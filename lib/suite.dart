@@ -1,16 +1,16 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'app_store.dart';
 import 'invoice_pdf.dart';
 import 'models.dart';
+
+part 'workflows.dart';
 
 const navItems = [
   ('Quotation Maker', Icons.request_quote_outlined),
@@ -48,26 +48,56 @@ class _SuiteShellState extends State<SuiteShell> {
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final pages = [
-      QuotePage(widget.store),
-      OrdersPage(widget.store),
-      ItemsPage(widget.store),
-      PartiesPage(widget.store),
+      QuotationWorkspace(widget.store),
+      TransactionPage(widget.store, 'order', key: const ValueKey('order')),
+      CatalogPage(widget.store),
+      CatalogPage(widget.store, parties: true),
       ReportsPage(widget.store),
       SettingsPage(widget.store),
     ];
     return Scaffold(
       appBar: AppBar(
-        title: Text(navItems[page].$1),
+        title: Text(navItems[page].$1, overflow: TextOverflow.ellipsis),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Center(
-              child: Text(
-                widget.store.company.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+          FilledButton.icon(
+            onPressed: () => openComposer(context, widget.store, 'order'),
+            icon: const Icon(Icons.add),
+            label: wide ? const Text('Sale Invoice') : const SizedBox.shrink(),
+          ),
+          if (wide)
+            TextButton.icon(
+              onPressed: () => openComposer(context, widget.store, 'payment_in'),
+              icon: const Icon(Icons.payments_outlined),
+              label: const Text('Payment In'),
+            ),
+          IconButton(
+            tooltip: 'Switch business',
+            onPressed: () => switchBusiness(context, widget.store),
+            icon: const Icon(Icons.business),
+          ),
+          IconButton(
+            tooltip: 'Search anything',
+            onPressed: () => showSearch(
+              context: context,
+              delegate: BusinessSearch(widget.store),
+            ),
+            icon: const Icon(Icons.search),
+          ),
+          IconButton(
+            tooltip: 'Toggle dark mode',
+            onPressed: widget.store.toggleTheme,
+            icon: const Icon(Icons.brightness_6_outlined),
+          ),
+          if (wide)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Center(
+                child: Text(
+                  widget.store.company.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          ),
           IconButton(
             onPressed: widget.onLogout,
             tooltip: 'Sign out',
@@ -80,57 +110,104 @@ class _SuiteShellState extends State<SuiteShell> {
         children: [
           if (wide) SizedBox(width: 250, child: _navigation(context)),
           if (wide) const VerticalDivider(width: 1),
-          Expanded(child: pages[page]),
+          Expanded(
+            child: KeyedSubtree(
+              key: ValueKey(widget.store.company.id),
+              child: pages[page],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: wide
           ? null
           : NavigationBar(
-              selectedIndex: page,
-              onDestinationSelected: (i) => setState(() => page = i),
+              selectedIndex: page < 4 ? page : 4,
+              onDestinationSelected: (i) {
+                if (i < 4) {
+                  setState(() => page = i);
+                } else {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (_) => ListView(
+                      children: [
+                        for (var n = 4; n < navItems.length; n++)
+                          ListTile(
+                            leading: Icon(navItems[n].$2),
+                            title: Text(navItems[n].$1),
+                            onTap: () {
+                              setState(() => page = n);
+                              Navigator.pop(context);
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                }
+              },
               destinations: [
                 for (final n in navItems.take(4))
                   NavigationDestination(
                     icon: Icon(n.$2),
                     label: n.$1.split(' ').first,
                   ),
+                const NavigationDestination(
+                  icon: Icon(Icons.more_horiz),
+                  label: 'More',
+                ),
               ],
             ),
     );
   }
 
-  Widget _navigation(BuildContext context) => SafeArea(
-    child: Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(22),
-          child: Row(
-            children: [
-              CircleAvatar(child: Icon(Icons.account_balance)),
-              SizedBox(width: 12),
-              Text(
-                'EMPIRAN',
-                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: navItems.length,
-            itemBuilder: (_, i) => ListTile(
-              selected: i == page,
-              leading: Icon(navItems[i].$2),
-              title: Text(navItems[i].$1),
-              onTap: () {
-                setState(() => page = i);
-                if (MediaQuery.sizeOf(context).width < 900)
-                  Navigator.pop(context);
-              },
+  Widget _navigation(BuildContext context) => ColoredBox(
+    color: const Color(0xff020617),
+    child: SafeArea(
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(22),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Color(0xff0f172a),
+                  backgroundImage: AssetImage(
+                    'assets/images/empiran_traders_logo.png',
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'EMPIRAN',
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          Expanded(
+            child: ListView.builder(
+              itemCount: navItems.length,
+              itemBuilder: (_, i) => ListTile(
+                selected: i == page,
+                selectedColor: Colors.white,
+                selectedTileColor: const Color(0xff2563eb),
+                textColor: const Color(0xffcbd5e1),
+                iconColor: const Color(0xff60a5fa),
+                leading: Icon(navItems[i].$2),
+                title: Text(navItems[i].$1),
+                onTap: () {
+                  setState(() => page = i);
+                  if (MediaQuery.sizeOf(context).width < 900) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -166,7 +243,7 @@ class PageFrame extends StatelessWidget {
                 ],
               ),
             ),
-            if (action != null) action!,
+            ?action,
           ],
         ),
         const SizedBox(height: 20),
@@ -174,362 +251,6 @@ class PageFrame extends StatelessWidget {
       ],
     ),
   );
-}
-
-class QuotePage extends StatefulWidget {
-  const QuotePage(this.store, {super.key});
-  final AppStore store;
-  @override
-  State<QuotePage> createState() => _QuotePageState();
-}
-
-class _QuotePageState extends State<QuotePage> {
-  final selected = <String, InvoiceLine>{};
-  final name = TextEditingController(), phone = TextEditingController();
-  void add(Item i) => setState(
-    () => selected.update(
-      i.id,
-      (l) => InvoiceLine(
-        itemId: l.itemId,
-        name: l.name,
-        quantity: l.quantity + 1,
-        unit: l.unit,
-        price: l.price,
-        hsn: l.hsn,
-      ),
-      ifAbsent: () => InvoiceLine(
-        itemId: i.id,
-        name: i.name,
-        quantity: 1,
-        unit: i.unit,
-        price: i.salesPrice,
-        hsn: i.hsn,
-      ),
-    ),
-  );
-  Future<void> generate() async {
-    if (selected.isEmpty) return;
-    final q = await widget.store.create(
-      gst: false,
-      type: 'quotation',
-      lines: selected.values.toList(),
-      partyName: name.text,
-      partyPhone: phone.text,
-      deductStock: false,
-    );
-    if (mounted) {
-      selected.clear();
-      setState(() {});
-      await showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Quotation generated'),
-          content: Text(
-            'Quotation ${q.number} was saved. Stock was not affected.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _convert(q);
-              },
-              child: const Text('Convert to order'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  Future<void> _convert(BusinessTransaction q) async {
-    final gst = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Convert quotation'),
-        content: const Text('Saving the order will deduct stock.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Non-GST order'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('GST order'),
-          ),
-        ],
-      ),
-    );
-    if (gst == null) return;
-    await widget.store.create(
-      gst: gst,
-      type: 'order',
-      lines: q.lines,
-      partyName: q.partyName,
-      partyPhone: q.partyPhone,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) => PageFrame(
-    title: 'Quotation Maker',
-    subtitle:
-        'Create estimates without changing stock, then convert in one click.',
-    child: LayoutBuilder(
-      builder: (_, c) {
-        final products = GridView.builder(
-          itemCount: widget.store.items.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: c.maxWidth > 900
-                ? 3
-                : c.maxWidth > 560
-                ? 2
-                : 1,
-            mainAxisExtent: 125,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemBuilder: (_, x) {
-            final i = widget.store.items[x];
-            return Card(
-              child: InkWell(
-                onTap: () => add(i),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      _ProductImage(i.image),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              i.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text('INR ${i.salesPrice.toStringAsFixed(2)}'),
-                            Text(
-                              'Stock ${i.currentStock} ${i.unit}',
-                              style: TextStyle(
-                                color: i.currentStock <= i.lowStockLimit
-                                    ? Colors.orange
-                                    : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.add_circle_outline),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-        final cart = Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: name,
-                  decoration: const InputDecoration(
-                    labelText: 'Customer name (optional)',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone (optional)',
-                  ),
-                ),
-                const Divider(height: 28),
-                Expanded(
-                  child: selected.isEmpty
-                      ? const Center(
-                          child: Text('Select products to build a quotation'),
-                        )
-                      : ListView(
-                          children: selected.values
-                              .map(
-                                (l) => ListTile(
-                                  title: Text(l.name),
-                                  subtitle: Text(
-                                    '${l.quantity} × INR ${l.price}',
-                                  ),
-                                  trailing: Text(
-                                    'INR ${l.total.toStringAsFixed(2)}',
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                ),
-                const Divider(),
-                Row(
-                  children: [
-                    const Text(
-                      'Total',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'INR ${selected.values.fold<double>(0, (a, b) => a + b.total).toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: selected.isEmpty ? null : generate,
-                    icon: const Icon(Icons.description_outlined),
-                    label: const Text('Generate quotation (stock safe)'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        return c.maxWidth > 760
-            ? Row(
-                children: [
-                  Expanded(flex: 3, child: products),
-                  const SizedBox(width: 16),
-                  Expanded(flex: 2, child: cart),
-                ],
-              )
-            : Column(
-                children: [
-                  Expanded(child: products),
-                  const SizedBox(height: 12),
-                  SizedBox(height: 330, child: cart),
-                ],
-              );
-      },
-    ),
-  );
-}
-
-class OrdersPage extends StatelessWidget {
-  const OrdersPage(this.store, {super.key});
-  final AppStore store;
-  Future<void> preview(BuildContext c, BusinessTransaction t) async =>
-      showDialog(
-        context: c,
-        builder: (_) => Dialog(
-          child: SizedBox(
-            width: 900,
-            height: 700,
-            child: PdfPreview(
-              build: (_) => buildInvoicePdf(store.company, t),
-              canChangePageFormat: false,
-            ),
-          ),
-        ),
-      );
-  @override
-  Widget build(BuildContext context) {
-    final orders = store.transactions.where((x) => x.type == 'order').toList();
-    return PageFrame(
-      title: 'Orders & Invoices',
-      subtitle:
-          'GST invoices include 9% CGST + 9% SGST; stock is deducted on save.',
-      action: FilledButton.icon(
-        onPressed: store.items.isEmpty
-            ? null
-            : () async {
-                final gst = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Quick order'),
-                    content: Text(
-                      'Create an order using 1 × ${store.items.first.name}?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Non-GST'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('GST'),
-                      ),
-                    ],
-                  ),
-                );
-                if (gst != null)
-                  await store.create(
-                    gst: gst,
-                    type: 'order',
-                    lines: [
-                      InvoiceLine(
-                        itemId: store.items.first.id,
-                        name: store.items.first.name,
-                        quantity: 1,
-                        unit: store.items.first.unit,
-                        price: store.items.first.salesPrice,
-                      ),
-                    ],
-                  );
-              },
-        icon: const Icon(Icons.add),
-        label: const Text('New order'),
-      ),
-      child: orders.isEmpty
-          ? const Center(
-              child: Text(
-                'No orders yet. Convert a quotation or create a quick order.',
-              ),
-            )
-          : ListView.separated(
-              itemCount: orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) {
-                final t = orders[i];
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      child: Icon(
-                        t.isGst ? Icons.receipt : Icons.shopping_bag_outlined,
-                      ),
-                    ),
-                    title: Text(
-                      '# ${t.number} • ${t.partyName.isEmpty ? 'Cash Customer' : t.partyName}',
-                    ),
-                    subtitle: Text(
-                      '${DateFormat.yMMMd().format(t.date)} • ${t.isGst ? 'GST' : 'Non-GST'} • ${t.status}',
-                    ),
-                    trailing: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          'INR ${t.total.toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          onPressed: () => preview(context, t),
-                          tooltip: 'Preview / Print PDF',
-                          icon: const Icon(Icons.picture_as_pdf_outlined),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-    );
-  }
 }
 
 class _ProductImage extends StatelessWidget {
@@ -562,83 +283,33 @@ class _ProductImage extends StatelessWidget {
   }
 }
 
-class ItemsPage extends StatelessWidget {
-  const ItemsPage(this.store, {super.key});
-  final AppStore store;
-  @override
-  Widget build(BuildContext context) => PageFrame(
-    title: 'Products & Inventory',
-    subtitle: 'Prices, product images, stock levels and low-stock warnings.',
-    action: FilledButton.icon(
-      onPressed: () => _itemDialog(context, store),
-      icon: const Icon(Icons.add),
-      label: const Text('Add product'),
-    ),
-    child: store.items.isEmpty
-        ? const Center(
-            child: Text('No products. Add the first product to start billing.'),
-          )
-        : GridView.builder(
-            itemCount: store.items.length,
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 380,
-              mainAxisExtent: 125,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemBuilder: (_, i) {
-              final x = store.items[i];
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    children: [
-                      _ProductImage(x.image),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              x.name,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            Text('${x.itemCode} • ${x.category}'),
-                            Text('INR ${x.salesPrice.toStringAsFixed(2)}'),
-                            Text(
-                              '${x.currentStock} ${x.unit} in stock',
-                              style: TextStyle(
-                                color: x.currentStock <= x.lowStockLimit
-                                    ? Colors.orange
-                                    : null,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-  );
-}
-
-Future<void> _itemDialog(BuildContext context, AppStore store) async {
+Future<void> _itemDialog(
+  BuildContext context,
+  AppStore store, {
+  Item? item,
+}) async {
   final name = TextEditingController(),
       code = TextEditingController(),
       price = TextEditingController(),
       stock = TextEditingController(),
       hsn = TextEditingController();
-  String? image;
+  final purchase = TextEditingController(text: '${item?.purchasePrice ?? 0}'),
+      category = TextEditingController(text: item?.category ?? 'General'),
+      unit = TextEditingController(text: item?.unit ?? 'Pcs'),
+      low = TextEditingController(text: '${item?.lowStockLimit ?? 5}');
+  name.text = item?.name ?? '';
+  code.text = item?.itemCode ?? '';
+  price.text = '${item?.salesPrice ?? 0}';
+  stock.text = '${item?.currentStock ?? 0}';
+  hsn.text = item?.hsn ?? '';
+  bool service = item?.isService ?? false;
+  String? image = item?.image;
+  String? error;
   await showDialog(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, set) => AlertDialog(
-        title: const Text('Add product'),
+        title: Text(item == null ? 'Add product' : 'Edit product'),
         content: SizedBox(
           width: 520,
           child: SingleChildScrollView(
@@ -685,6 +356,26 @@ Future<void> _itemDialog(BuildContext context, AppStore store) async {
                   decoration: const InputDecoration(labelText: 'HSN'),
                 ),
                 const SizedBox(height: 12),
+                for (final field in [
+                  ('Purchase price', purchase),
+                  ('Category', category),
+                  ('Unit', unit),
+                  ('Low stock limit', low),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: TextField(
+                      controller: field.$2,
+                      decoration: InputDecoration(labelText: field.$1),
+                    ),
+                  ),
+                SwitchListTile(
+                  title: const Text('Service (no stock movement)'),
+                  value: service,
+                  onChanged: (v) => set(() => service = v),
+                ),
+                if (error != null)
+                  Text(error!, style: const TextStyle(color: Colors.red)),
                 OutlinedButton.icon(
                   onPressed: () async {
                     final f = await ImagePicker().pickImage(
@@ -713,19 +404,44 @@ Future<void> _itemDialog(BuildContext context, AppStore store) async {
           ),
           FilledButton(
             onPressed: () async {
-              if (name.text.trim().isEmpty) return;
-              await store.addItem(
-                Item(
-                  id: DateTime.now().microsecondsSinceEpoch.toString(),
-                  name: name.text.trim(),
-                  itemCode: code.text.trim(),
-                  hsn: hsn.text.trim(),
-                  salesPrice: double.tryParse(price.text) ?? 0,
-                  currentStock: double.tryParse(stock.text) ?? 0,
-                  image: image,
-                ),
-              );
-              if (ctx.mounted) Navigator.pop(ctx);
+              if (name.text.trim().isEmpty ||
+                  [price, purchase, stock, low].any(
+                    (c) =>
+                        double.tryParse(c.text) == null ||
+                        !double.parse(c.text).isFinite,
+                  ) ||
+                  double.parse(price.text) < 0 ||
+                  double.parse(purchase.text) < 0 ||
+                  double.parse(low.text) < 0) {
+                set(
+                  () =>
+                      error = 'Enter a name and valid prices, stock and limit.',
+                );
+                return;
+              }
+              try {
+                await store.addItem(
+                  Item(
+                    id:
+                        item?.id ??
+                        DateTime.now().microsecondsSinceEpoch.toString(),
+                    purchasePrice: double.parse(purchase.text),
+                    category: category.text,
+                    unit: unit.text,
+                    lowStockLimit: double.parse(low.text),
+                    isService: service,
+                    name: name.text.trim(),
+                    itemCode: code.text.trim(),
+                    hsn: hsn.text.trim(),
+                    salesPrice: double.tryParse(price.text) ?? 0,
+                    currentStock: double.tryParse(stock.text) ?? 0,
+                    image: image,
+                  ),
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+              } catch (e) {
+                set(() => error = '$e');
+              }
             },
             child: const Text('Save'),
           ),
@@ -733,69 +449,48 @@ Future<void> _itemDialog(BuildContext context, AppStore store) async {
       ),
     ),
   );
+  for (final c in [
+    name,
+    code,
+    price,
+    stock,
+    hsn,
+    purchase,
+    category,
+    unit,
+    low,
+  ]) {
+    c.dispose();
+  }
 }
 
-class PartiesPage extends StatelessWidget {
-  const PartiesPage(this.store, {super.key});
-  final AppStore store;
-  @override
-  Widget build(BuildContext context) => PageFrame(
-    title: 'Customers & Suppliers',
-    subtitle: 'Party contacts, GST details, balances and transaction ledger.',
-    action: FilledButton.icon(
-      onPressed: () => _partyDialog(context, store),
-      icon: const Icon(Icons.person_add_alt),
-      label: const Text('Add party'),
-    ),
-    child: store.parties.isEmpty
-        ? const Center(
-            child: Text(
-              'No parties yet. Customer details remain optional during billing.',
-            ),
-          )
-        : ListView.separated(
-            itemCount: store.parties.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) {
-              final p = store.parties[i];
-              final tx = store.transactions
-                  .where((t) => t.partyName == p.name)
-                  .length;
-              return Card(
-                child: ExpansionTile(
-                  leading: CircleAvatar(child: Text(p.name[0].toUpperCase())),
-                  title: Text(p.name),
-                  subtitle: Text(
-                    '${p.type} • ${p.phone}${p.gstin.isEmpty ? '' : ' • GST ${p.gstin}'}',
-                  ),
-                  trailing: Text('INR ${p.balance.toStringAsFixed(2)}'),
-                  children: [
-                    ListTile(
-                      title: Text(
-                        p.address.isEmpty ? 'No address recorded' : p.address,
-                      ),
-                      subtitle: Text('$tx ledger transactions • ${p.email}'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-  );
-}
-
-Future<void> _partyDialog(BuildContext context, AppStore store) async {
+Future<void> _partyDialog(
+  BuildContext context,
+  AppStore store, {
+  Party? party,
+}) async {
   final n = TextEditingController(),
       ph = TextEditingController(),
       em = TextEditingController(),
       gst = TextEditingController(),
       address = TextEditingController();
-  String type = 'Customer';
+  n.text = party?.name ?? '';
+  ph.text = party?.phone ?? '';
+  em.text = party?.email ?? '';
+  gst.text = party?.gstin ?? '';
+  address.text = party?.address ?? '';
+  final balance = TextEditingController(text: '${party?.balance ?? 0}');
+  String? error;
+  String type = party?.type ?? 'Customer';
   await showDialog(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, set) => AlertDialog(
-        title: const Text('Add customer / supplier'),
+        title: Text(
+          party == null
+              ? 'Add customer / supplier'
+              : 'Edit customer / supplier',
+        ),
         content: SizedBox(
           width: 500,
           child: SingleChildScrollView(
@@ -817,7 +512,7 @@ Future<void> _partyDialog(BuildContext context, AppStore store) async {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField(
-                  value: type,
+                  initialValue: type,
                   items: ['Customer', 'Supplier', 'Both']
                       .map((x) => DropdownMenuItem(value: x, child: Text(x)))
                       .toList(),
@@ -829,6 +524,19 @@ Future<void> _partyDialog(BuildContext context, AppStore store) async {
                   controller: gst,
                   decoration: const InputDecoration(labelText: 'GSTIN / UIN'),
                 ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: balance,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Opening balance (+ receivable / - payable)',
+                  ),
+                ),
+                if (error != null)
+                  Text(error!, style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: address,
@@ -846,19 +554,31 @@ Future<void> _partyDialog(BuildContext context, AppStore store) async {
           ),
           FilledButton(
             onPressed: () async {
-              if (n.text.trim().isEmpty) return;
-              await store.addParty(
-                Party(
-                  id: DateTime.now().microsecondsSinceEpoch.toString(),
-                  name: n.text.trim(),
-                  phone: ph.text,
-                  email: em.text,
-                  type: type,
-                  gstin: gst.text,
-                  address: address.text,
-                ),
-              );
-              if (ctx.mounted) Navigator.pop(ctx);
+              if (n.text.trim().isEmpty ||
+                  double.tryParse(balance.text) == null ||
+                  !double.parse(balance.text).isFinite) {
+                set(() => error = 'Enter a name and valid opening balance.');
+                return;
+              }
+              try {
+                await store.addParty(
+                  Party(
+                    id:
+                        party?.id ??
+                        DateTime.now().microsecondsSinceEpoch.toString(),
+                    balance: double.parse(balance.text),
+                    name: n.text.trim(),
+                    phone: ph.text,
+                    email: em.text,
+                    type: type,
+                    gstin: gst.text,
+                    address: address.text,
+                  ),
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+              } catch (e) {
+                set(() => error = '$e');
+              }
             },
             child: const Text('Save'),
           ),
@@ -866,6 +586,9 @@ Future<void> _partyDialog(BuildContext context, AppStore store) async {
       ),
     ),
   );
+  for (final c in [n, ph, em, gst, address, balance]) {
+    c.dispose();
+  }
 }
 
 enum ReportRange { today, month, last30, all }
@@ -887,8 +610,14 @@ class _ReportsPageState extends State<ReportsPage> {
           (t) => tab == 0
               ? true
               : tab == 1
-              ? t.type == 'order'
-              : t.paid > 0,
+              ? [
+                  'order',
+                  'sale_invoice',
+                  'sale_order',
+                  'quotation',
+                  'estimate',
+                ].contains(t.type)
+              : t.paid > 0 || t.type.startsWith('payment_'),
         )
         .toList();
     final now = DateTime.now();
@@ -930,42 +659,27 @@ class _ReportsPageState extends State<ReportsPage> {
   }
 
   Future<void> csv() async {
-    final content =
-        'Number,Date,Party,Type,Total,Paid,Balance\n${rows.map((t) => '${t.number},${DateFormat('yyyy-MM-dd').format(t.date)},"${t.partyName}",${t.type},${t.total},${t.paid},${t.balance}').join('\n')}';
-    if (kIsWeb) {
-      await SharePlus.instance.share(
-        ShareParams(text: content, subject: 'Empiran report.csv'),
-      );
-      return;
-    }
-    final dir = await getTemporaryDirectory();
-    final f = File('${dir.path}${Platform.pathSeparator}empiran_report.csv');
-    await f.writeAsString(content);
+    final content = reportCsv(rows);
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(f.path)], subject: 'Empiran report'),
+      ShareParams(
+        files: [
+          XFile.fromData(
+            Uint8List.fromList(utf8.encode(content)),
+            mimeType: 'text/csv',
+          ),
+        ],
+        fileNameOverrides: ['empiran-report.csv'],
+      ),
     );
   }
 
   Future<void> printReport() async {
-    final fake = BusinessTransaction(
-      id: 'report',
-      type: 'report',
-      number: 'REPORT',
-      date: DateTime.now(),
-      lines: rows
-          .map(
-            (t) => InvoiceLine(
-              itemId: t.id,
-              name: '${t.number} ${t.partyName}',
-              quantity: 1,
-              unit: 'Txn',
-              price: t.total,
-            ),
-          )
-          .toList(),
-    );
     await Printing.layoutPdf(
-      onLayout: (_) => buildInvoicePdf(widget.store.company, fake),
+      onLayout: (_) => buildReportPdf(
+        widget.store.company,
+        rows,
+        ['Transaction Details', 'Sales Details', 'Payment Details'][tab],
+      ),
     );
   }
 
@@ -977,13 +691,13 @@ class _ReportsPageState extends State<ReportsPage> {
     return PageFrame(
       title: 'Reports',
       subtitle: 'Focused transaction, sales and payment reporting.',
-      child: Column(
+      child: ListView(
         children: [
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (int i = 0; i < 3; i)
+              for (int i = 0; i < 3; i++)
                 ChoiceChip(
                   label: Text(
                     [
@@ -995,6 +709,28 @@ class _ReportsPageState extends State<ReportsPage> {
                   selected: tab == i,
                   onSelected: (_) => setState(() => tab = i),
                 ),
+              TextButton.icon(
+                icon: const Icon(Icons.date_range),
+                label: Text(
+                  from == null
+                      ? 'Custom dates'
+                      : '${DateFormat.yMd().format(from!)} ? ${DateFormat.yMd().format(to!)}',
+                ),
+                onPressed: () async {
+                  final dates = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (dates != null && mounted) {
+                    setState(() {
+                      from = dates.start;
+                      to = dates.end;
+                      range = ReportRange.all;
+                    });
+                  }
+                },
+              ),
               for (final x in ReportRange.values)
                 ChoiceChip(
                   label: Text(
@@ -1006,7 +742,11 @@ class _ReportsPageState extends State<ReportsPage> {
                     }[x]!,
                   ),
                   selected: range == x,
-                  onSelected: (_) => setState(() => range = x),
+                  onSelected: (_) => setState(() {
+                    range = x;
+                    from = null;
+                    to = null;
+                  }),
                 ),
             ],
           ),
@@ -1055,7 +795,8 @@ class _ReportsPageState extends State<ReportsPage> {
             ],
           ),
           const SizedBox(height: 12),
-          Expanded(
+          SizedBox(
+            height: 420,
             child: r.isEmpty
                 ? const Center(child: Text('No records in this period.'))
                 : ListView.builder(
@@ -1183,6 +924,14 @@ class _CompanyFormState extends State<_CompanyForm> {
     }.entries)
       e.key: TextEditingController(text: e.value),
   };
+  @override
+  void dispose() {
+    for (final c in fields.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
   String? logo;
   @override
   void initState() {
@@ -1229,7 +978,9 @@ class _CompanyFormState extends State<_CompanyForm> {
               decoration: const InputDecoration(labelText: 'Full Address *'),
             ),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -1248,7 +999,6 @@ class _CompanyFormState extends State<_CompanyForm> {
                     logo == null ? 'Upload company logo' : 'Change logo',
                   ),
                 ),
-                const Spacer(),
                 FilledButton.icon(
                   onPressed: () async {
                     if ([
@@ -1278,10 +1028,11 @@ class _CompanyFormState extends State<_CompanyForm> {
                     c.ifsc = fields['ifsc']!.text;
                     c.logo = logo;
                     await widget.store.saveCompany();
-                    if (mounted)
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Company profile saved.')),
                       );
+                    }
                   },
                   icon: const Icon(Icons.save_outlined),
                   label: const Text('Save profile'),
@@ -1320,7 +1071,27 @@ class _Users extends StatelessWidget {
                 leading: const CircleAvatar(child: Icon(Icons.person_outline)),
                 title: Text(u['name']!),
                 subtitle: Text('${u['username']} • ${u['email']}'),
-                trailing: Chip(label: Text(u['role']!)),
+                trailing: PopupMenuButton<String>(
+                  tooltip: 'Manage staff',
+                  onSelected: (value) async {
+                    if (value == 'delete' &&
+                        await confirmDelete(
+                          context,
+                          'Delete this staff account?',
+                        )) {
+                      store.users.remove(u);
+                      await store.persist();
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(enabled: false, child: Text(u['role']!)),
+                    if (u['username'] != 'empirantraders')
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete account'),
+                      ),
+                  ],
+                ),
               ),
             );
           },
@@ -1336,6 +1107,7 @@ Future<void> _userDialog(BuildContext context, AppStore store) async {
       e = TextEditingController(),
       p = TextEditingController();
   String role = 'Billing Staff';
+  String? error;
   await showDialog(
     context: context,
     builder: (ctx) => StatefulBuilder(
@@ -1368,13 +1140,15 @@ Future<void> _userDialog(BuildContext context, AppStore store) async {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField(
-                value: role,
+                initialValue: role,
                 items: ['Billing Staff', 'Manager', 'Admin']
                     .map((x) => DropdownMenuItem(value: x, child: Text(x)))
                     .toList(),
                 onChanged: (v) => set(() => role = v!),
                 decoration: const InputDecoration(labelText: 'Role'),
               ),
+              if (error != null)
+                Text(error!, style: const TextStyle(color: Colors.red)),
             ],
           ),
         ),
@@ -1385,12 +1159,29 @@ Future<void> _userDialog(BuildContext context, AppStore store) async {
           ),
           FilledButton(
             onPressed: () async {
-              if (n.text.isEmpty || u.text.isEmpty || p.text.isEmpty) return;
+              if (n.text.trim().isEmpty ||
+                  u.text.trim().isEmpty ||
+                  p.text.trim().isEmpty) {
+                set(() => error = 'Name, username and password are required.');
+                return;
+              }
+              if (store.users.any(
+                (x) =>
+                    x['username']?.toLowerCase() ==
+                        u.text.trim().toLowerCase() ||
+                    (e.text.trim().isNotEmpty &&
+                        x['email']?.toLowerCase() ==
+                            e.text.trim().toLowerCase()),
+              )) {
+                set(() => error = 'Username or email already exists.');
+                return;
+              }
               await store.addUser({
                 'name': n.text,
-                'username': u.text,
-                'email': e.text,
+                'username': u.text.trim(),
+                'email': e.text.trim(),
                 'role': role,
+                'password': p.text,
               });
               if (ctx.mounted) Navigator.pop(ctx);
             },

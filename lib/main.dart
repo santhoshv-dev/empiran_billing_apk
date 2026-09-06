@@ -18,7 +18,19 @@ class _EmpiranAppState extends State<EmpiranApp> {
   @override
   void initState() {
     super.initState();
+    store.addListener(_refreshTheme);
     _start();
+  }
+
+  void _refreshTheme() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    store.removeListener(_refreshTheme);
+    store.dispose();
+    super.dispose();
   }
 
   Future<void> _start() async {
@@ -28,22 +40,40 @@ class _EmpiranAppState extends State<EmpiranApp> {
     ]);
     final p = await SharedPreferences.getInstance();
     final expiry = DateTime.tryParse(p.getString('sessionExpiry') ?? '');
-    if (mounted)
+    if (mounted) {
       setState(() {
         authenticated = expiry?.isAfter(DateTime.now()) ?? false;
         loading = false;
       });
+    }
   }
 
   Future<void> login(String username, String password) async {
-    if (username != 'empirantraders' || password != '123456')
-      throw Exception('Invalid username or password');
-    final p = await SharedPreferences.getInstance();
-    await p.setString('sessionToken', 'local-admin-session');
-    await p.setString(
-      'sessionExpiry',
-      DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+    final clean = username.trim().toLowerCase();
+    final defaultAdmin =
+        clean == 'empirantraders' && password.trim() == '123456';
+    final validUser = store.users.any(
+      (u) =>
+          (u['username']?.toLowerCase() == clean ||
+              u['email']?.toLowerCase() == clean) &&
+          u['password'] == password.trim(),
     );
+    if (!defaultAdmin && !validUser) {
+      await store.remoteLogin(clean, password.trim());
+    }
+    final p = await SharedPreferences.getInstance();
+    if (defaultAdmin || validUser) {
+      await p.setString('sessionToken', 'local-admin-session');
+      await p.setString(
+        'sessionExpiry',
+        DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+      );
+    }
+    setState(() => authenticated = true);
+  }
+
+  Future<void> register(String name, String email, String password) async {
+    await store.remoteRegister(name, email, password);
     setState(() => authenticated = true);
   }
 
@@ -51,6 +81,7 @@ class _EmpiranAppState extends State<EmpiranApp> {
     final p = await SharedPreferences.getInstance();
     await p.remove('sessionToken');
     await p.remove('sessionExpiry');
+    await store.disconnectApi();
     setState(() => authenticated = false);
   }
 
@@ -60,12 +91,12 @@ class _EmpiranAppState extends State<EmpiranApp> {
     title: 'Empiran Traders',
     theme: AppTheme.light,
     darkTheme: AppTheme.dark,
-    themeMode: ThemeMode.system,
+    themeMode: store.darkMode ? ThemeMode.dark : ThemeMode.light,
     home: loading
         ? const SplashScreen()
         : authenticated
         ? SuiteShell(store: store, onLogout: logout)
-        : LoginScreen(onLogin: login),
+        : LoginScreen(onLogin: login, onRegister: register),
   );
 }
 
@@ -100,7 +131,7 @@ class _SplashState extends State<SplashScreen>
       child: Center(
         child: AnimatedBuilder(
           animation: c,
-          builder: (_, __) => Column(
+          builder: (_, _) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
@@ -154,16 +185,30 @@ class _SplashState extends State<SplashScreen>
 }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, required this.onLogin});
+  const LoginScreen({
+    super.key,
+    required this.onLogin,
+    required this.onRegister,
+  });
   final Future<void> Function(String, String) onLogin;
+  final Future<void> Function(String, String, String) onRegister;
   @override
   State<LoginScreen> createState() => _LoginState();
 }
 
 class _LoginState extends State<LoginScreen> {
   final u = TextEditingController(text: 'empirantraders'),
-      p = TextEditingController(text: '123456');
-  bool busy = false;
+      p = TextEditingController(text: '123456'),
+      name = TextEditingController();
+  bool busy = false, showPassword = false, registering = false;
+  @override
+  void dispose() {
+    u.dispose();
+    p.dispose();
+    name.dispose();
+    super.dispose();
+  }
+
   String? error;
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -180,11 +225,13 @@ class _LoginState extends State<LoginScreen> {
                 children: [
                   const CircleAvatar(
                     radius: 36,
-                    child: Icon(Icons.account_balance_rounded, size: 38),
+                    backgroundImage: AssetImage(
+                      'assets/images/empiran_traders_logo.png',
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Welcome back',
+                    'EMPIRAN TRADERS',
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -194,18 +241,45 @@ class _LoginState extends State<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 28),
+                  if (registering) ...[
+                    TextField(
+                      controller: name,
+                      decoration: const InputDecoration(
+                        labelText: 'Your name',
+                        prefixIcon: Icon(Icons.badge_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   TextField(
                     controller: u,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
+                    keyboardType: registering
+                        ? TextInputType.emailAddress
+                        : null,
+                    decoration: InputDecoration(
+                      labelText: registering
+                          ? 'Email'
+                          : 'Username or API email',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: p,
-                    obscureText: true,
-                    decoration: const InputDecoration(
+                    obscureText: !showPassword,
+                    decoration: InputDecoration(
+                      suffixIcon: IconButton(
+                        tooltip: showPassword
+                            ? 'Hide password'
+                            : 'Show password',
+                        onPressed: () =>
+                            setState(() => showPassword = !showPassword),
+                        icon: Icon(
+                          showPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                      ),
                       labelText: 'Password',
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
@@ -230,10 +304,21 @@ class _LoginState extends State<LoginScreen> {
                               error = null;
                             });
                             try {
-                              await widget.onLogin(u.text.trim(), p.text);
+                              if (registering) {
+                                await widget.onRegister(
+                                  name.text.trim(),
+                                  u.text.trim(),
+                                  p.text,
+                                );
+                              } else {
+                                await widget.onLogin(u.text.trim(), p.text);
+                              }
                             } catch (e) {
                               setState(
-                                () => error = 'Invalid username or password.',
+                                () => error = e.toString().replaceFirst(
+                                  'Exception: ',
+                                  '',
+                                ),
                               );
                             } finally {
                               if (mounted) setState(() => busy = false);
@@ -244,7 +329,22 @@ class _LoginState extends State<LoginScreen> {
                             dimension: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Sign in'),
+                        : Text(registering ? 'Create API account' : 'Sign in'),
+                  ),
+                  TextButton(
+                    onPressed: busy
+                        ? null
+                        : () => setState(() {
+                            registering = !registering;
+                            error = null;
+                            u.text = registering ? '' : 'empirantraders';
+                            p.text = registering ? '' : '123456';
+                          }),
+                    child: Text(
+                      registering
+                          ? 'Already have an account? Sign in'
+                          : 'Create a cloud account',
+                    ),
                   ),
                 ],
               ),

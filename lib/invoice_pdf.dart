@@ -1,8 +1,100 @@
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'models.dart';
+
+String reportCsv(List<BusinessTransaction> rows) {
+  String cell(Object value) => '"${value.toString().replaceAll('"', '""')}"';
+  return [
+    [
+      'Date',
+      'Number',
+      'Type',
+      'Party',
+      'Subtotal',
+      'Tax',
+      'Total',
+      'Paid',
+      'Balance',
+      'Payment mode',
+      'Status',
+    ],
+    for (final t in rows)
+      [
+        DateFormat('yyyy-MM-dd').format(t.date),
+        t.number,
+        t.type,
+        t.partyName,
+        t.subtotal,
+        t.cgst + t.sgst,
+        t.total,
+        t.paid,
+        t.balance,
+        t.paymentMode,
+        t.status,
+      ],
+  ].map((row) => row.map(cell).join(',')).join('\r\n');
+}
+
+Future<Uint8List> buildReportPdf(
+  Company company,
+  List<BusinessTransaction> rows,
+  String title,
+) async {
+  final doc = pw.Document();
+  String money(double n) =>
+      NumberFormat.currency(locale: 'en_IN', symbol: 'INR ').format(n);
+  doc.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.a4.landscape,
+      build: (_) => [
+        pw.Text(
+          company.name,
+          style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.Text(title),
+        pw.SizedBox(height: 16),
+        pw.Text(
+          'Records: ${rows.length}    Total: ${money(rows.fold(0, (s, t) => s + t.total))}    Paid: ${money(rows.fold(0, (s, t) => s + t.paid))}    Balance: ${money(rows.fold(0, (s, t) => s + t.balance))}',
+        ),
+        pw.SizedBox(height: 16),
+        pw.TableHelper.fromTextArray(
+          headers: [
+            'Date',
+            'Number',
+            'Party',
+            'Type',
+            'Total',
+            'Paid',
+            'Balance',
+            'Status',
+          ],
+          data: [
+            for (final t in rows)
+              [
+                DateFormat.yMd().format(t.date),
+                t.number,
+                t.partyName,
+                t.type,
+                money(t.total),
+                money(t.paid),
+                money(t.balance),
+                t.status,
+              ],
+          ],
+          cellStyle: const pw.TextStyle(fontSize: 8),
+          headerStyle: pw.TextStyle(
+            fontSize: 8,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
+  return doc.save();
+}
 
 String amountInWords(double value) {
   const one = [
@@ -84,12 +176,25 @@ pw.Widget _cell(
 
 Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
   final doc = pw.Document();
+  pw.MemoryImage? logo;
+  if (c.logo != null && c.logo!.isNotEmpty) {
+    try {
+      logo = pw.MemoryImage(base64Decode(c.logo!.split(',').last));
+    } catch (_) {
+      /* Older backups may contain an image URL. */
+    }
+  }
   final fmt = NumberFormat.currency(locale: 'en_IN', symbol: 'INR ');
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(22),
       build: (_) => [
+        if (logo != null)
+          pw.Image(logo, width: 64, height: 48, fit: pw.BoxFit.contain),
+        if (t.discount != 0) pw.Text('Discount: ${fmt.format(t.discount)}'),
+        if (t.shipping != 0) pw.Text('Shipping: ${fmt.format(t.shipping)}'),
+        if (t.notes.isNotEmpty) pw.Text('Notes: ${t.notes}'),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.end,
           children: [
@@ -101,7 +206,15 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
         ),
         pw.Center(
           child: pw.Text(
-            t.isGst ? 'TAX INVOICE' : 'INVOICE',
+            t.type == 'quotation' || t.type == 'estimate'
+                ? 'QUOTATION'
+                : t.type.startsWith('payment_')
+                ? 'PAYMENT RECEIPT'
+                : t.type == 'report'
+                ? 'TRANSACTION REPORT'
+                : t.isGst
+                ? 'TAX INVOICE'
+                : t.type.replaceAll('_', ' ').toUpperCase(),
             style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
           ),
         ),
@@ -152,7 +265,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                     for (final row in [
                       [
                         'Invoice No.',
-                        '${t.number}',
+                        (t.number),
                         'Dated',
                         DateFormat('dd-MMM-yyyy').format(t.date),
                       ],

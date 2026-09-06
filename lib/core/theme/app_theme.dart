@@ -16,7 +16,7 @@ abstract final class AppRadii {
 }
 
 abstract final class AppTheme {
-  static const _seed = Color(0xff075fae);
+  static const _seed = Color(0xff2563eb);
   static ThemeData get light => _theme(Brightness.light);
   static ThemeData get dark => _theme(Brightness.dark);
   static ThemeData _theme(Brightness brightness) {
@@ -25,8 +25,8 @@ abstract final class AppTheme {
       brightness: brightness,
       secondary: const Color(0xffff9d00),
       surface: brightness == Brightness.light
-          ? const Color(0xfff7f9fc)
-          : const Color(0xff10151d),
+          ? const Color(0xfff1f5f9)
+          : const Color(0xff020617),
     );
     final base = ThemeData(
       useMaterial3: true,

@@ -1,6 +1,19 @@
 import 'dart:convert';
 
 double _d(dynamic value) => (value as num?)?.toDouble() ?? 0;
+String _transactionType(dynamic value) => switch ('$value') {
+  'sale_invoice' => 'order',
+  'estimate' => 'quotation',
+  final value => value,
+};
+Map<String, dynamic> _transactionMeta(dynamic value) {
+  if (value is! String || !value.trimLeft().startsWith('{')) return {};
+  try {
+    return Map<String, dynamic>.from(jsonDecode(value));
+  } catch (_) {
+    return {};
+  }
+}
 
 class Company {
   Company({
@@ -72,12 +85,15 @@ class Item {
     this.hsn = '',
     this.unit = 'Pcs',
     this.salesPrice = 0,
+    this.purchasePrice = 0,
+    this.isService = false,
     this.currentStock = 0,
     this.lowStockLimit = 5,
     this.image,
   });
   String id, name, category, itemCode, hsn, unit;
-  double salesPrice, currentStock, lowStockLimit;
+  double salesPrice, purchasePrice, currentStock, lowStockLimit;
+  bool isService;
   String? image;
   factory Item.fromJson(Map<String, dynamic> j) => Item(
     id: '${j['id']}',
@@ -87,6 +103,8 @@ class Item {
     hsn: j['hsn'] ?? '',
     unit: j['unit'] ?? 'Pcs',
     salesPrice: _d(j['salesPrice']),
+    purchasePrice: _d(j['purchasePrice']),
+    isService: j['isService'] ?? false,
     currentStock: _d(j['currentStock']),
     lowStockLimit: _d(j['lowStockLimit']),
     image: j['image'] ?? j['imageUrl'],
@@ -99,6 +117,8 @@ class Item {
     'hsn': hsn,
     'unit': unit,
     'salesPrice': salesPrice,
+    'purchasePrice': purchasePrice,
+    'isService': isService,
     'currentStock': currentStock,
     'lowStockLimit': lowStockLimit,
     'image': image,
@@ -191,6 +211,11 @@ class BusinessTransaction {
     this.paymentMode = 'Cash',
     this.status = 'Unpaid',
     this.dispatch = const {},
+    this.partyId,
+    this.convertedFrom,
+    this.discount = 0,
+    this.shipping = 0,
+    this.notes = '',
   });
   String id,
       type,
@@ -201,35 +226,46 @@ class BusinessTransaction {
       partyGstin,
       paymentMode,
       status;
+  String? partyId, convertedFrom;
+  String notes;
+  double discount, shipping;
   DateTime date;
   List<InvoiceLine> lines;
   bool isGst;
   double paid;
   Map<String, String> dispatch;
   double get subtotal => lines.fold(0, (a, b) => a + b.total);
-  double get cgst => isGst ? subtotal * .09 : 0;
-  double get sgst => isGst ? subtotal * .09 : 0;
-  double get total => subtotal + cgst + sgst;
+  double get cgst => isGst ? (subtotal - discount) * .09 : 0;
+  double get sgst => isGst ? (subtotal - discount) * .09 : 0;
+  double get total => subtotal - discount + cgst + sgst + shipping;
   double get balance => total - paid;
-  factory BusinessTransaction.fromJson(Map<String, dynamic> j) =>
-      BusinessTransaction(
-        id: '${j['id']}',
-        type: j['type'] ?? j['txnType'] ?? 'order',
-        number: j['number'] ?? j['txnNo'] ?? '',
-        date: DateTime.tryParse('${j['date']}') ?? DateTime.now(),
-        lines: ((j['lines'] ?? j['lineItems'] ?? []) as List)
-            .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-        partyName: j['partyName'] ?? '',
-        partyPhone: j['partyPhone'] ?? '',
-        partyAddress: j['partyAddress'] ?? '',
-        partyGstin: j['partyGstin'] ?? '',
-        isGst: j['isGst'] ?? (_d(j['cgst']) > 0),
-        paid: _d(j['paid'] ?? j['paidAmount']),
-        paymentMode: j['paymentMode'] ?? 'Cash',
-        status: j['status'] ?? 'Unpaid',
-        dispatch: Map<String, String>.from(j['dispatch'] ?? {}),
-      );
+  factory BusinessTransaction.fromJson(
+    Map<String, dynamic> j,
+  ) => BusinessTransaction(
+    id: '${j['id']}',
+    partyId: j['partyId']?.toString(),
+    convertedFrom: (j['convertedFrom'] ?? j['referenceNo'])?.toString(),
+    discount: _d(j['discount'] ?? j['discountAmount']),
+    shipping: _d(j['shipping'] ?? j['shippingCharges']),
+    notes: _transactionMeta(j['notes'])['text']?.toString() ?? j['notes'] ?? '',
+    type: _transactionType(j['type'] ?? j['txnType'] ?? 'order'),
+    number: j['number'] ?? j['txnNo'] ?? '',
+    date: DateTime.tryParse('${j['date']}') ?? DateTime.now(),
+    lines: ((j['lines'] ?? j['lineItems'] ?? []) as List)
+        .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e)))
+        .toList(),
+    partyName: j['partyName'] ?? '',
+    partyPhone: j['partyPhone'] ?? '',
+    partyAddress: j['partyAddress'] ?? '',
+    partyGstin: j['partyGstin'] ?? '',
+    isGst: j['isGst'] ?? (_d(j['cgst']) > 0),
+    paid: _d(j['paid'] ?? j['paidAmount']),
+    paymentMode: j['paymentMode'] ?? 'Cash',
+    status: j['status'] ?? 'Unpaid',
+    dispatch: Map<String, String>.from(
+      j['dispatch'] ?? _transactionMeta(j['notes'])['dispatch'] ?? {},
+    ),
+  );
   Map<String, dynamic> toJson() => {
     'id': id,
     'type': type,
@@ -245,6 +281,11 @@ class BusinessTransaction {
     'paymentMode': paymentMode,
     'status': status,
     'dispatch': dispatch,
+    'partyId': partyId,
+    'convertedFrom': convertedFrom,
+    'discount': discount,
+    'shipping': shipping,
+    'notes': notes,
   };
 }
 

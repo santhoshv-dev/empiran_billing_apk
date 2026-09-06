@@ -1,5 +1,7 @@
 # empiran
 
+See [MIGRATION.md](MIGRATION.md) for the React-to-Flutter screen mapping, run commands, storage behavior and verification notes.
+
 A new Flutter project.
 
 ## Getting Started
