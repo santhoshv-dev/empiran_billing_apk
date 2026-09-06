@@ -131,7 +131,7 @@ class _SplashState extends State<SplashScreen>
       child: Center(
         child: AnimatedBuilder(
           animation: c,
-          builder: (_, _) => Column(
+          builder: (context, child) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(

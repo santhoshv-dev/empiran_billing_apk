@@ -687,7 +687,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   )
                 : ListView.separated(
                     itemCount: data.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
                     itemBuilder: (_, i) {
                       final t = data[i];
                       return Card(

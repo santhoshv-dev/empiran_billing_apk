@@ -9,17 +9,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'app_store.dart';
 import 'invoice_pdf.dart';
 import 'models.dart';
+import 'dashboard.dart';
+import 'core/services/permission_service.dart';
 
 part 'workflows.dart';
 
-const navItems = [
-  ('Quotation Maker', Icons.request_quote_outlined),
-  ('Orders & Invoices', Icons.receipt_long_outlined),
-  ('Products & Inventory', Icons.inventory_2_outlined),
-  ('Customers & Suppliers', Icons.groups_outlined),
-  ('Reports', Icons.analytics_outlined),
-  ('Settings & Users', Icons.settings_outlined),
-];
+// navItems generated dynamically in build
 
 class SuiteShell extends StatefulWidget {
   const SuiteShell({super.key, required this.store, required this.onLogout});
@@ -47,17 +42,33 @@ class _SuiteShellState extends State<SuiteShell> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 900;
-    final pages = [
-      QuotationWorkspace(widget.store),
-      TransactionPage(widget.store, 'order', key: const ValueKey('order')),
-      CatalogPage(widget.store),
-      CatalogPage(widget.store, parties: true),
-      ReportsPage(widget.store),
-      SettingsPage(widget.store),
-    ];
+    
+    final allowedNavItems = <(String, IconData)>[];
+    final allowedPages = <Widget>[];
+    
+    void addNav(String title, IconData icon, Widget p) {
+      allowedNavItems.add((title, icon));
+      allowedPages.add(p);
+    }
+    
+    addNav('Dashboard', Icons.dashboard_outlined, DashboardScreen(store: widget.store, onNavigate: (i) => setState(() => page = i)));
+    addNav('Quotation Maker', Icons.request_quote_outlined, QuotationWorkspace(widget.store));
+    addNav('Orders & Invoices', Icons.receipt_long_outlined, TransactionPage(widget.store, 'order', key: const ValueKey('order')));
+    addNav('Products & Inventory', Icons.inventory_2_outlined, CatalogPage(widget.store));
+    addNav('Customers & Suppliers', Icons.groups_outlined, CatalogPage(widget.store, parties: true));
+    
+    if (PermissionService.canViewReports(widget.store.company)) {
+      addNav('Reports', Icons.analytics_outlined, ReportsPage(widget.store));
+    }
+    if (PermissionService.canAccessSettings(widget.store.company)) {
+      addNav('Settings & Users', Icons.settings_outlined, SettingsPage(widget.store));
+    }
+    
+    if (page >= allowedPages.length) page = 0;
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text(navItems[page].$1, overflow: TextOverflow.ellipsis),
+        title: Text(allowedNavItems[page].$1, overflow: TextOverflow.ellipsis),
         actions: [
           FilledButton.icon(
             onPressed: () => openComposer(context, widget.store, 'order'),
@@ -105,18 +116,10 @@ class _SuiteShellState extends State<SuiteShell> {
           ),
         ],
       ),
-      drawer: wide ? null : Drawer(child: _navigation(context)),
-      body: Row(
-        children: [
-          if (wide) SizedBox(width: 250, child: _navigation(context)),
-          if (wide) const VerticalDivider(width: 1),
-          Expanded(
-            child: KeyedSubtree(
-              key: ValueKey(widget.store.company.id),
-              child: pages[page],
-            ),
-          ),
-        ],
+      drawer: Drawer(child: _navigation(context, allowedNavItems)),
+      body: KeyedSubtree(
+        key: ValueKey(widget.store.company.id),
+        child: allowedPages[page],
       ),
       bottomNavigationBar: wide
           ? null
@@ -130,10 +133,10 @@ class _SuiteShellState extends State<SuiteShell> {
                     context: context,
                     builder: (_) => ListView(
                       children: [
-                        for (var n = 4; n < navItems.length; n++)
+                        for (var n = 4; n < allowedNavItems.length; n++)
                           ListTile(
-                            leading: Icon(navItems[n].$2),
-                            title: Text(navItems[n].$1),
+                            leading: Icon(allowedNavItems[n].$2),
+                            title: Text(allowedNavItems[n].$1),
                             onTap: () {
                               setState(() => page = n);
                               Navigator.pop(context);
@@ -145,21 +148,22 @@ class _SuiteShellState extends State<SuiteShell> {
                 }
               },
               destinations: [
-                for (final n in navItems.take(4))
+                for (final n in allowedNavItems.take(4))
                   NavigationDestination(
                     icon: Icon(n.$2),
                     label: n.$1.split(' ').first,
                   ),
-                const NavigationDestination(
-                  icon: Icon(Icons.more_horiz),
-                  label: 'More',
-                ),
+                if (allowedNavItems.length > 4)
+                  const NavigationDestination(
+                    icon: Icon(Icons.more_horiz),
+                    label: 'More',
+                  ),
               ],
             ),
     );
   }
 
-  Widget _navigation(BuildContext context) => ColoredBox(
+  Widget _navigation(BuildContext context, List<(String, IconData)> allowedNavItems) => ColoredBox(
     color: const Color(0xff020617),
     child: SafeArea(
       child: Column(
@@ -188,15 +192,15 @@ class _SuiteShellState extends State<SuiteShell> {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: navItems.length,
+              itemCount: allowedNavItems.length,
               itemBuilder: (_, i) => ListTile(
                 selected: i == page,
                 selectedColor: Colors.white,
                 selectedTileColor: const Color(0xff2563eb),
                 textColor: const Color(0xffcbd5e1),
                 iconColor: const Color(0xff60a5fa),
-                leading: Icon(navItems[i].$2),
-                title: Text(navItems[i].$1),
+                leading: Icon(allowedNavItems[i].$2),
+                title: Text(allowedNavItems[i].$1),
                 onTap: () {
                   setState(() => page = i);
                   if (MediaQuery.sizeOf(context).width < 900) {
@@ -243,7 +247,7 @@ class PageFrame extends StatelessWidget {
                 ],
               ),
             ),
-            ?action,
+            if (action != null) action!,
           ],
         ),
         const SizedBox(height: 20),

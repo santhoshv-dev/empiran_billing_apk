@@ -30,6 +30,7 @@ class Company {
     this.branch = '',
     this.ifsc = '',
     this.logo,
+    this.role = 'Owner',
   });
   String id,
       name,
@@ -42,7 +43,8 @@ class Company {
       bankName,
       accountNo,
       branch,
-      ifsc;
+      ifsc,
+      role;
   String? logo;
   factory Company.fromJson(Map<String, dynamic> j) => Company(
     id: '${j['id'] ?? 'local'}',
@@ -58,6 +60,7 @@ class Company {
     branch: j['branch'] ?? '',
     ifsc: j['ifsc'] ?? '',
     logo: j['logo'],
+    role: j['role'] ?? 'Owner',
   );
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -73,6 +76,7 @@ class Company {
     'branch': branch,
     'ifsc': ifsc,
     'logo': logo,
+    'role': role,
   };
 }
 
@@ -216,6 +220,7 @@ class BusinessTransaction {
     this.discount = 0,
     this.shipping = 0,
     this.notes = '',
+    this.referredBy,
   });
   String id,
       type,
@@ -226,7 +231,7 @@ class BusinessTransaction {
       partyGstin,
       paymentMode,
       status;
-  String? partyId, convertedFrom;
+  String? partyId, convertedFrom, referredBy;
   String notes;
   double discount, shipping;
   DateTime date;
@@ -245,6 +250,7 @@ class BusinessTransaction {
     id: '${j['id']}',
     partyId: j['partyId']?.toString(),
     convertedFrom: (j['convertedFrom'] ?? j['referenceNo'])?.toString(),
+    referredBy: j['referredBy']?.toString(),
     discount: _d(j['discount'] ?? j['discountAmount']),
     shipping: _d(j['shipping'] ?? j['shippingCharges']),
     notes: _transactionMeta(j['notes'])['text']?.toString() ?? j['notes'] ?? '',
@@ -283,6 +289,7 @@ class BusinessTransaction {
     'dispatch': dispatch,
     'partyId': partyId,
     'convertedFrom': convertedFrom,
+    'referredBy': referredBy,
     'discount': discount,
     'shipping': shipping,
     'notes': notes,

@@ -3,9 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 import 'data/remote/api_client.dart';
+import 'data/local/db_helper.dart';
+import 'core/services/financial_year_service.dart';
+import 'data/remote/sync_engine.dart';
 
 class AppStore extends ChangeNotifier {
   final ApiClient api = ApiClient();
+  late final SyncEngine syncEngine;
+
+  AppStore() {
+    syncEngine = SyncEngine(this);
+  }
+
   bool remoteMode = false;
   bool syncing = false;
   String? syncError;
@@ -53,11 +62,56 @@ class AppStore extends ChangeNotifier {
     if (c != null) company = Company.fromJson(c);
     final s = map('settings');
     if (s != null) settings = InvoiceSettings.fromJson(s);
-    items = list('items').map(Item.fromJson).toList();
-    parties = list('parties').map(Party.fromJson).toList();
-    transactions = list(
-      'transactions',
-    ).map(BusinessTransaction.fromJson).toList();
+    
+    // SQLite Loading
+    final dbItems = await DbHelper.instance.queryAll('items');
+    if (dbItems.isEmpty && p.containsKey('items')) {
+       // Migrate from SharedPreferences to SQLite once
+       items = list('items').map(Item.fromJson).toList();
+       for (var item in items) {
+         final j = item.toJson();
+         j['isService'] = item.isService ? 1 : 0;
+         await DbHelper.instance.insert('items', j);
+       }
+       p.remove('items');
+    } else {
+       items = dbItems.map((j) {
+         final data = Map<String, dynamic>.from(j);
+         data['isService'] = (data['isService'] as int) == 1;
+         return Item.fromJson(data);
+       }).toList();
+    }
+
+    final dbParties = await DbHelper.instance.queryAll('parties');
+    if (dbParties.isEmpty && p.containsKey('parties')) {
+       parties = list('parties').map(Party.fromJson).toList();
+       for (var party in parties) await DbHelper.instance.insert('parties', party.toJson());
+       p.remove('parties');
+    } else {
+       parties = dbParties.map((j) => Party.fromJson(j)).toList();
+    }
+
+    final dbTxns = await DbHelper.instance.queryAll('transactions');
+    if (dbTxns.isEmpty && p.containsKey('transactions')) {
+       transactions = list('transactions').map(BusinessTransaction.fromJson).toList();
+       for (var t in transactions) {
+         final j = t.toJson();
+         j['isGst'] = t.isGst ? 1 : 0;
+         j['lines'] = jsonEncode(j['lines']);
+         j['dispatch'] = jsonEncode(j['dispatch']);
+         await DbHelper.instance.insert('transactions', j);
+       }
+       p.remove('transactions');
+    } else {
+       transactions = dbTxns.map((j) {
+         final data = Map<String, dynamic>.from(j);
+         data['isGst'] = (data['isGst'] as int) == 1;
+         data['lines'] = jsonDecode(data['lines'] as String);
+         data['dispatch'] = jsonDecode(data['dispatch'] as String);
+         return BusinessTransaction.fromJson(data);
+       }).toList();
+    }
+
     final u = list('users');
     if (u.isNotEmpty) {
       users = u.map((e) => e.map((k, v) => MapEntry(k, '$v'))).toList();
@@ -168,14 +222,24 @@ class AppStore extends ChangeNotifier {
       p.setString('firms', jsonEncode(firms)),
       p.setString('company', jsonEncode(company.toJson())),
       p.setString('settings', jsonEncode(settings.toJson())),
-      p.setString('items', encodeList(items.map((e) => e.toJson()))),
-      p.setString('parties', encodeList(parties.map((e) => e.toJson()))),
-      p.setString(
-        'transactions',
-        encodeList(transactions.map((e) => e.toJson())),
-      ),
       p.setString('users', jsonEncode(users)),
     ]);
+    // Persist items, parties, transactions to SQLite to ensure in-memory changes are saved
+    for (var item in items) {
+      final j = item.toJson();
+      j['isService'] = item.isService ? 1 : 0;
+      await DbHelper.instance.insert('items', j);
+    }
+    for (var party in parties) {
+      await DbHelper.instance.insert('parties', party.toJson());
+    }
+    for (var t in transactions) {
+      final j = t.toJson();
+      j['isGst'] = t.isGst ? 1 : 0;
+      j['lines'] = jsonEncode(j['lines']);
+      j['dispatch'] = jsonEncode(j['dispatch']);
+      await DbHelper.instance.insert('transactions', j);
+    }
     notifyListeners();
   }
 
@@ -190,27 +254,31 @@ class AppStore extends ChangeNotifier {
 
   Future<void> saveSettings() => _save();
   Future<void> addItem(Item value) async {
-    if (remoteMode) {
-      final data = value.id.length == 36
-          ? await api.updateItem(company.id, value.id, _itemPayload(value))
-          : await api.createItem(company.id, _itemPayload(value));
-      value = Item.fromJson(data);
+    final isNew = value.id.length != 36 && !value.id.startsWith(RegExp(r'[0-9]{16}'));
+    if (isNew && value.id.length < 13) {
+      value.id = DateTime.now().microsecondsSinceEpoch.toString();
     }
     items.removeWhere((i) => i.id == value.id);
     items.add(value);
     await _save();
+    
+    if (remoteMode) {
+      await syncEngine.queueOperation('item', value.id, isNew ? 'CREATE' : 'UPDATE', _itemPayload(value));
+    }
   }
 
   Future<void> addParty(Party value) async {
-    if (remoteMode) {
-      final data = value.id.length == 36
-          ? await api.updateParty(company.id, value.id, _partyPayload(value))
-          : await api.createParty(company.id, _partyPayload(value));
-      value = Party.fromJson(data);
+    final isNew = value.id.length != 36 && !value.id.startsWith(RegExp(r'[0-9]{16}'));
+    if (isNew && value.id.length < 13) {
+      value.id = DateTime.now().microsecondsSinceEpoch.toString();
     }
     parties.removeWhere((p) => p.id == value.id);
     parties.add(value);
     await _save();
+    
+    if (remoteMode) {
+      await syncEngine.queueOperation('party', value.id, isNew ? 'CREATE' : 'UPDATE', _partyPayload(value));
+    }
   }
 
   Future<void> addUser(Map<String, String> value) async {
@@ -327,12 +395,6 @@ class AppStore extends ChangeNotifier {
                       },
                 );
   Future<void> deleteTransaction(BusinessTransaction t) async {
-    if (remoteMode) {
-      await api.deleteTransaction(company.id, t.id);
-      transactions.removeWhere((x) => x.id == t.id);
-      await syncFromApi();
-      return;
-    }
     final direction = stockDirection(t.type);
     for (final l in t.lines) {
       for (final item in items.where((i) => i.id == l.itemId && !i.isService)) {
@@ -341,6 +403,10 @@ class AppStore extends ChangeNotifier {
     }
     transactions.removeWhere((x) => x.id == t.id);
     await _save();
+    
+    if (remoteMode) {
+      await syncEngine.queueOperation('transaction', t.id, 'DELETE', {});
+    }
   }
 
   Future<BusinessTransaction> create({
@@ -385,11 +451,18 @@ class AppStore extends ChangeNotifier {
       throw StateError('This quotation has already been converted.');
     }
     final quote = type == 'quotation' || type == 'estimate';
-    final no = quote
-        ? 'QT-${DateTime.now().microsecondsSinceEpoch}'
-        : gst
-        ? '${settings.gstCounter}/${settings.gstYear}'
-        : '${settings.nonGstPrefix}${settings.nonGstCounter}';
+    final String no;
+    if (quote) {
+      settings.nonGstCounter++;
+      no = FinancialYearService.generateDocumentNumber('QT', settings.nonGstCounter, date: date);
+    } else if (gst) {
+      settings.gstCounter++;
+      no = FinancialYearService.generateDocumentNumber('INV', settings.gstCounter, date: date);
+    } else {
+      settings.nonGstCounter++;
+      no = '${settings.nonGstPrefix}${settings.nonGstCounter}';
+    }
+    
     final t = BusinessTransaction(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: type,
@@ -421,21 +494,7 @@ class AppStore extends ChangeNotifier {
         : paid > 0
         ? 'Partial'
         : 'Unpaid';
-    if (remoteMode) {
-      final remote = await api.createTransaction(
-        company.id,
-        _transactionPayload(t),
-      );
-      final saved = BusinessTransaction.fromJson(remote);
-      saved.partyPhone = partyPhone;
-      saved.partyAddress = t.partyAddress;
-      saved.partyGstin = t.partyGstin;
-      saved.dispatch = t.dispatch;
-      saved.convertedFrom = convertedFrom;
-      transactions.insert(0, saved);
-      await syncFromApi();
-      return saved;
-    }
+        
     transactions.insert(0, t);
     final direction = deductStock ? stockDirection(type) : 0;
     for (final l in lines) {
@@ -443,14 +502,14 @@ class AppStore extends ChangeNotifier {
         item.currentStock += direction * l.quantity;
       }
     }
-    if (!quote) {
-      if (gst) {
-        settings.gstCounter++;
-      } else {
-        settings.nonGstCounter++;
-      }
-    }
+    // Counter incremented during generation to ensure no duplication
+
     await _save();
+    
+    if (remoteMode) {
+      await syncEngine.queueOperation('transaction', t.id, 'CREATE', _transactionPayload(t));
+    }
+    
     return t;
   }
 
