@@ -24,12 +24,57 @@ class AppStore extends ChangeNotifier {
   List<Item> items = [];
   List<Party> parties = [];
   List<BusinessTransaction> transactions = [];
+  Map<String, String>? currentUser;
+  String get currentUserRole => currentUser?['role'] ?? 'Admin';
+  String get currentUserName => currentUser?['name'] ?? currentUser?['username'] ?? 'User';
+  String get currentApiUrl => api.baseUrl;
+  void notify() => notifyListeners();
+
+  Future<void> setApiUrl(String url) async {
+    api.baseUrl = url;
+    final p = await SharedPreferences.getInstance();
+    await p.setString('apiUrl', url);
+    notifyListeners();
+  }
+
+  List<String> categories = ['General', 'Electronics', 'Hardware', 'Grocery', 'Services'];
+
+  Future<void> addCategory(String cat) async {
+    final trimmed = cat.trim();
+    if (trimmed.isNotEmpty && !categories.contains(trimmed)) {
+      categories.add(trimmed);
+      await _save();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteCategory(String cat) async {
+    categories.remove(cat.trim());
+    await _save();
+    notifyListeners();
+  }
+
   List<Map<String, String>> users = [
     {
-      'name': 'Administrator',
+      'name': 'Business Admin',
       'username': 'empirantraders',
-      'email': '',
+      'email': 'admin@empiran.com',
+      'password': '123456',
       'role': 'Admin',
+    },
+    {
+      'name': 'Store Manager',
+      'username': 'manager',
+      'email': 'manager@empiran.com',
+      'password': '123456',
+      'role': 'Manager',
+    },
+    {
+      'name': 'POS Biller',
+      'username': 'biller',
+      'email': 'biller@empiran.com',
+      'password': '123456',
+      'role': 'Biller',
     },
   ];
   List<Map<String, dynamic>> expenses = [], bankAccounts = [];
@@ -62,6 +107,20 @@ class AppStore extends ChangeNotifier {
     if (c != null) company = Company.fromJson(c);
     final s = map('settings');
     if (s != null) settings = InvoiceSettings.fromJson(s);
+
+    final savedCats = p.getString('categories');
+    if (savedCats != null && savedCats.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(savedCats);
+        if (decoded is List) {
+          categories = decoded.map((e) => '$e').toList();
+        }
+      } catch (_) {}
+    }
+    final savedApiUrl = p.getString('apiUrl');
+    if (savedApiUrl != null && savedApiUrl.isNotEmpty) {
+      api.baseUrl = savedApiUrl;
+    }
     
     // SQLite Loading
     final dbItems = await DbHelper.instance.queryAll('items');
@@ -85,7 +144,9 @@ class AppStore extends ChangeNotifier {
     final dbParties = await DbHelper.instance.queryAll('parties');
     if (dbParties.isEmpty && p.containsKey('parties')) {
        parties = list('parties').map(Party.fromJson).toList();
-       for (var party in parties) await DbHelper.instance.insert('parties', party.toJson());
+       for (var party in parties) {
+         await DbHelper.instance.insert('parties', party.toJson());
+       }
        p.remove('parties');
     } else {
        parties = dbParties.map((j) => Party.fromJson(j)).toList();
@@ -116,6 +177,31 @@ class AppStore extends ChangeNotifier {
     if (u.isNotEmpty) {
       users = u.map((e) => e.map((k, v) => MapEntry(k, '$v'))).toList();
     }
+    // Ensure default RBAC accounts exist (Admin, Manager, Biller)
+    void ensureUser(String username, String name, String email, String role) {
+      if (!users.any((x) => x['username']?.toLowerCase() == username.toLowerCase())) {
+        users.add({
+          'name': name,
+          'username': username,
+          'email': email,
+          'password': '123456',
+          'role': role,
+        });
+      }
+    }
+    ensureUser('empirantraders', 'Business Admin', 'admin@empiran.com', 'Admin');
+    ensureUser('manager', 'Store Manager', 'manager@empiran.com', 'Manager');
+    ensureUser('biller', 'POS Biller', 'biller@empiran.com', 'Biller');
+
+    final savedUser = p.getString('currentUser');
+    if (savedUser != null && savedUser.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(savedUser);
+        if (decoded is Map) {
+          currentUser = decoded.map((k, v) => MapEntry('$k', '$v'));
+        }
+      } catch (_) {}
+    }
     ready = true;
     notifyListeners();
     if (remoteMode) {
@@ -137,6 +223,18 @@ class AppStore extends ChangeNotifier {
     await p.setString('apiToken', api.token!);
     await p.setString('sessionExpiry', '${auth['expiresAt']}');
     remoteMode = true;
+
+    final authUser = auth['user'];
+    if (authUser is Map) {
+      currentUser = {
+        'name': authUser['name']?.toString() ?? email,
+        'username': email.split('@').first,
+        'email': authUser['email']?.toString() ?? email,
+        'role': authUser['role']?.toString() ?? 'Admin',
+      };
+      await p.setString('currentUser', jsonEncode(currentUser));
+    }
+
     await syncFromApi(createFirstBusiness: true);
     return auth;
   }
@@ -190,6 +288,7 @@ class AppStore extends ChangeNotifier {
         api.getTransactions(company.id),
         api.getExpenses(company.id),
         api.getBankAccounts(company.id),
+        api.getStaff(company.id).catchError((_) => <Map<String, dynamic>>[]),
       ]);
       items = results[0].map(Item.fromJson).toList();
       parties = results[1].map(Party.fromJson).toList();
@@ -203,6 +302,28 @@ class AppStore extends ChangeNotifier {
       }
       expenses = results[3].map(_expenseFromApi).toList();
       bankAccounts = results[4].map(_bankFromApi).toList();
+
+      final staffList = results[5];
+      for (final s in staffList) {
+        final email = s['email']?.toString() ?? '';
+        final name = s['name']?.toString() ?? '';
+        final role = s['role']?.toString() ?? 'Biller';
+        if (email.isNotEmpty) {
+          final idx = users.indexWhere((u) => u['email']?.toLowerCase() == email.toLowerCase());
+          if (idx != -1) {
+            users[idx]['role'] = role;
+            users[idx]['name'] = name;
+          } else {
+            users.add({
+              'name': name,
+              'username': email.split('@').first,
+              'email': email,
+              'password': '******',
+              'role': role,
+            });
+          }
+        }
+      }
       await _save();
     } catch (e) {
       syncError = '$e';
@@ -222,7 +343,9 @@ class AppStore extends ChangeNotifier {
       p.setString('firms', jsonEncode(firms)),
       p.setString('company', jsonEncode(company.toJson())),
       p.setString('settings', jsonEncode(settings.toJson())),
+      p.setString('categories', jsonEncode(categories)),
       p.setString('users', jsonEncode(users)),
+      p.setString('currentUser', currentUser != null ? jsonEncode(currentUser) : ''),
     ]);
     // Persist items, parties, transactions to SQLite to ensure in-memory changes are saved
     for (var item in items) {
@@ -263,7 +386,7 @@ class AppStore extends ChangeNotifier {
     await _save();
     
     if (remoteMode) {
-      await syncEngine.queueOperation('item', value.id, isNew ? 'CREATE' : 'UPDATE', _itemPayload(value));
+      await syncEngine.queueOperation('item', value.id, isNew ? 'CREATE' : 'UPDATE', _itemPayload(value), businessId: company.id);
     }
   }
 
@@ -277,13 +400,70 @@ class AppStore extends ChangeNotifier {
     await _save();
     
     if (remoteMode) {
-      await syncEngine.queueOperation('party', value.id, isNew ? 'CREATE' : 'UPDATE', _partyPayload(value));
+      await syncEngine.queueOperation('party', value.id, isNew ? 'CREATE' : 'UPDATE', _partyPayload(value), businessId: company.id);
     }
   }
 
   Future<void> addUser(Map<String, String> value) async {
     users.add(value);
     await _save();
+  }
+
+  Future<void> createUser({
+    required String name,
+    required String username,
+    required String email,
+    required String password,
+    required String role,
+  }) async {
+    final entry = {
+      'name': name.trim(),
+      'username': username.trim().toLowerCase(),
+      'email': email.trim().toLowerCase(),
+      'password': password.trim(),
+      'role': role.trim(),
+    };
+    users.add(entry);
+    await _save();
+    notifyListeners();
+
+    if (remoteMode) {
+      try {
+        await api.createStaff(company.id, entry);
+      } catch (_) {}
+    }
+  }
+
+  Future<void> updateUser(
+    String targetUsername, {
+    String? name,
+    String? email,
+    String? password,
+    String? role,
+  }) async {
+    final idx = users.indexWhere((u) => u['username']?.toLowerCase() == targetUsername.toLowerCase());
+    if (idx != -1) {
+      final existing = Map<String, String>.from(users[idx]);
+      if (name != null && name.trim().isNotEmpty) existing['name'] = name.trim();
+      if (email != null) existing['email'] = email.trim();
+      if (password != null && password.trim().isNotEmpty) existing['password'] = password.trim();
+      if (role != null && role.trim().isNotEmpty) existing['role'] = role.trim();
+      users[idx] = existing;
+
+      if (currentUser?['username']?.toLowerCase() == targetUsername.toLowerCase()) {
+        currentUser = existing;
+      }
+      await _save();
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteUser(String targetUsername) async {
+    if (targetUsername.toLowerCase() == 'empirantraders') return false;
+    users.removeWhere((u) => u['username']?.toLowerCase() == targetUsername.toLowerCase());
+    await _save();
+    notifyListeners();
+    return true;
   }
 
   Future<void> persist() => _save();
@@ -405,7 +585,7 @@ class AppStore extends ChangeNotifier {
     await _save();
     
     if (remoteMode) {
-      await syncEngine.queueOperation('transaction', t.id, 'DELETE', {});
+      await syncEngine.queueOperation('transaction', t.id, 'DELETE', {}, businessId: company.id);
     }
   }
 
@@ -507,7 +687,7 @@ class AppStore extends ChangeNotifier {
     await _save();
     
     if (remoteMode) {
-      await syncEngine.queueOperation('transaction', t.id, 'CREATE', _transactionPayload(t));
+      await syncEngine.queueOperation('transaction', t.id, 'CREATE', _transactionPayload(t), businessId: company.id);
     }
     
     return t;

@@ -22,7 +22,7 @@ class SyncEngine {
     _isSyncing = true;
     try {
       store.syncing = true;
-      store.notifyListeners();
+      store.notify();
       
       await _pushChanges();
       await store.syncFromApi(); // Pull
@@ -32,11 +32,17 @@ class SyncEngine {
     } finally {
       _isSyncing = false;
       store.syncing = false;
-      store.notifyListeners();
+      store.notify();
     }
   }
 
-  Future<void> queueOperation(String entityType, String entityId, String operation, Map<String, dynamic> payload) async {
+  Future<void> queueOperation(
+    String entityType,
+    String entityId,
+    String operation,
+    Map<String, dynamic> payload, {
+    required String businessId,
+  }) async {
     final queueItem = {
       'id': _uuid.v4(),
       'entityType': entityType,
@@ -46,6 +52,7 @@ class SyncEngine {
       'status': 'pending',
       'retryCount': 0,
       'createdAt': DateTime.now().toIso8601String(),
+      'businessId': businessId,
     };
     await DbHelper.instance.insert('sync_queue', queueItem);
     
@@ -81,33 +88,43 @@ class SyncEngine {
     final entityType = queueItem['entityType'];
     final entityId = queueItem['entityId'];
     final operation = queueItem['operation'];
+    final businessId = queueItem['businessId'] as String? ?? store.company.id;
     final payload = jsonDecode(queueItem['payload'] as String);
 
     switch (entityType) {
       case 'transaction':
         if (operation == 'CREATE') {
           payload['clientTransactionId'] = entityId; // Idempotency key
-          await store.api.createTransaction(store.company.id, payload);
+          await store.api.createTransaction(businessId, payload);
         } else if (operation == 'DELETE') {
-          await store.api.deleteTransaction(store.company.id, entityId);
+          await store.api.deleteTransaction(businessId, entityId);
         }
         break;
       case 'item':
         if (operation == 'CREATE') {
-          await store.api.createItem(store.company.id, payload);
+          await store.api.createItem(businessId, payload);
         } else if (operation == 'UPDATE') {
-          await store.api.updateItem(store.company.id, entityId, payload);
+          await store.api.updateItem(businessId, entityId, payload);
         } else if (operation == 'DELETE') {
-          await store.api.deleteItem(store.company.id, entityId);
+          await store.api.deleteItem(businessId, entityId);
         }
         break;
       case 'party':
         if (operation == 'CREATE') {
-          await store.api.createParty(store.company.id, payload);
+          await store.api.createParty(businessId, payload);
         } else if (operation == 'UPDATE') {
-          await store.api.updateParty(store.company.id, entityId, payload);
+          await store.api.updateParty(businessId, entityId, payload);
         } else if (operation == 'DELETE') {
-          await store.api.deleteParty(store.company.id, entityId);
+          await store.api.deleteParty(businessId, entityId);
+        }
+        break;
+      case 'category':
+        if (operation == 'CREATE') {
+          await store.api.createCategory(businessId, payload);
+        } else if (operation == 'UPDATE') {
+          await store.api.updateCategory(businessId, entityId, payload);
+        } else if (operation == 'DELETE') {
+          await store.api.deleteCategory(businessId, entityId);
         }
         break;
     }

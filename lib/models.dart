@@ -122,10 +122,29 @@ class Item {
     'unit': unit,
     'salesPrice': salesPrice,
     'purchasePrice': purchasePrice,
-    'isService': isService,
+    'isService': isService ? 1 : 0,
     'currentStock': currentStock,
     'lowStockLimit': lowStockLimit,
     'image': image,
+  };
+}
+
+class Category {
+  Category({
+    required this.id,
+    required this.name,
+  });
+
+  String id, name;
+
+  factory Category.fromJson(Map<String, dynamic> j) => Category(
+    id: j['id'] ?? j['Id'] ?? '',
+    name: j['name'] ?? j['Name'] ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
   };
 }
 

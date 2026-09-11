@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 
 class DbHelper {
   static final DbHelper instance = DbHelper._init();
   static Database? _database;
+  static bool _desktopDatabaseFactoryConfigured = false;
   DbHelper._init();
 
   Future<Database?> get database async {
@@ -15,12 +16,22 @@ class DbHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux)) {
+      if (!_desktopDatabaseFactoryConfigured) {
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
+        _desktopDatabaseFactoryConfigured = true;
+      }
+    }
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -55,6 +66,13 @@ class DbHelper {
       )
     ''');
     
+    await db.execute('''
+      CREATE TABLE categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL
+      )
+    ''');
+
     await db.execute('''
       CREATE TABLE transactions (
         id TEXT PRIMARY KEY,
@@ -91,8 +109,15 @@ class DbHelper {
         createdAt TEXT,
         lastAttemptAt TEXT,
         errorMessage TEXT
+        ,businessId TEXT
       )
     ''');
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE sync_queue ADD COLUMN businessId TEXT');
+    }
   }
 
   // Generic methods
@@ -118,6 +143,12 @@ class DbHelper {
     if (kIsWeb) return [];
     final db = await instance.database;
     return await db!.query(table);
+  }
+
+  Future<int> deleteAll(String table) async {
+    if (kIsWeb) return 0;
+    final db = await instance.database;
+    return await db!.delete(table);
   }
 
   Future<void> clearAll() async {

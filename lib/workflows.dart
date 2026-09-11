@@ -3,6 +3,7 @@ part of 'suite.dart';
 class QuotationWorkspace extends StatelessWidget {
   const QuotationWorkspace(this.store, {super.key});
   final AppStore store;
+
   @override
   Widget build(BuildContext context) => DefaultTabController(
     length: 2,
@@ -10,8 +11,8 @@ class QuotationWorkspace extends StatelessWidget {
       children: [
         const TabBar(
           tabs: [
-            Tab(text: 'Quotation Maker'),
-            Tab(text: 'Saved Quotations'),
+            Tab(text: 'Create Quotation / Estimate', icon: Icon(Icons.edit_document)),
+            Tab(text: 'Saved Quotations', icon: Icon(Icons.history_outlined)),
           ],
         ),
         Expanded(
@@ -35,6 +36,7 @@ class WhatsAppPage extends StatefulWidget {
 
 class _WhatsAppPageState extends State<WhatsAppPage> {
   final phone = TextEditingController(), message = TextEditingController();
+
   @override
   void dispose() {
     phone.dispose();
@@ -45,54 +47,79 @@ class _WhatsAppPageState extends State<WhatsAppPage> {
   @override
   Widget build(BuildContext context) => PageFrame(
     title: 'WhatsApp Connect',
-    subtitle:
-        'Open a message draft or share a document from transaction history.',
-    child: ListView(
-      children: [
-        const Icon(Icons.chat, size: 80, color: Colors.green),
-        const SizedBox(height: 20),
-        const Text(
-          'Send invoices and payment details',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
-        TextField(
-          controller: phone,
-          decoration: const InputDecoration(
-            labelText: 'Phone with country code',
+    subtitle: 'Send direct invoice drafts, payment links, and balance reminders.',
+    child: SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 580),
+        child: EmpiranCard(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.chat_outlined, size: 32, color: Colors.green),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Direct Customer Messaging',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Launch a pre-filled WhatsApp conversation with your customer.',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              EmpiranTextField(
+                controller: phone,
+                label: 'Customer Phone (with country code)',
+                hint: 'e.g. 919876543210',
+                isNumber: true,
+                isRequired: true,
+              ),
+              const SizedBox(height: 14),
+              EmpiranTextField(
+                controller: message,
+                label: 'Message Draft',
+                hint: 'Enter your message or reminder here…',
+                maxLines: 5,
+              ),
+              const SizedBox(height: 20),
+              EmpiranButton(
+                label: 'Open WhatsApp Draft',
+                icon: Icons.send,
+                onPressed: () async {
+                  final clean = phone.text.replaceAll(RegExp(r'[^0-9]'), '');
+                  if (clean.isEmpty) return;
+                  final uri = Uri.https('wa.me', '/$clean', {'text': message.text});
+                  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  if (!opened && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Unable to open WhatsApp.')),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Tip: To send PDF invoices with full item breakdown, open any saved transaction and tap "WhatsApp".',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: message,
-          decoration: const InputDecoration(labelText: 'Message'),
-          maxLines: 5,
-        ),
-        const SizedBox(height: 12),
-        FilledButton(
-          onPressed: () async {
-            final uri = Uri.https(
-              'wa.me',
-              '/${phone.text.replaceAll(RegExp(r'[^0-9]'), '')}',
-              {'text': message.text},
-            );
-            final opened = await launchUrl(
-              uri,
-              mode: LaunchMode.externalApplication,
-            );
-            if (!opened && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Unable to open WhatsApp.')),
-              );
-            }
-          },
-          child: const Text('Open WhatsApp draft'),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'For PDF attachments, use PDF / Print / Share on a saved transaction and choose WhatsApp. You review and send the message in WhatsApp.',
-        ),
-      ],
+      ),
     ),
   );
 }
@@ -100,54 +127,78 @@ class _WhatsAppPageState extends State<WhatsAppPage> {
 class BusinessSearch extends SearchDelegate<void> {
   BusinessSearch(this.store);
   final AppStore store;
+
   @override
   List<Widget> buildActions(BuildContext context) => [
     IconButton(onPressed: () => query = '', icon: const Icon(Icons.clear)),
   ];
+
   @override
   Widget buildLeading(BuildContext context) => IconButton(
     onPressed: () => close(context, null),
     icon: const Icon(Icons.arrow_back),
   );
+
   @override
   Widget buildResults(BuildContext context) => buildSuggestions(context);
+
   @override
-  Widget buildSuggestions(BuildContext context) => ListView(
-    children: [
-      for (final i in store.items.where(
-        (i) => '${i.name} ${i.itemCode}'.toLowerCase().contains(
-          query.toLowerCase(),
-        ),
-      ))
-        ListTile(
-          leading: const Icon(Icons.inventory_2_outlined),
-          title: Text(i.name),
-          subtitle: Text('${money(i.salesPrice)} · Stock ${i.currentStock}'),
-          onTap: () => _itemDialog(context, store, item: i),
-        ),
-      for (final p in store.parties.where(
-        (p) =>
-            '${p.name} ${p.phone}'.toLowerCase().contains(query.toLowerCase()),
-      ))
-        ListTile(
-          leading: const Icon(Icons.person_outline),
-          title: Text(p.name),
-          subtitle: Text('${p.phone} · ${money(store.partyBalance(p))}'),
-          onTap: () => _partyDialog(context, store, party: p),
-        ),
-      for (final t in store.transactions.where(
-        (t) => '${t.number} ${t.partyName}'.toLowerCase().contains(
-          query.toLowerCase(),
-        ),
-      ))
-        ListTile(
-          leading: const Icon(Icons.receipt_long),
-          title: Text(t.number),
-          subtitle: Text('${t.partyName} · ${money(t.total)}'),
-          onTap: () => previewDocument(context, store, t),
-        ),
-    ],
-  );
+  Widget buildSuggestions(BuildContext context) {
+    final q = query.trim().toLowerCase();
+    final items = store.items.where((i) => '${i.name} ${i.itemCode} ${i.category}'.toLowerCase().contains(q));
+    final parties = store.parties.where((p) => '${p.name} ${p.phone} ${p.gstin}'.toLowerCase().contains(q));
+    final txns = store.transactions.where((t) => '${t.number} ${t.partyName}'.toLowerCase().contains(q));
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        if (items.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Text('Products & Inventory', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.grey)),
+          ),
+          for (final i in items.take(5))
+            ListTile(
+              leading: const Icon(Icons.inventory_2_outlined, color: AppColors.secondary),
+              title: Text(i.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('${i.category} • SKU: ${i.itemCode.isEmpty ? "N/A" : i.itemCode} • Stock: ${i.currentStock}'),
+              trailing: Text(money(i.salesPrice), style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
+              onTap: () => _itemDialog(context, store, item: i),
+            ),
+          const Divider(),
+        ],
+        if (parties.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Text('Customers & Suppliers', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.grey)),
+          ),
+          for (final p in parties.take(5))
+            ListTile(
+              leading: const Icon(Icons.person_outline, color: Colors.purple),
+              title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('${p.type} • ${p.phone}'),
+              trailing: Text(money(store.partyBalance(p)), style: TextStyle(fontWeight: FontWeight.w700, color: store.partyBalance(p) >= 0 ? AppColors.success : AppColors.error)),
+              onTap: () => _partyDialog(context, store, party: p),
+            ),
+          const Divider(),
+        ],
+        if (txns.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Text('Invoices & Transactions', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.grey)),
+          ),
+          for (final t in txns.take(5))
+            ListTile(
+              leading: const Icon(Icons.receipt_long, color: AppColors.primary),
+              title: Text('${t.number} • ${t.partyName.isEmpty ? "Cash Customer" : t.partyName}', style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('${transactionLabels[t.type] ?? t.type} • ${DateFormat.yMMMd().format(t.date)}'),
+              trailing: Text(money(t.total), style: const TextStyle(fontWeight: FontWeight.w700)),
+              onTap: () => previewDocument(context, store, t),
+            ),
+        ],
+      ],
+    );
+  }
 }
 
 Future<void> switchBusiness(BuildContext context, AppStore store) async {
@@ -155,154 +206,76 @@ Future<void> switchBusiness(BuildContext context, AppStore store) async {
   await showDialog(
     context: context,
     builder: (c) => AlertDialog(
-      title: const Text('My businesses'),
+      title: const Text('Select Active Business Firm'),
       content: SizedBox(
-        width: 420,
+        width: 440,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.check_circle),
-                title: Text(store.company.name),
-                subtitle: const Text('Active business'),
+              // Active business item
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadii.medium),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(store.company.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                          const Text('Active Firm', style: TextStyle(fontSize: 12, color: AppColors.primary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              for (final entry
-                  in (store.remoteMode
-                      ? store.remoteBusinesses
-                            .where((b) => '${b['id']}' != store.company.id)
-                            .map((b) => MapEntry('${b['id']}', {'company': b}))
-                      : store.firms.entries.where(
-                          (e) => e.key != store.company.id,
-                        )))
+              const SizedBox(height: 12),
+              for (final entry in (store.remoteMode
+                  ? store.remoteBusinesses
+                      .where((b) => '${b['id']}' != store.company.id)
+                      .map((b) => MapEntry('${b['id']}', {'company': b}))
+                  : store.firms.entries.where((e) => e.key != store.company.id)))
                 ListTile(
-                  title: Text('${entry.value['company']['name']}'),
+                  leading: const Icon(Icons.business_outlined),
+                  title: Text('${entry.value['company']['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
                   onTap: () async {
                     await store.switchFirm(entry.key);
                     if (c.mounted) Navigator.pop(c);
                   },
                 ),
-              const Divider(),
-              TextField(
+              const Divider(height: 24),
+              EmpiranTextField(
                 controller: name,
-                decoration: const InputDecoration(
-                  labelText: 'New business name',
-                ),
+                label: 'Create New Firm / Branch',
+                hint: 'e.g. Empiran Lighting Co.',
               ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(c),
-          child: const Text('Close'),
-        ),
-        FilledButton(
+        TextButton(onPressed: () => Navigator.pop(c), child: const Text('Close')),
+        EmpiranButton(
+          label: 'Create Firm',
           onPressed: () async {
-            if (name.text.trim().isEmpty) return;
-            await store.addFirm(name.text);
-            if (c.mounted) Navigator.pop(c);
+            if (name.text.trim().isNotEmpty) {
+              await store.addFirm(name.text.trim());
+              if (c.mounted) Navigator.pop(c);
+            }
           },
-          child: const Text('Add business'),
         ),
       ],
     ),
   );
   name.dispose();
-}
-
-Future<void> backupDialog(BuildContext context, AppStore store) async {
-  final input = TextEditingController();
-  String? error;
-  await showDialog(
-    context: context,
-    builder: (c) => StatefulBuilder(
-      builder: (c, set) => AlertDialog(
-        title: const Text('Business backup'),
-        content: SizedBox(
-          width: 560,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Export the active business as JSON. To restore a Flutter backup, paste its JSON below. Restoring replaces this business’s current records.',
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: input,
-                  maxLines: 8,
-                  decoration: const InputDecoration(labelText: 'Backup JSON'),
-                ),
-                if (error != null)
-                  Text(error!, style: const TextStyle(color: Colors.red)),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Close'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final bytes = Uint8List.fromList(
-                utf8.encode(jsonEncode(store.snapshot())),
-              );
-              await SharePlus.instance.share(
-                ShareParams(
-                  files: [XFile.fromData(bytes, mimeType: 'application/json')],
-                  fileNameOverrides: ['empiran-backup.json'],
-                ),
-              );
-            },
-            child: const Text('Export JSON'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              try {
-                final data = Map<String, dynamic>.from(jsonDecode(input.text));
-                // Parse into an isolated store first, so invalid input cannot change live data.
-                final check = AppStore();
-                check.restore(data);
-                check.dispose();
-                final approved = await showDialog<bool>(
-                  context: c,
-                  builder: (d) => AlertDialog(
-                    title: const Text('Replace current business data?'),
-                    content: const Text(
-                      'Export a backup first if you need to keep the current records.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(d, false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(d, true),
-                        child: const Text('Restore'),
-                      ),
-                    ],
-                  ),
-                );
-                if (approved != true) return;
-                data['company']['id'] = store.company.id;
-                store.restore(data);
-                await store.persist();
-                if (c.mounted) Navigator.pop(c);
-              } catch (e) {
-                set(() => error = 'Invalid backup: $e');
-              }
-            },
-            child: const Text('Restore'),
-          ),
-        ],
-      ),
-    ),
-  );
-  input.dispose();
 }
 
 class CatalogPage extends StatefulWidget {
@@ -315,185 +288,240 @@ class CatalogPage extends StatefulWidget {
 
 class _CatalogPageState extends State<CatalogPage> {
   String query = '';
-  bool lowOnly = false;
+  String partyFilter = 'All'; // 'All', 'Customers', 'Suppliers'
+
   @override
-  Widget build(BuildContext context) => PageFrame(
-    title: widget.parties ? 'Customers & Suppliers' : 'Products & Inventory',
-    subtitle: widget.parties
-        ? 'Contacts, GST details and account statements'
-        : 'Product catalogue, pricing and stock management',
-    action: FilledButton.icon(
-      onPressed: () => widget.parties
-          ? _partyDialog(context, widget.store)
-          : _itemDialog(context, widget.store),
-      icon: const Icon(Icons.add),
-      label: const Text('Add'),
-    ),
-    child: Column(
-      children: [
-        TextField(
-          decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.search),
-            hintText: 'Search by name, code, category or phone',
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final filteredParties = widget.store.parties.where((p) {
+      final matchesQuery = '${p.name} ${p.phone} ${p.type} ${p.gstin}'
+          .toLowerCase()
+          .contains(query.toLowerCase());
+      if (!matchesQuery) return false;
+      if (partyFilter == 'Customers') return p.type == 'Customer' || p.type == 'Both';
+      if (partyFilter == 'Suppliers') return p.type == 'Supplier' || p.type == 'Both';
+      return true;
+    }).toList();
+
+    return PageFrame(
+      title: 'Customers & Suppliers',
+      subtitle: '${filteredParties.length} business contacts and accounts registered',
+      action: EmpiranButton(
+        label: 'Add Contact',
+        icon: Icons.person_add_outlined,
+        onPressed: () => _partyDialog(context, widget.store),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: EmpiranSearchBar(
+                  hint: 'Search contacts by name, phone, or GSTIN…',
+                  initialValue: query,
+                  onChanged: (v) => setState(() => query = v),
+                ),
+              ),
+              const SizedBox(width: 12),
+              for (final f in ['All', 'Customers', 'Suppliers'])
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: FilterChip(
+                    label: Text(f),
+                    selected: partyFilter == f,
+                    onSelected: (_) => setState(() => partyFilter = f),
+                  ),
+                ),
+            ],
           ),
-          onChanged: (v) => setState(() => query = v),
-        ),
-        if (!widget.parties)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilterChip(
-              label: const Text('Low stock only'),
-              selected: lowOnly,
-              onSelected: (v) => setState(() => lowOnly = v),
-            ),
-          ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: ListView(
-            children: widget.parties
-                ? [
-                    for (final p in widget.store.parties.where(
-                      (p) => '${p.name} ${p.phone} ${p.type}'
-                          .toLowerCase()
-                          .contains(query.toLowerCase()),
-                    ))
-                      Card(
-                        child: ExpansionTile(
-                          title: Text(p.name),
-                          subtitle: Text(
-                            '${p.type} · ${p.phone} · ${money(widget.store.partyBalance(p))}',
-                          ),
+          const SizedBox(height: 14),
+
+          Expanded(
+            child: filteredParties.isEmpty
+                ? EmpiranEmptyState(
+                    title: 'No contacts found',
+                    description: query.isNotEmpty
+                        ? 'No contacts matched "$query".'
+                        : 'Add customers and suppliers to track balances and issue invoices.',
+                    icon: Icons.groups_outlined,
+                    actionLabel: 'Add Contact',
+                    onAction: () => _partyDialog(context, widget.store),
+                  )
+                : ListView.separated(
+                    itemCount: filteredParties.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final p = filteredParties[index];
+                      final bal = widget.store.partyBalance(p);
+                      final isReceivable = bal >= 0;
+
+                      return EmpiranCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ListTile(
-                              title: Text(p.address),
-                              subtitle: Text('${p.email} · ${p.gstin}'),
-                            ),
-                            Wrap(
+                            Row(
                               children: [
-                                TextButton(
-                                  onPressed: () => _partyDialog(
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: p.type == 'Supplier'
+                                      ? Colors.orange.withValues(alpha: 0.15)
+                                      : Colors.purple.withValues(alpha: 0.15),
+                                  child: Icon(
+                                    p.type == 'Supplier' ? Icons.store_outlined : Icons.person_outline,
+                                    color: p.type == 'Supplier' ? Colors.orange : Colors.purple,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        p.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Wrap(
+                                        spacing: 8,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          EmpiranStatusChip(label: p.type, small: true),
+                                          if (p.phone.isNotEmpty)
+                                            Text(p.phone, style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)),
+                                          if (p.gstin.isNotEmpty)
+                                            Text('GSTIN: ${p.gstin}', style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted)),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      money(bal.abs()),
+                                      style: AppTypography.number.copyWith(
+                                        color: bal == 0
+                                            ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
+                                            : (isReceivable ? AppColors.success : AppColors.error),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      bal == 0 ? 'Settled' : (isReceivable ? 'Receivable' : 'Payable'),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: bal == 0 ? Colors.grey : (isReceivable ? AppColors.success : AppColors.error),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            if (p.address.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                p.address,
+                                style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            const Divider(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                if (p.phone.isNotEmpty) ...[
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.chat_outlined, size: 16, color: Colors.green),
+                                    label: const Text('WhatsApp', style: TextStyle(color: Colors.green)),
+                                    onPressed: () {
+                                      final clean = p.phone.replaceAll(RegExp(r'[^0-9]'), '');
+                                      launchUrl(Uri.https('wa.me', '/$clean', {
+                                        'text': 'Hello ${p.name}, your account balance with ${widget.store.company.name} is ${money(bal)}.',
+                                      }), mode: LaunchMode.externalApplication);
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.call_outlined, size: 16),
+                                    label: const Text('Call'),
+                                    onPressed: () => launchUrl(Uri.parse('tel:${p.phone}')),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                TextButton.icon(
+                                  icon: const Icon(Icons.payments_outlined, size: 16),
+                                  label: Text(p.type == 'Supplier' ? 'Pay' : 'Receive'),
+                                  onPressed: () => openComposer(
                                     context,
                                     widget.store,
-                                    party: p,
+                                    p.type == 'Supplier' ? 'payment_out' : 'payment_in',
+                                    source: BusinessTransaction(
+                                      id: '',
+                                      type: p.type == 'Supplier' ? 'payment_out' : 'payment_in',
+                                      number: '',
+                                      date: DateTime.now(),
+                                      lines: [],
+                                      partyId: p.id,
+                                      partyName: p.name,
+                                      partyPhone: p.phone,
+                                    ),
                                   ),
-                                  child: const Text('Edit'),
                                 ),
-                                TextButton(
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  tooltip: 'Edit Contact',
+                                  icon: const Icon(Icons.edit_outlined, size: 18),
+                                  onPressed: () => _partyDialog(context, widget.store, party: p),
+                                ),
+                                IconButton(
+                                  tooltip: 'Delete Contact',
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
                                   onPressed: () async {
-                                    if (await confirmDelete(
-                                      context,
-                                      'Delete ${p.name}? Existing documents will be retained.',
-                                    )) {
+                                    if (await confirmDelete(context, 'Delete "${p.name}"? Existing invoices will be retained.')) {
                                       await widget.store.deleteParty(p);
                                     }
                                   },
-                                  child: const Text('Delete'),
                                 ),
-                                for (final type in [
-                                  'payment_in',
-                                  'payment_out',
-                                ])
-                                  TextButton(
-                                    onPressed: () => openComposer(
-                                      context,
-                                      widget.store,
-                                      type,
-                                      source: BusinessTransaction(
-                                        id: '',
-                                        type: type,
-                                        number: '',
-                                        date: DateTime.now(),
-                                        lines: [],
-                                        partyId: p.id,
-                                        partyName: p.name,
-                                        partyPhone: p.phone,
-                                      ),
-                                    ),
-                                    child: Text(transactionLabels[type]!),
-                                  ),
                               ],
                             ),
-                            for (final t in widget.store.transactions.where(
-                              (t) =>
-                                  t.partyId == p.id ||
-                                  (t.partyId == null && t.partyName == p.name),
-                            ))
-                              ListTile(
-                                title: Text(
-                                  '${t.number} · ${transactionLabels[t.type] ?? t.type}',
-                                ),
-                                trailing: Text(money(t.total)),
-                                onTap: () =>
-                                    previewDocument(context, widget.store, t),
-                              ),
                           ],
                         ),
-                      ),
-                  ]
-                : [
-                    for (final i in widget.store.items.where(
-                      (i) =>
-                          (!lowOnly || i.currentStock <= i.lowStockLimit) &&
-                          '${i.name} ${i.itemCode} ${i.category}'
-                              .toLowerCase()
-                              .contains(query.toLowerCase()),
-                    ))
-                      Card(
-                        child: ListTile(
-                          leading: _ProductImage(i.image),
-                          title: Text(i.name),
-                          subtitle: Text(
-                            '${i.category} · ${money(i.salesPrice)}\n${i.isService ? 'Service' : '${i.currentStock} ${i.unit} in stock'}',
-                          ),
-                          isThreeLine: true,
-                          onTap: () =>
-                              _itemDialog(context, widget.store, item: i),
-                          trailing: PopupMenuButton<String>(
-                            onSelected: (v) async {
-                              if (v == 'edit') {
-                                await _itemDialog(
-                                  context,
-                                  widget.store,
-                                  item: i,
-                                );
-                              }
-                              if (v == 'delete' &&
-                                  context.mounted &&
-                                  await confirmDelete(
-                                    context,
-                                    'Delete ${i.name}? Existing documents will be retained.',
-                                  )) {
-                                await widget.store.deleteItem(i);
-                              }
-                              if (v == 'stock' && context.mounted) {
-                                await adjustStock(context, widget.store, i);
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Text('Edit'),
-                              ),
-                              if (!i.isService)
-                                const PopupMenuItem(
-                                  value: 'stock',
-                                  child: Text('Adjust stock'),
-                                ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+                      );
+                    },
+                  ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
+
+Future<bool> confirmDelete(BuildContext context, String message) async =>
+    await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Confirm Deletion'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          EmpiranButton(
+            label: 'Delete',
+            variant: EmpiranButtonVariant.danger,
+            onPressed: () => Navigator.pop(c, true),
+          ),
+        ],
+      ),
+    ) ?? false;
 
 Future<void> adjustStock(
   BuildContext context,
@@ -506,41 +534,51 @@ Future<void> adjustStock(
     context: context,
     builder: (c) => StatefulBuilder(
       builder: (c, set) => AlertDialog(
-        title: Text('Adjust ${item.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Current stock: ${item.currentStock}. Use a negative quantity to remove stock.',
-            ),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
+        title: Text('Adjust Stock — ${item.name}'),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Current Available Stock: ${item.currentStock} ${item.unit}',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
               ),
-              decoration: const InputDecoration(labelText: 'Quantity change'),
-            ),
-            if (error != null)
-              Text(error!, style: const TextStyle(color: Colors.red)),
-          ],
+              const SizedBox(height: 6),
+              const Text(
+                'Enter positive quantity to add stock, or negative to reduce stock.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              EmpiranTextField(
+                controller: controller,
+                label: 'Stock Quantity Change',
+                hint: 'e.g. 10 or -5',
+                isNumber: true,
+                isDecimal: true,
+                isRequired: true,
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 10),
+                Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+              ],
+            ],
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+          EmpiranButton(
+            label: 'Update Stock',
             onPressed: () async {
               final value = double.tryParse(controller.text);
               if (value == null || !value.isFinite) {
-                set(() => error = 'Enter a valid quantity.');
+                set(() => error = 'Enter a valid quantity number.');
                 return;
               }
               await store.changeStock(item, value);
               if (c.mounted) Navigator.pop(c);
             },
-            child: const Text('Save'),
           ),
         ],
       ),
@@ -550,7 +588,7 @@ Future<void> adjustStock(
 }
 
 String money(num value) =>
-    NumberFormat.currency(locale: 'en_IN', symbol: 'INR ').format(value);
+    NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(value);
 
 const transactionLabels = <String, String>{
   'quotation': 'Quotations',
@@ -585,14 +623,12 @@ Future<void> previewDocument(
 Future<void> shareDocument(BuildContext context, BusinessTransaction t) async {
   final phone = t.partyPhone.replaceAll(RegExp(r'[^0-9]'), '');
   final uri = Uri.https('wa.me', '/$phone', {
-    'text':
-        'Hello ${t.partyName.isEmpty ? 'Customer' : t.partyName}, ${transactionLabels[t.type] ?? t.type} ${t.number}: ${money(t.total)}. Thank you!',
+    'text': 'Hello ${t.partyName.isEmpty ? 'Customer' : t.partyName}, ${transactionLabels[t.type] ?? t.type} ${t.number}: ${money(t.total)}. Thank you!',
   });
-  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
-      context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Unable to open WhatsApp.')));
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open WhatsApp.')),
+    );
   }
 }
 
@@ -607,161 +643,205 @@ class TransactionPage extends StatefulWidget {
 class _TransactionPageState extends State<TransactionPage> {
   String query = '', status = 'All';
   DateTimeRange? range;
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final data = widget.store.transactions
         .where(
           (t) =>
-              (t.type == widget.type ||
-                  (widget.type == 'order' && t.type == 'sale_invoice')) &&
-              '${t.number} ${t.partyName} ${t.partyPhone}'
-                  .toLowerCase()
-                  .contains(query.toLowerCase()) &&
-              (status == 'All' ||
-                  t.status.toLowerCase() == status.toLowerCase()) &&
-              (range == null ||
-                  (!t.date.isBefore(range!.start) &&
-                      t.date.isBefore(
-                        range!.end.add(const Duration(days: 1)),
-                      ))),
+              (t.type == widget.type || (widget.type == 'order' && t.type == 'sale_invoice')) &&
+              '${t.number} ${t.partyName} ${t.partyPhone}'.toLowerCase().contains(query.toLowerCase()) &&
+              (status == 'All' || t.status.toLowerCase() == status.toLowerCase()) &&
+              (range == null || (!t.date.isBefore(range!.start) && t.date.isBefore(range!.end.add(const Duration(days: 1))))),
         )
         .toList();
+
+    final totalAmount = data.fold<double>(0, (s, t) => s + t.total);
+
     return PageFrame(
-      title: transactionLabels[widget.type]!,
-      subtitle:
-          '${data.length} records · Total ${money(data.fold<double>(0, (s, t) => s + t.total))}',
-      action: FilledButton.icon(
+      title: transactionLabels[widget.type] ?? widget.type,
+      subtitle: '${data.length} records • Total Volume: ${money(totalAmount)}',
+      action: EmpiranButton(
+        label: 'Create ${widget.type == "quotation" ? "Quote" : "Invoice"}',
+        icon: Icons.add,
         onPressed: () => openComposer(context, widget.store, widget.type),
-        icon: const Icon(Icons.add),
-        label: const Text('Create'),
       ),
       child: Column(
         children: [
-          TextField(
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              hintText: 'Search number, name or phone',
-            ),
-            onChanged: (v) => setState(() => query = v),
-          ),
-          Wrap(
-            spacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
             children: [
+              Expanded(
+                child: EmpiranSearchBar(
+                  hint: 'Search by document #, customer name or phone…',
+                  initialValue: query,
+                  onChanged: (v) => setState(() => query = v),
+                ),
+              ),
+              const SizedBox(width: 12),
               for (final s in ['All', 'Paid', 'Unpaid', 'Partial'])
-                FilterChip(
-                  label: Text(s),
-                  selected: status == s,
-                  onSelected: (_) => setState(() => status = s),
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: FilterChip(
+                    label: Text(s),
+                    selected: status == s,
+                    onSelected: (_) => setState(() => status = s),
+                  ),
                 ),
+              const SizedBox(width: 8),
               TextButton.icon(
-                icon: const Icon(Icons.date_range),
-                label: Text(
-                  range == null
-                      ? 'Date range'
-                      : '${DateFormat.yMd().format(range!.start)} – ${DateFormat.yMd().format(range!.end)}',
-                ),
+                icon: const Icon(Icons.date_range, size: 18),
+                label: Text(range == null
+                    ? 'Dates'
+                    : '${DateFormat.yMd().format(range!.start)} - ${DateFormat.yMd().format(range!.end)}'),
                 onPressed: () async {
-                  final value = await showDateRangePicker(
+                  final val = await showDateRangePicker(
                     context: context,
                     firstDate: DateTime(2000),
                     lastDate: DateTime(2100),
                   );
-                  if (mounted && value != null) setState(() => range = value);
+                  if (mounted && val != null) setState(() => range = val);
                 },
               ),
               if (range != null)
                 IconButton(
-                  tooltip: 'Clear dates',
+                  tooltip: 'Clear Date Filter',
+                  icon: const Icon(Icons.clear, size: 18),
                   onPressed: () => setState(() => range = null),
-                  icon: const Icon(Icons.clear),
                 ),
             ],
           ),
+          const SizedBox(height: 16),
+
           Expanded(
             child: data.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No transactions found. Create one to get started.',
-                    ),
+                ? EmpiranEmptyState(
+                    title: 'No ${transactionLabels[widget.type] ?? "records"} found',
+                    description: query.isNotEmpty ? 'No records matched your search query.' : 'Create your first invoice or transaction to get started.',
+                    icon: Icons.receipt_long_outlined,
+                    actionLabel: 'Create Now',
+                    onAction: () => openComposer(context, widget.store, widget.type),
                   )
                 : ListView.separated(
                     itemCount: data.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (_, i) {
                       final t = data[i];
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${t.number} · ${t.partyName.isEmpty ? 'Cash Customer' : t.partyName}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                      final isPaid = t.status.toLowerCase() == 'paid';
+
+                      return EmpiranCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                                    borderRadius: BorderRadius.circular(AppRadii.medium),
+                                  ),
+                                  child: const Icon(Icons.receipt_outlined, color: AppColors.primary, size: 22),
                                 ),
-                              ),
-                              Text(
-                                '${DateFormat.yMMMd().format(t.date)} · ${t.isGst ? 'GST' : 'Non-GST'} · ${t.status}',
-                              ),
-                              Text(
-                                '${money(t.total)} · Balance ${money(t.balance)}',
-                              ),
-                              Wrap(
-                                spacing: 6,
-                                children: [
-                                  TextButton.icon(
-                                    onPressed: () => previewDocument(
-                                      context,
-                                      widget.store,
-                                      t,
-                                    ),
-                                    icon: const Icon(Icons.picture_as_pdf),
-                                    label: const Text('PDF / Print / Share'),
-                                  ),
-                                  TextButton.icon(
-                                    onPressed: () => shareDocument(context, t),
-                                    icon: const Icon(Icons.chat_outlined),
-                                    label: const Text('WhatsApp'),
-                                  ),
-                                  if (widget.type == 'quotation')
-                                    TextButton(
-                                      onPressed:
-                                          widget.store.transactions.any(
-                                            (x) => x.convertedFrom == t.id,
-                                          )
-                                          ? null
-                                          : () => openComposer(
-                                              context,
-                                              widget.store,
-                                              'order',
-                                              source: t,
-                                            ),
-                                      child: Text(
-                                        widget.store.transactions.any(
-                                              (x) => x.convertedFrom == t.id,
-                                            )
-                                            ? 'Converted'
-                                            : 'Convert to order',
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        t.partyName.isEmpty ? 'Cash Customer' : t.partyName,
+                                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                                       ),
-                                    ),
-                                  IconButton(
-                                    tooltip: 'Delete transaction',
-                                    icon: const Icon(Icons.delete_outline),
-                                    onPressed: () async {
-                                      if (await confirmDelete(
-                                        context,
-                                        'Delete ${t.number}? Stock changes will be reversed.',
-                                      )) {
-                                        await widget.store.deleteTransaction(t);
-                                      }
-                                    },
+                                      const SizedBox(height: 2),
+                                      Wrap(
+                                        spacing: 8,
+                                        children: [
+                                          Text(
+                                            '# ${t.number}',
+                                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary),
+                                          ),
+                                          Text(
+                                            DateFormat.yMMMd().format(t.date),
+                                            style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                          ),
+                                          EmpiranStatusChip(label: t.isGst ? 'GST 18%' : 'Non-GST', small: true),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      money(t.total),
+                                      style: AppTypography.number.copyWith(fontSize: 17),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    EmpiranStatusChip(
+                                      label: t.status,
+                                      type: isPaid ? EmpiranStatusType.success : EmpiranStatusType.warning,
+                                      small: true,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  t.balance > 0 ? 'Balance Due: ${money(t.balance)}' : 'Fully Paid (${t.paymentMode})',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: t.balance > 0 ? AppColors.error : AppColors.success,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.picture_as_pdf, size: 16),
+                                      label: const Text('PDF Preview'),
+                                      onPressed: () => previewDocument(context, widget.store, t),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.chat_outlined, size: 16, color: Colors.green),
+                                      label: const Text('WhatsApp', style: TextStyle(color: Colors.green)),
+                                      onPressed: () => shareDocument(context, t),
+                                    ),
+                                    if (widget.type == 'quotation') ...[
+                                      const SizedBox(width: 4),
+                                      EmpiranButton(
+                                        label: widget.store.transactions.any((x) => x.convertedFrom == t.id)
+                                            ? 'Converted'
+                                            : 'Convert to Order',
+                                        height: 32,
+                                        variant: EmpiranButtonVariant.secondary,
+                                        onPressed: widget.store.transactions.any((x) => x.convertedFrom == t.id)
+                                            ? null
+                                            : () => openComposer(context, widget.store, 'order', source: t),
+                                      ),
+                                    ],
+                                    IconButton(
+                                      tooltip: 'Delete Transaction',
+                                      icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                      onPressed: () async {
+                                        if (await confirmDelete(context, 'Delete transaction #${t.number}?')) {
+                                          await widget.store.deleteTransaction(t);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -773,26 +853,6 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 }
 
-Future<bool> confirmDelete(BuildContext context, String message) async =>
-    await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Delete record'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(c, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    ) ??
-    false;
-
 Future<void> openComposer(
   BuildContext context,
   AppStore store,
@@ -801,9 +861,7 @@ Future<void> openComposer(
 }) async {
   final saved = await Navigator.push<BusinessTransaction>(
     context,
-    MaterialPageRoute(
-      builder: (_) => InvoiceComposer(store, type, source: source),
-    ),
+    MaterialPageRoute(builder: (_) => InvoiceComposer(store, type, source: source)),
   );
   if (saved != null && context.mounted) {
     await previewDocument(context, store, saved);
@@ -838,13 +896,12 @@ class _InvoiceComposerState extends State<InvoiceComposer> {
   final dispatch = <String, String>{};
   String? error;
   DateTime date = DateTime.now();
+
   bool get payment => widget.type.startsWith('payment_');
-  double get subtotal =>
-      payment ? amount : lines.fold(0, (s, l) => s + l.total);
-  double get effectiveDiscount =>
-      percentageDiscount ? subtotal * discount / 100 : discount;
-  double get total =>
-      (subtotal - effectiveDiscount) * (gst ? 1.18 : 1) + shipping;
+  double get subtotal => payment ? amount : lines.fold(0, (s, l) => s + l.total);
+  double get effectiveDiscount => percentageDiscount ? subtotal * discount / 100 : discount;
+  double get total => (subtotal - effectiveDiscount) * (gst ? 1.18 : 1) + shipping;
+
   @override
   void initState() {
     super.initState();
@@ -879,14 +936,13 @@ class _InvoiceComposerState extends State<InvoiceComposer> {
           name: item.name,
           quantity: 1,
           unit: item.unit,
-          price: widget.type.startsWith('purchase')
-              ? item.purchasePrice
-              : item.salesPrice,
+          price: widget.type.startsWith('purchase') ? item.purchasePrice : item.salesPrice,
           hsn: item.hsn,
         ),
       );
     }
   });
+
   Future<void> save() async {
     setState(() {
       busy = true;
@@ -894,9 +950,10 @@ class _InvoiceComposerState extends State<InvoiceComposer> {
     });
     try {
       if (payment && (partyId == null || amount <= 0)) {
-        throw ArgumentError(
-          'Select a party and enter an amount greater than zero.',
-        );
+        throw ArgumentError('Select a party and enter an amount greater than zero.');
+      }
+      if (!payment && lines.isEmpty) {
+        throw ArgumentError('Add at least one product to the invoice.');
       }
       final t = await widget.store.create(
         gst: gst,
@@ -905,7 +962,7 @@ class _InvoiceComposerState extends State<InvoiceComposer> {
             ? [
                 InvoiceLine(
                   itemId: '',
-                  name: transactionLabels[widget.type]!,
+                  name: transactionLabels[widget.type] ?? widget.type,
                   quantity: 1,
                   unit: '',
                   price: amount,
@@ -922,9 +979,7 @@ class _InvoiceComposerState extends State<InvoiceComposer> {
         shipping: shipping,
         paymentMode: paymentMode,
         notes: notes.text,
-        convertedFrom: widget.source?.type == 'quotation'
-            ? widget.source?.id
-            : null,
+        convertedFrom: widget.source?.type == 'quotation' ? widget.source?.id : null,
       );
       if (mounted) {
         if (widget.embedded) {
@@ -932,6 +987,9 @@ class _InvoiceComposerState extends State<InvoiceComposer> {
           if (mounted) {
             setState(() {
               lines.clear();
+              name.clear();
+              phone.clear();
+              partyId = null;
             });
           }
         } else {
@@ -945,426 +1003,514 @@ class _InvoiceComposerState extends State<InvoiceComposer> {
     }
   }
 
-  Widget numeric(String label, double value, ValueChanged<double> changed) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: TextFormField(
-          initialValue: '$value',
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: label),
-          onChanged: (v) =>
-              setState(() => changed(double.tryParse(v) ?? double.nan)),
-        ),
-      );
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text('Create ${transactionLabels[widget.type]}')),
-    body: LayoutBuilder(
-      builder: (_, c) {
-        final products = Column(
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search products, codes or HSN',
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (v) => setState(() => query = v),
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: Text('Create ${transactionLabels[widget.type] ?? widget.type}'),
             ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final cat in {
-                    'All',
-                    ...widget.store.items.map((i) => i.category),
-                  })
-                    Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: ChoiceChip(
-                        label: Text(cat),
-                        selected: category == cat,
-                        onSelected: (_) => setState(() => category = cat),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: widget.store.items.isEmpty
-                  ? Center(
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          await _itemDialog(context, widget.store);
-                          if (mounted) setState(() {});
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add your first product'),
-                      ),
-                    )
-                  : ListView(
-                      children: [
-                        for (final i in widget.store.items.where(
-                          (i) =>
-                              (category == 'All' || i.category == category) &&
-                              '${i.name} ${i.itemCode} ${i.hsn}'
-                                  .toLowerCase()
-                                  .contains(query.toLowerCase()),
-                        ))
-                          Card(
-                            child: ListTile(
-                              leading: _ProductImage(i.image),
-                              title: Text(i.name),
-                              subtitle: Text(
-                                '${money(widget.type.startsWith('purchase') ? i.purchasePrice : i.salesPrice)} · Stock ${i.currentStock} ${i.unit}',
-                              ),
-                              trailing: const Icon(Icons.add_circle_outline),
-                              onTap: () => add(i),
-                            ),
-                          ),
-                      ],
-                    ),
-            ),
-          ],
-        );
-        final cart = ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              'Customer / Supplier',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: partyId,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Choose saved party',
-              ),
-              items: widget.store.parties
-                  .map(
-                    (p) => DropdownMenuItem(value: p.id, child: Text(p.name)),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() {
-                partyId = v;
-                final p = widget.store.parties.firstWhere((p) => p.id == v);
-                name.text = p.name;
-                phone.text = p.phone;
-              }),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Name (optional)'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: phone,
-              decoration: const InputDecoration(labelText: 'Phone'),
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.calendar_today),
-              label: Text(DateFormat.yMMMd().format(date)),
-              onPressed: () async {
-                final d = await showDatePicker(
-                  context: context,
-                  initialDate: date,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (d != null) setState(() => date = d);
-              },
-            ),
-            if (payment) numeric('Payment amount', amount, (v) => amount = v),
-            for (final l in lines)
-              Card(
-                key: ObjectKey(l),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Remove line',
-                            onPressed: () => setState(() => lines.remove(l)),
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: numeric(
-                              'Quantity (${l.unit})',
-                              l.quantity,
-                              (v) => l.quantity = v,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: numeric(
-                              'Unit price',
-                              l.price,
-                              (v) => l.price = v,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(money(l.total)),
-                    ],
-                  ),
-                ),
-              ),
-            if (!payment) ...[
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('GST order (CGST 9% + SGST 9%)'),
-                value: gst,
-                onChanged: (v) => setState(() => gst = v),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Discount as percentage'),
-                value: percentageDiscount,
-                onChanged: (v) => setState(() {
-                  percentageDiscount = v;
-                  discount = 0;
-                }),
-              ),
-              KeyedSubtree(
-                key: ValueKey(percentageDiscount),
-                child: numeric(
-                  percentageDiscount ? 'Discount (%)' : 'Discount amount',
-                  discount,
-                  (v) => discount = v,
-                ),
-              ),
-              numeric('Shipping charges', shipping, (v) => shipping = v),
-              numeric('Paid amount', paid, (v) => paid = v),
-            ],
-            DropdownButtonFormField<String>(
-              initialValue: paymentMode,
-              decoration: const InputDecoration(labelText: 'Payment mode'),
-              items: [
-                'Cash',
-                'Bank',
-                'UPI',
-                'Cheque',
-                'Card',
-              ].map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
-              onChanged: (v) => setState(() => paymentMode = v!),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: notes,
-              decoration: const InputDecoration(labelText: 'Notes / terms'),
-              maxLines: 2,
-            ),
-            if (!payment && widget.type != 'quotation')
-              ExpansionTile(
-                title: const Text('Dispatch & delivery details'),
-                children: [
-                  for (final field in const {
-                    'deliveryNote': 'Delivery note',
-                    'reference': 'Reference no. / date',
-                    'otherReferences': 'Other references',
-                    'buyersOrderNo': 'Buyer order number',
-                    'buyersOrderDate': 'Buyer order date',
-                    'dispatchDocNo': 'Dispatch document number',
-                    'deliveryNoteDate': 'Delivery note date',
-                    'transportMode': 'Dispatched through',
-                    'destination': 'Destination',
-                    'lrNo': 'Bill of lading / LR number',
-                    'vehicleNo': 'Motor vehicle number',
-                  }.entries)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: TextFormField(
-                        initialValue: dispatch[field.key],
-                        decoration: InputDecoration(labelText: field.value),
-                        onChanged: (v) => dispatch[field.key] = v,
-                      ),
-                    ),
-                ],
-              ),
-            const Divider(height: 30),
-            Text('Subtotal: ${money(subtotal)}'),
-            if (gst)
-              Text(
-                'CGST + SGST: ${money((subtotal - effectiveDiscount) * .18)}',
-              ),
-            Text(
-              'Total: ${money(total)}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            if (!payment) Text('Balance: ${money(total - paid)}'),
-            if (error != null)
-              Text(
-                error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: busy ? null : save,
-              icon: const Icon(Icons.save_outlined),
-              label: Text(busy ? 'Saving…' : 'Save & preview PDF'),
-            ),
-          ],
-        );
-        if (payment) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 650),
-              child: cart,
-            ),
-          );
-        }
-        if (c.maxWidth >= 800) {
-          return Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(flex: 3, child: products),
-                const SizedBox(width: 20),
-                Expanded(flex: 2, child: Card(child: cart)),
-              ],
-            ),
-          );
-        }
-        return DefaultTabController(
-          length: 2,
-          child: Column(
+      body: LayoutBuilder(
+        builder: (_, c) {
+          final isWide = c.maxWidth >= 850;
+
+          // Products Selector Pane
+          final productsPane = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TabBar(
-                tabs: [
-                  const Tab(text: 'Products'),
-                  Tab(text: 'Cart (${lines.length})'),
-                ],
+              EmpiranSearchBar(
+                hint: 'Search products by name, code or HSN…',
+                initialValue: query,
+                onChanged: (v) => setState(() => query = v),
               ),
-              Expanded(
-                child: TabBarView(
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
-                    Padding(padding: const EdgeInsets.all(12), child: products),
-                    cart,
+                    for (final cat in {'All', ...widget.store.items.map((i) => i.category)})
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ChoiceChip(
+                          label: Text(cat),
+                          selected: category == cat,
+                          onSelected: (_) => setState(() => category = cat),
+                        ),
+                      ),
                   ],
                 ),
               ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: widget.store.items.isEmpty
+                    ? EmpiranEmptyState(
+                        title: 'No products in catalog',
+                        description: 'Add your first product to begin billing.',
+                        icon: Icons.inventory_2_outlined,
+                        actionLabel: 'Add Product',
+                        onAction: () async {
+                          await _itemDialog(context, widget.store);
+                          if (mounted) setState(() {});
+                        },
+                      )
+                    : ListView.separated(
+                        itemCount: widget.store.items.where((i) =>
+                            (category == 'All' || i.category == category) &&
+                            '${i.name} ${i.itemCode} ${i.hsn}'.toLowerCase().contains(query.toLowerCase())).length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 6),
+                        itemBuilder: (context, i) {
+                          final item = widget.store.items.where((i) =>
+                              (category == 'All' || i.category == category) &&
+                              '${i.name} ${i.itemCode} ${i.hsn}'.toLowerCase().contains(query.toLowerCase())).toList()[i];
+                          final inCart = lines.any((l) => l.itemId == item.id);
+
+                          return EmpiranCard(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            onTap: () => add(item),
+                            child: Row(
+                              children: [
+                                _ProductImage(item.image),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Stock: ${item.currentStock} ${item.unit} • ${item.category}',
+                                        style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      money(widget.type.startsWith('purchase') ? item.purchasePrice : item.salesPrice),
+                                      style: AppTypography.number.copyWith(fontSize: 15, color: AppColors.primary),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: inCart ? AppColors.success.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                                      ),
+                                      child: Text(
+                                        inCart ? 'Added ✓' : '+ Add',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: inCart ? AppColors.success : AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
             ],
-          ),
-        );
-      },
-    ),
-  );
+          );
+
+          // Cart & Billing Checkout Pane
+          final cartPane = ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('Customer / Party Details', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                initialValue: partyId,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Choose Saved Customer / Supplier'),
+                items: widget.store.parties
+                    .map((p) => DropdownMenuItem(value: p.id, child: Text('${p.name} (${p.phone})')))
+                    .toList(),
+                onChanged: (v) => setState(() {
+                  partyId = v;
+                  if (v != null) {
+                    final p = widget.store.parties.firstWhere((p) => p.id == v);
+                    name.text = p.name;
+                    phone.text = p.phone;
+                  }
+                }),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: EmpiranTextField(controller: name, label: 'Customer Name (or Cash)'),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: EmpiranTextField(controller: phone, label: 'Mobile Number', isNumber: true),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: date,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (d != null) setState(() => date = d);
+                    },
+                    child: Text('Date: ${DateFormat.yMMMd().format(date)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+
+              if (payment) ...[
+                EmpiranTextField(
+                  label: 'Payment Amount (₹)',
+                  hint: '0.00',
+                  isNumber: true,
+                  isDecimal: true,
+                  isRequired: true,
+                  onChanged: (v) => setState(() => amount = double.tryParse(v) ?? 0),
+                ),
+                const SizedBox(height: 12),
+              ] else ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Selected Items (${lines.length})', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    if (lines.isNotEmpty)
+                      TextButton(
+                        onPressed: () => setState(() => lines.clear()),
+                        child: const Text('Clear All', style: TextStyle(color: AppColors.error, fontSize: 12)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (lines.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurfaceContainer,
+                      borderRadius: BorderRadius.circular(AppRadii.medium),
+                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                    ),
+                    child: const Center(
+                      child: Text('No items in cart. Select products from the left to begin.'),
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: lines.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final l = lines[i];
+                      return EmpiranCard(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(l.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                                ),
+                                IconButton(
+                                  tooltip: 'Remove',
+                                  icon: const Icon(Icons.close, size: 18, color: AppColors.error),
+                                  onPressed: () => setState(() => lines.remove(l)),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                // Quantity Stepper
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                    borderRadius: BorderRadius.circular(AppRadii.small),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.remove, size: 16),
+                                        onPressed: () {
+                                          setState(() {
+                                            if (l.quantity > 1) {
+                                              l.quantity--;
+                                            } else {
+                                              lines.remove(l);
+                                            }
+                                          });
+                                        },
+                                      ),
+                                      Text(
+                                        '${l.quantity.toStringAsFixed(0)} ${l.unit}',
+                                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.add, size: 16),
+                                        onPressed: () => setState(() => l.quantity++),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text(
+                                    '@ ${money(l.price)}',
+                                    style: TextStyle(fontSize: 13, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                  ),
+                                ),
+                                Text(
+                                  money(l.total),
+                                  style: AppTypography.number.copyWith(fontSize: 15),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                const SizedBox(height: 16),
+
+                // Calculation Options
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Apply GST (CGST 9% + SGST 9%)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  value: gst,
+                  onChanged: (v) => setState(() => gst = v),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: EmpiranTextField(
+                        label: percentageDiscount ? 'Discount (%)' : 'Discount Amount (₹)',
+                        hint: '0',
+                        isNumber: true,
+                        isDecimal: true,
+                        onChanged: (v) => setState(() => discount = double.tryParse(v) ?? 0),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      children: [
+                        const Text('% / ₹', style: TextStyle(fontSize: 12)),
+                        Switch(
+                          value: percentageDiscount,
+                          onChanged: (v) => setState(() {
+                            percentageDiscount = v;
+                            discount = 0;
+                          }),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: EmpiranTextField(
+                        label: 'Shipping Charges (₹)',
+                        hint: '0.00',
+                        isNumber: true,
+                        isDecimal: true,
+                        onChanged: (v) => setState(() => shipping = double.tryParse(v) ?? 0),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: EmpiranTextField(
+                        label: 'Paid Amount (₹)',
+                        hint: '0.00',
+                        isNumber: true,
+                        isDecimal: true,
+                        onChanged: (v) => setState(() => paid = double.tryParse(v) ?? 0),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: paymentMode,
+                decoration: const InputDecoration(labelText: 'Payment Mode'),
+                items: ['Cash', 'Bank', 'UPI', 'Cheque', 'Card']
+                    .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                    .toList(),
+                onChanged: (v) => setState(() => paymentMode = v!),
+              ),
+              const SizedBox(height: 12),
+              EmpiranTextField(
+                controller: notes,
+                label: 'Notes / Terms & Conditions',
+                hint: 'e.g. Warranty 1 year, goods once sold cannot be returned',
+                maxLines: 2,
+              ),
+              const Divider(height: 28),
+
+              // Summary Box
+              EmpiranCard(
+                color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.lightSurfaceContainerHighest.withValues(alpha: 0.5),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Subtotal:', style: TextStyle(fontSize: 14)),
+                        Text(money(subtotal), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      ],
+                    ),
+                    if (effectiveDiscount > 0) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Discount:', style: TextStyle(fontSize: 14, color: AppColors.error)),
+                          Text('- ${money(effectiveDiscount)}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.error)),
+                        ],
+                      ),
+                    ],
+                    if (gst) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('CGST (9%) + SGST (9%):', style: TextStyle(fontSize: 14)),
+                          Text(money((subtotal - effectiveDiscount) * 0.18), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        ],
+                      ),
+                    ],
+                    if (shipping > 0) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Shipping:', style: TextStyle(fontSize: 14)),
+                          Text(money(shipping), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        ],
+                      ),
+                    ],
+                    const Divider(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('GRAND TOTAL:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                        Text(
+                          money(total),
+                          style: AppTypography.number.copyWith(fontSize: 20, color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                    if (!payment) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Balance Due:', style: TextStyle(fontSize: 13, color: total - paid > 0 ? AppColors.error : AppColors.success)),
+                          Text(money(total - paid), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: total - paid > 0 ? AppColors.error : AppColors.success)),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              if (error != null) ...[
+                const SizedBox(height: 12),
+                Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+              ],
+              const SizedBox(height: 16),
+
+              EmpiranButton(
+                label: busy ? 'Saving Invoice…' : 'Save & Generate Invoice',
+                icon: Icons.check_circle_outline,
+                isLoading: busy,
+                isFullWidth: true,
+                onPressed: busy ? null : save,
+              ),
+            ],
+          );
+
+          if (payment) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: cartPane,
+              ),
+            );
+          }
+
+          if (isWide) {
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(flex: 3, child: productsPane),
+                  const SizedBox(width: 20),
+                  Expanded(flex: 2, child: EmpiranCard(padding: EdgeInsets.zero, child: cartPane)),
+                ],
+              ),
+            );
+          }
+
+          // Mobile View with Clean Tabs
+          return DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                TabBar(
+                  tabs: [
+                    const Tab(text: 'Product Catalog', icon: Icon(Icons.inventory_2_outlined)),
+                    Tab(text: 'Cart (${lines.length})', icon: const Icon(Icons.shopping_cart_outlined)),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      Padding(padding: const EdgeInsets.all(12), child: productsPane),
+                      cartPane,
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage(this.store, {super.key});
   final AppStore store;
+
   @override
   Widget build(BuildContext context) {
-    final sales = store.transactions.where(
-      (t) => t.type == 'order' || t.type == 'sale_invoice',
-    );
-    final purchases = store.transactions.where(
-      (t) => t.type == 'purchase_bill',
-    );
-    return PageFrame(
-      title: 'Business Dashboard',
-      subtitle: 'Sales, purchases, stock and party balances at a glance.',
-      child: ListView(
-        children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final metric in [
-                ('Total sales', sales.fold<double>(0, (s, t) => s + t.total)),
-                ('Purchases', purchases.fold<double>(0, (s, t) => s + t.total)),
-                (
-                  'Receivables',
-                  store.parties.fold<double>(
-                    0,
-                    (s, p) =>
-                        s + store.partyBalance(p).clamp(0, double.infinity),
-                  ),
-                ),
-                (
-                  'Expenses',
-                  store.expenses.fold<double>(
-                    0,
-                    (s, e) => s + (e['amount'] as num).toDouble(),
-                  ),
-                ),
-              ])
-                SizedBox(
-                  width: 230,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(metric.$1),
-                          Text(
-                            money(metric.$2),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final type in [
-                'order',
-                'purchase_bill',
-                'payment_in',
-                'payment_out',
-              ])
-                FilledButton.tonal(
-                  onPressed: () => openComposer(context, store, type),
-                  child: Text(transactionLabels[type]!),
-                ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text('Low stock', style: Theme.of(context).textTheme.titleLarge),
-          for (final item in store.items.where(
-            (i) => !i.isService && i.currentStock <= i.lowStockLimit,
-          ))
-            ListTile(
-              leading: const Icon(Icons.warning_amber, color: Colors.orange),
-              title: Text(item.name),
-              trailing: Text('${item.currentStock} ${item.unit}'),
-            ),
-          const SizedBox(height: 24),
-          Text(
-            'Recent transactions',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          for (final t in store.transactions.take(10))
-            ListTile(
-              title: Text('${t.number} · ${t.partyName}'),
-              subtitle: Text(transactionLabels[t.type] ?? t.type),
-              trailing: Text(money(t.total)),
-              onTap: () => previewDocument(context, store, t),
-            ),
-        ],
-      ),
+    return DashboardScreen(
+      store: store,
+      onNavigate: (_) {},
     );
   }
 }
@@ -1379,29 +1525,22 @@ class RecordsPage extends StatefulWidget {
 
 class _RecordsPageState extends State<RecordsPage> {
   String query = '';
-  List<Map<String, dynamic>> get records =>
-      widget.bank ? widget.store.bankAccounts : widget.store.expenses;
+  List<Map<String, dynamic>> get records => widget.bank ? widget.store.bankAccounts : widget.store.expenses;
+
   Future<void> edit([Map<String, dynamic>? record]) async {
     final fields = widget.bank
-        ? [
-            'Account name',
-            'Bank name',
-            'Account number',
-            'IFSC',
-            'Opening balance',
-          ]
-        : ['Expense name', 'Category', 'Amount', 'Payment mode', 'Notes'];
-    final controllers = {
-      for (final f in fields)
-        f: TextEditingController(text: '${record?[f] ?? ''}'),
-    };
+        ? ['Account Name', 'Bank Name', 'Account Number', 'IFSC', 'Opening Balance']
+        : ['Expense Title', 'Category', 'Amount', 'Payment Mode', 'Notes'];
+
+    final controllers = {for (final f in fields) f: TextEditingController(text: '${record?[f] ?? ''}')};
     DateTime date = DateTime.tryParse('${record?['date']}') ?? DateTime.now();
     String? error;
+
     await showDialog(
       context: context,
       builder: (c) => StatefulBuilder(
         builder: (c, set) => AlertDialog(
-          title: Text(widget.bank ? 'Bank account' : 'Expense'),
+          title: Text(widget.bank ? 'Bank Account' : 'Expense Entry'),
           content: SizedBox(
             width: 440,
             child: SingleChildScrollView(
@@ -1411,52 +1550,33 @@ class _RecordsPageState extends State<RecordsPage> {
                   for (final f in fields)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: TextField(
+                      child: EmpiranTextField(
                         controller: controllers[f],
-                        decoration: InputDecoration(labelText: f),
+                        label: f,
+                        isNumber: f.contains('Amount') || f.contains('Balance'),
+                        isDecimal: f.contains('Amount') || f.contains('Balance'),
+                        isRequired: f == fields.first || f.contains('Amount') || f.contains('Balance'),
                       ),
                     ),
-                  if (!widget.bank)
-                    TextButton(
-                      onPressed: () async {
-                        final d = await showDatePicker(
-                          context: c,
-                          initialDate: date,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (d != null) set(() => date = d);
-                      },
-                      child: Text(DateFormat.yMMMd().format(date)),
-                    ),
                   if (error != null)
-                    Text(error!, style: const TextStyle(color: Colors.red)),
+                    Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
+            TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+            EmpiranButton(
+              label: 'Save Record',
               onPressed: () async {
-                final value = double.tryParse(
-                  controllers[widget.bank ? 'Opening balance' : 'Amount']!.text,
-                );
-                if (controllers[fields.first]!.text.trim().isEmpty ||
-                    value == null ||
-                    !value.isFinite ||
-                    (!widget.bank && value <= 0)) {
-                  set(() => error = 'Enter a name and valid amount.');
+                final value = double.tryParse(controllers[widget.bank ? 'Opening Balance' : 'Amount']!.text);
+                if (controllers[fields.first]!.text.trim().isEmpty || value == null || !value.isFinite) {
+                  set(() => error = 'Enter a valid title and amount.');
                   return;
                 }
                 final result = <String, dynamic>{
                   for (final f in fields) f: controllers[f]!.text.trim(),
-                  'id':
-                      record?['id'] ??
-                      DateTime.now().microsecondsSinceEpoch.toString(),
+                  'id': record?['id'] ?? DateTime.now().microsecondsSinceEpoch.toString(),
                   'amount': value,
                   'date': date.toIso8601String(),
                 };
@@ -1474,7 +1594,6 @@ class _RecordsPageState extends State<RecordsPage> {
                   set(() => error = '$e');
                 }
               },
-              child: const Text('Save'),
             ),
           ],
         ),
@@ -1487,52 +1606,40 @@ class _RecordsPageState extends State<RecordsPage> {
 
   @override
   Widget build(BuildContext context) => PageFrame(
-    title: widget.bank ? 'Cash & Bank Accounts' : 'Expenses',
-    subtitle:
-        'Total ${money(records.fold<double>(0, (s, r) => s + (r['amount'] as num).toDouble()))}',
-    action: FilledButton.icon(
+    title: widget.bank ? 'Cash & Bank Accounts' : 'Expense Tracker',
+    subtitle: 'Total recorded: ${money(records.fold<double>(0, (s, r) => s + (r['amount'] as num).toDouble()))}',
+    action: EmpiranButton(
+      label: 'Add Record',
+      icon: Icons.add,
       onPressed: edit,
-      icon: const Icon(Icons.add),
-      label: const Text('Add'),
     ),
     child: Column(
       children: [
-        TextField(
-          decoration: const InputDecoration(
-            hintText: 'Search records',
-            prefixIcon: Icon(Icons.search),
-          ),
+        EmpiranSearchBar(
+          hint: 'Search records…',
+          initialValue: query,
           onChanged: (v) => setState(() => query = v),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Expanded(
           child: ListView(
             children: [
-              for (final r in records.where(
-                (r) => r.values
-                    .join(' ')
-                    .toLowerCase()
-                    .contains(query.toLowerCase()),
-              ))
-                Card(
+              for (final r in records.where((r) => r.values.join(' ').toLowerCase().contains(query.toLowerCase())))
+                EmpiranCard(
+                  margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    title: Text(
-                      '${r[widget.bank ? 'Account name' : 'Expense name']}',
-                    ),
+                    title: Text('${r[widget.bank ? 'Account Name' : 'Expense Title']}', style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(
                       widget.bank
-                          ? '${r['Bank name']} · ${r['Account number']} · ${r['IFSC']}'
-                          : '${r['Category']} · ${DateFormat.yMMMd().format(DateTime.parse(r['date']))}',
+                          ? '${r['Bank Name']} • ${r['Account Number']}'
+                          : '${r['Category']} • ${DateFormat.yMMMd().format(DateTime.tryParse('${r['date']}') ?? DateTime.now())}',
                     ),
-                    trailing: Text(money(r['amount'] as num)),
+                    trailing: Text(money(r['amount'] as num), style: AppTypography.number.copyWith(fontSize: 15)),
                     onTap: () => edit(r),
                     leading: IconButton(
-                      icon: const Icon(Icons.delete_outline),
+                      icon: const Icon(Icons.delete_outline, color: AppColors.error),
                       onPressed: () async {
-                        if (await confirmDelete(
-                          context,
-                          'Delete this record?',
-                        )) {
+                        if (await confirmDelete(context, 'Delete this record?')) {
                           await widget.store.deleteRecord(r, bank: widget.bank);
                         }
                       },
