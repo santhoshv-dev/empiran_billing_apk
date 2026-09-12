@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 
@@ -6,6 +8,7 @@ class DbHelper {
   static final DbHelper instance = DbHelper._init();
   static Database? _database;
   static bool _desktopDatabaseFactoryConfigured = false;
+  static final Map<String, List<Map<String, dynamic>>> _webStore = {};
   DbHelper._init();
 
   Future<Database?> get database async {
@@ -62,7 +65,8 @@ class DbHelper {
         type TEXT,
         gstin TEXT,
         address TEXT,
-        balance REAL
+        openingBalance REAL,
+        currentBalance REAL
       )
     ''');
     
@@ -120,39 +124,104 @@ class DbHelper {
     }
   }
 
-  // Generic methods
+  // Generic methods with full Web support
   Future<int> insert(String table, Map<String, dynamic> data) async {
-    if (kIsWeb) return 0;
+    if (kIsWeb) {
+      final list = _webStore.putIfAbsent(table, () => []);
+      final id = data['id']?.toString();
+      if (id != null) {
+        list.removeWhere((x) => x['id']?.toString() == id);
+      }
+      list.add(Map<String, dynamic>.from(data));
+      try {
+        final p = await SharedPreferences.getInstance();
+        await p.setString('web_db_$table', jsonEncode(list));
+      } catch (_) {}
+      return 1;
+    }
     final db = await instance.database;
     return await db!.insert(table, data, conflictAlgorithm: ConflictAlgorithm.replace);
   }
   
   Future<int> update(String table, Map<String, dynamic> data, String id) async {
-    if (kIsWeb) return 0;
+    if (kIsWeb) {
+      final list = _webStore.putIfAbsent(table, () => []);
+      final idx = list.indexWhere((x) => x['id']?.toString() == id);
+      if (idx != -1) {
+        list[idx] = {...list[idx], ...data};
+        try {
+          final p = await SharedPreferences.getInstance();
+          await p.setString('web_db_$table', jsonEncode(list));
+        } catch (_) {}
+        return 1;
+      }
+      return 0;
+    }
     final db = await instance.database;
     return await db!.update(table, data, where: 'id = ?', whereArgs: [id]);
   }
   
   Future<int> delete(String table, String id) async {
-    if (kIsWeb) return 0;
+    if (kIsWeb) {
+      final list = _webStore.putIfAbsent(table, () => []);
+      final initialLen = list.length;
+      list.removeWhere((x) => x['id']?.toString() == id);
+      try {
+        final p = await SharedPreferences.getInstance();
+        await p.setString('web_db_$table', jsonEncode(list));
+      } catch (_) {}
+      return initialLen - list.length;
+    }
     final db = await instance.database;
     return await db!.delete(table, where: 'id = ?', whereArgs: [id]);
   }
   
   Future<List<Map<String, dynamic>>> queryAll(String table) async {
-    if (kIsWeb) return [];
+    if (kIsWeb) {
+      if (!_webStore.containsKey(table)) {
+        try {
+          final p = await SharedPreferences.getInstance();
+          final raw = p.getString('web_db_$table');
+          if (raw != null && raw.isNotEmpty) {
+            final decoded = jsonDecode(raw);
+            if (decoded is List) {
+              _webStore[table] = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+            }
+          }
+        } catch (_) {}
+      }
+      return List<Map<String, dynamic>>.from(_webStore[table] ?? []);
+    }
     final db = await instance.database;
     return await db!.query(table);
   }
 
   Future<int> deleteAll(String table) async {
-    if (kIsWeb) return 0;
+    if (kIsWeb) {
+      final count = _webStore[table]?.length ?? 0;
+      _webStore[table]?.clear();
+      try {
+        final p = await SharedPreferences.getInstance();
+        await p.remove('web_db_$table');
+      } catch (_) {}
+      return count;
+    }
     final db = await instance.database;
     return await db!.delete(table);
   }
 
   Future<void> clearAll() async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      _webStore.clear();
+      try {
+        final p = await SharedPreferences.getInstance();
+        await p.remove('web_db_items');
+        await p.remove('web_db_parties');
+        await p.remove('web_db_transactions');
+        await p.remove('web_db_sync_queue');
+      } catch (_) {}
+      return;
+    }
     final db = await instance.database;
     await db!.delete('items');
     await db.delete('parties');

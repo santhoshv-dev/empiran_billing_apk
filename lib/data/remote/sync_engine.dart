@@ -94,15 +94,33 @@ class SyncEngine {
     switch (entityType) {
       case 'transaction':
         if (operation == 'CREATE') {
-          payload['clientTransactionId'] = entityId; // Idempotency key
-          await store.api.createTransaction(businessId, payload);
+          payload['clientTransactionId'] = entityId;
+          final res = await store.api.createTransaction(businessId, payload);
+          if (res['id'] != null) {
+            final newId = res['id'].toString();
+            final idx = store.transactions.indexWhere((x) => x.id == entityId);
+            if (idx != -1) {
+              store.transactions[idx].id = newId;
+            }
+          }
         } else if (operation == 'DELETE') {
           await store.api.deleteTransaction(businessId, entityId);
         }
         break;
       case 'item':
         if (operation == 'CREATE') {
-          await store.api.createItem(businessId, payload);
+          final res = await store.api.createItem(businessId, payload);
+          if (res['id'] != null) {
+            final newId = res['id'].toString();
+            final idx = store.items.indexWhere((x) => x.id == entityId);
+            if (idx != -1) {
+              store.items[idx].id = newId;
+              await DbHelper.instance.delete('items', entityId);
+              final j = store.items[idx].toJson();
+              j['isService'] = store.items[idx].isService ? 1 : 0;
+              await DbHelper.instance.insert('items', j);
+            }
+          }
         } else if (operation == 'UPDATE') {
           await store.api.updateItem(businessId, entityId, payload);
         } else if (operation == 'DELETE') {
@@ -111,7 +129,16 @@ class SyncEngine {
         break;
       case 'party':
         if (operation == 'CREATE') {
-          await store.api.createParty(businessId, payload);
+          final res = await store.api.createParty(businessId, payload);
+          if (res['id'] != null) {
+            final newId = res['id'].toString();
+            final idx = store.parties.indexWhere((x) => x.id == entityId);
+            if (idx != -1) {
+              store.parties[idx].id = newId;
+              await DbHelper.instance.delete('parties', entityId);
+              await DbHelper.instance.insert('parties', store.parties[idx].toJson());
+            }
+          }
         } else if (operation == 'UPDATE') {
           await store.api.updateParty(businessId, entityId, payload);
         } else if (operation == 'DELETE') {

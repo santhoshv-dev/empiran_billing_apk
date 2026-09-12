@@ -605,20 +605,82 @@ const transactionLabels = <String, String>{
 Future<void> previewDocument(
   BuildContext context,
   AppStore store,
-  BusinessTransaction t,
-) => showDialog(
+  BusinessTransaction t, {
+  bool isThermal = false,
+}) => showDialog(
   context: context,
-  builder: (_) => Dialog(
-    child: SizedBox(
-      width: 900,
-      height: 700,
-      child: PdfPreview(
-        build: (_) => buildInvoicePdf(store.company, t),
-        canChangePageFormat: false,
+  builder: (ctx) {
+    bool thermal = isThermal;
+    return StatefulBuilder(
+      builder: (context, setState) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SizedBox(
+          width: thermal ? 480 : 920,
+          height: 720,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: const BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Colors.black12)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(thermal ? Icons.receipt_long : Icons.description_outlined, color: const Color(0xFF2563EB)),
+                        const SizedBox(width: 8),
+                        Text(
+                          thermal ? 'Supermarket Thermal Receipt (80mm)' : 'Standard Tax Invoice (A4)',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        SegmentedButton<bool>(
+                          segments: const [
+                            ButtonSegment(value: false, label: Text('A4 Invoice'), icon: Icon(Icons.print_outlined)),
+                            ButtonSegment(value: true, label: Text('Thermal 80mm'), icon: Icon(Icons.receipt_long)),
+                          ],
+                          selected: {thermal},
+                          onSelectionChanged: (set) {
+                            setState(() => thermal = set.first);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: PdfPreview(
+                  key: ValueKey(thermal),
+                  build: (_) => thermal
+                      ? buildThermalReceiptPdf(store.company, t)
+                      : buildInvoicePdf(store.company, t),
+                  canChangePageFormat: false,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ),
-  ),
+    );
+  },
 );
+
+Future<void> previewThermalReceipt(
+  BuildContext context,
+  AppStore store,
+  BusinessTransaction t,
+) => previewDocument(context, store, t, isThermal: true);
 
 Future<void> shareDocument(BuildContext context, BusinessTransaction t) async {
   final phone = t.partyPhone.replaceAll(RegExp(r'[^0-9]'), '');

@@ -538,3 +538,139 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
   );
   return doc.save();
 }
+
+Future<Uint8List> buildThermalReceiptPdf(
+  Company c,
+  BusinessTransaction t,
+) async {
+  final doc = pw.Document();
+  final money = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs.');
+  final dateFormat = DateFormat('dd-MM-yyyy hh:mm a');
+
+  doc.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.roll80.copyWith(
+        marginTop: 6,
+        marginBottom: 6,
+        marginLeft: 8,
+        marginRight: 8,
+      ),
+      build: (ctx) => [
+        pw.Center(
+          child: pw.Text(
+            c.name.toUpperCase(),
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+        if (c.address.isNotEmpty)
+          pw.Center(
+            child: pw.Text(
+              c.address,
+              style: const pw.TextStyle(fontSize: 8),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        if (c.phone.isNotEmpty)
+          pw.Center(
+            child: pw.Text(
+              'Ph: ${c.phone}',
+              style: const pw.TextStyle(fontSize: 8),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        if (c.gstin.isNotEmpty)
+          pw.Center(
+            child: pw.Text(
+              'GSTIN: ${c.gstin}',
+              style: const pw.TextStyle(fontSize: 8),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        pw.SizedBox(height: 4),
+        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('Bill No: ${t.number}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            pw.Text(t.paymentMode.toUpperCase(), style: const pw.TextStyle(fontSize: 8)),
+          ],
+        ),
+        pw.Text('Date: ${dateFormat.format(t.date)}', style: const pw.TextStyle(fontSize: 8)),
+        if (t.partyName.isNotEmpty && t.partyName.toLowerCase() != 'walk-in customer')
+          pw.Text('Customer: ${t.partyName}', style: const pw.TextStyle(fontSize: 8)),
+        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Row(
+          children: [
+            pw.Expanded(flex: 5, child: pw.Text('Item', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
+            pw.Expanded(flex: 2, child: pw.Text('Qty', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
+            pw.Expanded(flex: 3, child: pw.Text('Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
+            pw.Expanded(flex: 3, child: pw.Text('Total', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
+          ],
+        ),
+        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        for (final li in t.lines)
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(vertical: 2),
+            child: pw.Row(
+              children: [
+                pw.Expanded(flex: 5, child: pw.Text(li.name, style: const pw.TextStyle(fontSize: 8))),
+                pw.Expanded(flex: 2, child: pw.Text('${li.quantity}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8))),
+                pw.Expanded(flex: 3, child: pw.Text(li.price.toStringAsFixed(2), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8))),
+                pw.Expanded(flex: 3, child: pw.Text(li.total.toStringAsFixed(2), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8))),
+              ],
+            ),
+          ),
+        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('Sub Total:', style: const pw.TextStyle(fontSize: 8)),
+            pw.Text(money.format(t.subtotal), style: const pw.TextStyle(fontSize: 8)),
+          ],
+        ),
+        if (t.discount > 0)
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Discount:', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text('-${money.format(t.discount)}', style: const pw.TextStyle(fontSize: 8)),
+            ],
+          ),
+        if (t.cgst + t.sgst > 0)
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Tax / GST:', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text(money.format(t.cgst + t.sgst), style: const pw.TextStyle(fontSize: 8)),
+            ],
+          ),
+        pw.SizedBox(height: 2),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('GRAND TOTAL:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.Text(money.format(t.total), style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+          ],
+        ),
+        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Center(
+          child: pw.Text(
+            'Total Items: ${t.lines.length} • Qty: ${t.lines.fold<double>(0, (acc, l) => acc + l.quantity)}',
+            style: const pw.TextStyle(fontSize: 8),
+          ),
+        ),
+        pw.SizedBox(height: 4),
+        pw.Center(
+          child: pw.Text(
+            'Thank you! Visit again.',
+            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  return doc.save();
+}
+

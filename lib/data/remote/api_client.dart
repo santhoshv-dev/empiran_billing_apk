@@ -296,4 +296,18 @@ class ApiClient {
       _map(await dio.post('/email/test', data: toEmail != null ? {'toEmail': toEmail} : {}));
   Future<Map<String, dynamic>> sendInvoiceEmail(Map<String, dynamic> data) async =>
       _map(await dio.post('/email/invoice', data: data));
+
+  Future<Map<String, dynamic>?> getItemImage(String businessId, String itemId) async {
+    try {
+      return _map(await dio.get('/businesses/$businessId/items/$itemId/image'));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadItemImageBase64(String businessId, String itemId, String base64) async =>
+      _map(await dio.post('/businesses/$businessId/items/$itemId/image/base64', data: {'base64Data': base64}));
+
+  Future<void> deleteItemImage(String businessId, String itemId) async =>
+      dio.delete('/businesses/$businessId/items/$itemId/image');
 }
