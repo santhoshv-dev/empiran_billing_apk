@@ -1,6 +1,12 @@
 import 'dart:convert';
 
 double _d(dynamic value) => (value as num?)?.toDouble() ?? 0;
+bool _b(dynamic value) {
+  if (value is bool) return value;
+  if (value is int) return value != 0;
+  if (value is String) return value == '1' || value.toLowerCase() == 'true';
+  return false;
+}
 String _transactionType(dynamic value) => switch ('$value') {
       'sale_invoice' => 'order',
       'estimate' => 'quotation',
@@ -13,6 +19,47 @@ Map<String, dynamic> _transactionMeta(dynamic value) {
   } catch (_) {
     return {};
   }
+}
+
+List<InvoiceLine> _parseLines(dynamic raw) {
+  if (raw == null) return [];
+  if (raw is String) {
+    if (raw.trim().isEmpty) return [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded
+            .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+  if (raw is List) {
+    return raw
+        .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+  return [];
+}
+
+Map<String, String> _parseDispatch(dynamic raw, dynamic notes) {
+  if (raw is Map) {
+    return raw.map((k, v) => MapEntry(k.toString(), v.toString()));
+  }
+  if (raw is String && raw.trim().isNotEmpty) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k.toString(), v.toString()));
+      }
+    } catch (_) {}
+  }
+  final meta = _transactionMeta(notes)['dispatch'];
+  if (meta is Map) {
+    return meta.map((k, v) => MapEntry(k.toString(), v.toString()));
+  }
+  return {};
 }
 
 class Company {
@@ -108,7 +155,7 @@ class Item {
         unit: j['unit'] ?? 'Pcs',
         salesPrice: _d(j['salesPrice']),
         purchasePrice: _d(j['purchasePrice']),
-        isService: j['isService'] ?? false,
+        isService: _b(j['isService']),
         currentStock: _d(j['currentStock']),
         lowStockLimit: _d(j['lowStockLimit']),
         image: j['image'] ?? j['imageUrl'],
@@ -279,9 +326,7 @@ class BusinessTransaction {
         type: _transactionType(j['type'] ?? j['txnType'] ?? 'order'),
         number: j['number'] ?? j['txnNo'] ?? '',
         date: DateTime.tryParse('${j['date']}') ?? DateTime.now(),
-        lines: ((j['lines'] ?? j['lineItems'] ?? []) as List)
-            .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
+        lines: _parseLines(j['lines'] ?? j['lineItems']),
         partyName: j['partyName'] ?? '',
         partyPhone: j['partyPhone'] ?? '',
         partyAddress: j['partyAddress'] ?? '',
@@ -290,9 +335,7 @@ class BusinessTransaction {
         paid: _d(j['paid'] ?? j['paidAmount']),
         paymentMode: j['paymentMode'] ?? 'Cash',
         status: j['status'] ?? 'Unpaid',
-        dispatch: Map<String, String>.from(
-          j['dispatch'] ?? _transactionMeta(j['notes'])['dispatch'] ?? {},
-        ),
+        dispatch: _parseDispatch(j['dispatch'], j['notes']),
       );
   Map<String, dynamic> toJson() => {
         'id': id,

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
   ApiClient({Dio? dio})
@@ -19,8 +20,9 @@ class ApiClient {
     this.dio.interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) {
-              if (token != null)
+              if (token != null) {
                 options.headers['Authorization'] = 'Bearer $token';
+              }
               // Prevent Dio from dropping baseUrl path segments (e.g. /api/v1/)
               // when relative paths begin with a leading slash
               if (!options.path.startsWith('http://') &&
@@ -321,4 +323,80 @@ class ApiClient {
 
   Future<void> deleteItemImage(String businessId, String itemId) async =>
       dio.delete('/businesses/$businessId/items/$itemId/image');
+
+  // Password management
+  Future<Response<dynamic>> forgotPassword(String email) =>
+      dio.post('/auth/forgot-password', data: {'email': email});
+
+  Future<Response<dynamic>> resetPassword({
+    required String token,
+    required String newPassword,
+  }) =>
+      dio.post('/auth/reset-password', data: {
+        'token': token,
+        'newPassword': newPassword,
+      });
+
+  Future<Response<dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) =>
+      dio.post('/auth/change-password', data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+
+  // User management alias methods mapping to StaffController
+  Future<List<Map<String, dynamic>>> getUsers(String businessId) =>
+      getStaff(businessId);
+
+  Future<Map<String, dynamic>> createUser(
+    String businessId,
+    Map<String, dynamic> data,
+  ) =>
+      createStaff(businessId, data);
+
+  Future<Map<String, dynamic>> updateUser(
+    String businessId,
+    String userId,
+    Map<String, dynamic> data,
+  ) =>
+      updateStaffRole(
+        businessId,
+        userId,
+        data['role']?.toString() ?? 'Biller',
+      );
+
+  Future<void> deleteUser(String businessId, String userId) =>
+      deleteStaff(businessId, userId);
+
+  /// Resolves the current active business GUID.
+  /// If cached ID is not a valid GUID or is 'local', fetches businesses from API.
+  Future<String?> getActiveBusinessId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString('company_id');
+    if (cached != null && cached.isNotEmpty && cached != 'local' && _isGuid(cached)) {
+      return cached;
+    }
+    if (token != null && token!.isNotEmpty) {
+      try {
+        final list = await getBusinesses();
+        if (list.isNotEmpty) {
+          final id = list.first['id']?.toString();
+          if (id != null && id.isNotEmpty && _isGuid(id)) {
+            await prefs.setString('company_id', id);
+            return id;
+          }
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  static bool _isGuid(String val) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(val.trim());
+  }
 }
+

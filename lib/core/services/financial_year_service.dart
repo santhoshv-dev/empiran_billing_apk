@@ -24,4 +24,6 @@ class FinancialYearService {
     final paddedCounter = counter.toString().padLeft(4, '0');
     return '$prefix/$fy/$paddedCounter';
   }
+
+  static String currentTag({DateTime? date}) => getCurrentFinancialYear(date: date);
 }

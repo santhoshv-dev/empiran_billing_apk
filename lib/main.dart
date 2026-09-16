@@ -1,287 +1,129 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'app_store.dart';
-import 'core/theme/app_theme.dart';
-import 'package:dio/dio.dart';
-import 'suite.dart';
-import 'password_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// The public entry point is sign-in only; administrators manage accounts.
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, required this.store, required this.onLogin});
-  final AppStore store;
-  final Future<void> Function(String, String) onLogin;
-  @override
-  State<LoginScreen> createState() => _LoginState();
+import 'core/theme/app_theme.dart';
+import 'data/remote/api_client.dart';
+import 'features/auth/data/repositories/auth_repository.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
+import 'features/auth/presentation/pages/change_password_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
+import 'features/invoices/data/repositories/invoices_repository.dart';
+import 'features/invoices/presentation/bloc/invoices_bloc.dart';
+import 'features/invoices/presentation/bloc/invoices_event.dart';
+import 'features/parties/data/repositories/parties_repository.dart';
+import 'features/parties/presentation/bloc/parties_bloc.dart';
+import 'features/parties/presentation/bloc/parties_event.dart';
+import 'features/products/data/repositories/products_repository.dart';
+import 'features/products/presentation/bloc/products_bloc.dart';
+import 'features/products/presentation/bloc/products_event.dart';
+import 'features/settings/data/repositories/settings_repository.dart';
+import 'features/settings/presentation/bloc/settings_bloc.dart';
+import 'features/settings/presentation/bloc/settings_event.dart';
+import 'features/shell/presentation/pages/shell_page.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  final apiClient = ApiClient();
+
+  runApp(EmpiranApp(apiClient: apiClient));
 }
 
-class _LoginState extends State<LoginScreen> {
-  final form = GlobalKey<FormState>();
-  final username = TextEditingController();
-  final password = TextEditingController();
-  bool busy = false;
-  bool showPassword = false;
-  String? error;
+class EmpiranApp extends StatelessWidget {
+  final ApiClient apiClient;
 
-  @override
-  void dispose() {
-    username.dispose();
-    password.dispose();
-    super.dispose();
-  }
-
-  Future<void> signIn() async {
-    if (busy || !form.currentState!.validate()) return;
-    FocusScope.of(context).unfocus();
-    setState(() {
-      busy = true;
-      error = null;
-    });
-    try {
-      await widget.onLogin(username.text.trim(), password.text);
-    } catch (exception) {
-      if (mounted) {
-        setState(() => error = exception is DioException
-            ? exception.message ?? 'Unable to sign in. Please try again.'
-            : 'Unable to sign in. Please try again.');
-      }
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
+  const EmpiranApp({super.key, required this.apiClient});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Scaffold(
-      body: SafeArea(
-          child: Center(
-              child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: AutofillGroup(
-              child: Form(
-                  key: form,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                                gradient: AppGradients.primary,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: AppShadows.soft),
-                            child: const Icon(Icons.receipt_long_rounded,
-                                color: Colors.white, size: 42),
-                          )),
-                      const SizedBox(height: 24),
-                      Text('Billing App',
-                          style: theme.textTheme.headlineLarge
-                              ?.copyWith(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
-                      Text('Welcome back. Let’s get to business.',
-                          style: theme.textTheme.bodyLarge),
-                      const SizedBox(height: 32),
-                      Card(
-                          margin: EdgeInsets.zero,
-                          child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text('Sign in',
-                                        style: theme.textTheme.headlineSmall),
-                                    const SizedBox(height: 24),
-                                    TextFormField(
-                                        controller: username,
-                                        enabled: !busy,
-                                        autofillHints: const [
-                                          AutofillHints.username
-                                        ],
-                                        textInputAction: TextInputAction.next,
-                                        decoration: const InputDecoration(
-                                            labelText: 'Username or email',
-                                            prefixIcon: Icon(
-                                                Icons.person_outline_rounded)),
-                                        validator: (value) => value == null ||
-                                                value.trim().isEmpty
-                                            ? 'Enter your username or email.'
-                                            : null),
-                                    const SizedBox(height: 16),
-                                    TextFormField(
-                                        controller: password,
-                                        enabled: !busy,
-                                        obscureText: !showPassword,
-                                        autofillHints: const [
-                                          AutofillHints.password
-                                        ],
-                                        textInputAction: TextInputAction.done,
-                                        onFieldSubmitted: (_) => signIn(),
-                                        decoration: InputDecoration(
-                                            labelText: 'Password',
-                                            prefixIcon: const Icon(
-                                                Icons.lock_outline_rounded),
-                                            suffixIcon: IconButton(
-                                                tooltip: showPassword
-                                                    ? 'Hide password'
-                                                    : 'Show password',
-                                                onPressed: () => setState(() =>
-                                                    showPassword =
-                                                        !showPassword),
-                                                icon: Icon(showPassword
-                                                    ? Icons
-                                                        .visibility_off_outlined
-                                                    : Icons
-                                                        .visibility_outlined))),
-                                        validator: (value) =>
-                                            value == null || value.isEmpty
-                                                ? 'Enter your password.'
-                                                : null),
-                                    Align(
-                                        alignment: Alignment.centerRight,
-                                        child: TextButton(
-                                            onPressed: busy
-                                                ? null
-                                                : () => Navigator.of(context)
-                                                    .push(MaterialPageRoute<
-                                                            void>(
-                                                        builder: (_) =>
-                                                            PasswordScreen(
-                                                                api: widget
-                                                                    .store.api,
-                                                                action:
-                                                                    PasswordAction
-                                                                        .forgot))),
-                                            child: const Text(
-                                                'Forgot password?'))),
-                                    if (error != null)
-                                      Padding(
-                                          padding:
-                                              const EdgeInsets.only(bottom: 16),
-                                          child: Semantics(
-                                              liveRegion: true,
-                                              child: Text(error!,
-                                                  style: TextStyle(
-                                                      color: colors.error)))),
-                                    FilledButton(
-                                        onPressed: busy ? null : signIn,
-                                        child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 14),
-                                            child: Text(busy
-                                                ? 'Signing in...'
-                                                : 'Sign in'))),
-                                  ]))),
-                      const SizedBox(height: 24),
-                      Text('Need an account? Contact your administrator.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall),
-                    ],
-                  ))),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<ApiClient>.value(value: apiClient),
+        RepositoryProvider<AuthRepository>(
+          create: (context) => AuthRepository(apiClient: apiClient),
         ),
-      ))),
+        RepositoryProvider<SettingsRepository>(
+          create: (context) => SettingsRepository(apiClient: apiClient),
+        ),
+        RepositoryProvider<ProductsRepository>(
+          create: (context) => ProductsRepository(apiClient: apiClient),
+        ),
+        RepositoryProvider<PartiesRepository>(
+          create: (context) => PartiesRepository(apiClient: apiClient),
+        ),
+        RepositoryProvider<InvoicesRepository>(
+          create: (context) => InvoicesRepository(apiClient: apiClient),
+        ),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(
+            create: (context) => AuthBloc(
+              authRepository: context.read<AuthRepository>(),
+            )..add(const AuthCheckRequested()),
+          ),
+          BlocProvider<SettingsBloc>(
+            create: (context) => SettingsBloc(
+              settingsRepository: context.read<SettingsRepository>(),
+            )..add(const LoadSettingsRequested()),
+          ),
+          BlocProvider<ProductsBloc>(
+            create: (context) => ProductsBloc(
+              productsRepository: context.read<ProductsRepository>(),
+            )..add(const LoadProductsRequested()),
+          ),
+          BlocProvider<PartiesBloc>(
+            create: (context) => PartiesBloc(
+              partiesRepository: context.read<PartiesRepository>(),
+            )..add(const LoadPartiesRequested()),
+          ),
+          BlocProvider<InvoicesBloc>(
+            create: (context) => InvoicesBloc(
+              invoicesRepository: context.read<InvoicesRepository>(),
+            )..add(const LoadInvoicesRequested()),
+          ),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Billing App',
+          theme: AppTheme.theme,
+          darkTheme: AppTheme.theme,
+          themeMode: ThemeMode.light,
+          onGenerateRoute: (settings) {
+            final uri = Uri.tryParse(settings.name ?? '');
+            if (uri?.path == '/reset-password') {
+              return MaterialPageRoute<void>(
+                settings: settings,
+                builder: (_) => ChangePasswordPage(
+                  isForgot: false,
+                  token: uri!.queryParameters['token'],
+                ),
+              );
+            }
+            return null;
+          },
+          home: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              if (state is AuthInitial || state is AuthLoading) {
+                return const SplashScreen();
+              }
+              if (state is AuthAuthenticated) {
+                return const ShellPage();
+              }
+              return const LoginPage();
+            },
+          ),
+        ),
+      ),
     );
   }
 }
 
-void main() => runApp(const EmpiranApp());
-
-class EmpiranApp extends StatefulWidget {
-  const EmpiranApp({super.key});
-  @override
-  State<EmpiranApp> createState() => _EmpiranAppState();
-}
-
-class _EmpiranAppState extends State<EmpiranApp> {
-  final store = AppStore();
-  bool loading = true, authenticated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    store.addListener(_refreshTheme);
-    _start();
-  }
-
-  void _refreshTheme() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    store.removeListener(_refreshTheme);
-    store.dispose();
-    super.dispose();
-  }
-
-  Future<void> _start() async {
-    await Future.wait([
-      store.load(),
-      Future.delayed(const Duration(milliseconds: 900)),
-    ]);
-    final p = await SharedPreferences.getInstance();
-    final expiry = DateTime.tryParse(p.getString('sessionExpiry') ?? '');
-    if (mounted) {
-      setState(() {
-        authenticated = store.remoteMode &&
-            store.currentUser != null &&
-            (expiry?.isAfter(DateTime.now()) ?? false);
-        loading = false;
-      });
-    }
-  }
-
-  Future<void> login(String username, String password) async {
-    final clean = username.trim().toLowerCase();
-    await store.remoteLogin(clean, password);
-    if (mounted) setState(() => authenticated = true);
-  }
-
-  Future<void> logout() async {
-    final p = await SharedPreferences.getInstance();
-    await p.remove('sessionToken');
-    await p.remove('sessionExpiry');
-    await p.remove('currentUser');
-    store.currentUser = null;
-    await store.disconnectApi();
-    setState(() => authenticated = false);
-  }
-
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Billing App',
-        theme: AppTheme.theme,
-        darkTheme: AppTheme.theme,
-        themeMode: ThemeMode.light,
-        onGenerateRoute: (settings) {
-          final uri = Uri.tryParse(settings.name ?? '');
-          if (uri?.path == '/reset-password') {
-            return MaterialPageRoute<void>(
-                settings: settings,
-                builder: (_) => PasswordScreen(
-                    api: store.api,
-                    action: PasswordAction.reset,
-                    token: uri!.queryParameters['token']));
-          }
-          return null;
-        },
-        home: loading
-            ? const SplashScreen()
-            : authenticated
-                ? SuiteShell(store: store, onLogout: logout)
-                : LoginScreen(store: store, onLogin: login),
-      );
-}
-
-/// SWeShare-Inspired Splash Screen: Airy Ice-Blue Canvas with Floating Logo and Shimmer
+/// Splash Screen: Airy Ice-Blue Canvas with Floating Logo and Shimmer
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -301,11 +143,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: AppColors.lightBackground,
       body: Center(
         child: AnimatedBuilder(
           animation: _ctrl,
@@ -317,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
                 height: 104,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isDark ? AppColors.darkSurface : Colors.white,
+                  color: Colors.white,
                   border: Border.all(
                     color: AppColors.primary
                         .withValues(alpha: 0.35 + _ctrl.value * 0.3),
@@ -354,12 +193,10 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
+              const Text(
                 'Billing & Business Management',
                 style: TextStyle(
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.lightTextSecondary,
+                  color: AppColors.lightTextSecondary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
@@ -374,9 +211,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: LinearProgressIndicator(
                     value: _ctrl.value,
                     color: AppColors.primary,
-                    backgroundColor: isDark
-                        ? AppColors.darkSurfaceContainer
-                        : AppColors.lightSurfaceContainer,
+                    backgroundColor: AppColors.lightSurfaceContainer,
                   ),
                 ),
               ),

@@ -144,6 +144,17 @@ class DbHelper {
         .insert(table, data, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  Future<int> insertOrUpdate(
+    String table,
+    Map<String, dynamic> data, [
+    String? id,
+  ]) {
+    if (id != null && !data.containsKey('id')) {
+      data['id'] = id;
+    }
+    return insert(table, data);
+  }
+
   Future<int> update(String table, Map<String, dynamic> data, String id) async {
     if (kIsWeb) {
       final list = _webStore.putIfAbsent(table, () => []);
