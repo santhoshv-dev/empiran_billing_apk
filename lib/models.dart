@@ -331,7 +331,7 @@ class BusinessTransaction {
         partyPhone: j['partyPhone'] ?? '',
         partyAddress: j['partyAddress'] ?? '',
         partyGstin: j['partyGstin'] ?? '',
-        isGst: j['isGst'] ?? (_d(j['cgst']) > 0),
+        isGst: _b(j['isGst']) || (_d(j['cgst']) > 0),
         paid: _d(j['paid'] ?? j['paidAmount']),
         paymentMode: j['paymentMode'] ?? 'Cash',
         status: j['status'] ?? 'Unpaid',

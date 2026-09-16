@@ -80,9 +80,7 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
         ],
       ),
-    );
-
-    Future.delayed(const Duration(milliseconds: 500), () => catController.dispose());
+    ).then((_) => catController.dispose());
   }
 
   @override
@@ -208,6 +206,7 @@ class _ProductsPageState extends State<ProductsPage> {
                   SizedBox(
                     width: 180,
                     child: DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _stockFilter,
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),

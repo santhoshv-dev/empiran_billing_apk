@@ -56,6 +56,7 @@ class StaffManagementTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
+                    isExpanded: true,
                     initialValue: ['Admin', 'Manager', 'Biller'].contains(role) ? role : 'Biller',
                     decoration: const InputDecoration(labelText: 'Staff Role'),
                     items: const [
@@ -115,9 +116,7 @@ class StaffManagementTab extends StatelessWidget {
           ],
         ),
       ),
-    );
-
-    Future.delayed(const Duration(milliseconds: 500), () {
+    ).then((_) {
       name.dispose();
       username.dispose();
       email.dispose();

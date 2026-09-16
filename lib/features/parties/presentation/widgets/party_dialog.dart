@@ -7,140 +7,176 @@ import '../bloc/parties_bloc.dart';
 import '../bloc/parties_event.dart';
 
 void showPartyDialog(BuildContext context, {Party? party, String? defaultType}) {
-  final n = TextEditingController(text: party?.name ?? '');
-  final ph = TextEditingController(text: party?.phone ?? '');
-  final em = TextEditingController(text: party?.email ?? '');
-  final gst = TextEditingController(text: party?.gstin ?? '');
-  final address = TextEditingController(text: party?.address ?? '');
-  final balance = TextEditingController(text: '${party?.balance ?? 0}');
-  String type = party?.type ?? defaultType ?? 'Customer';
-  String? error;
-
   showDialog(
     context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, set) => AlertDialog(
-        title: Text(party == null ? 'New Contact Account' : 'Edit Contact Account'),
-        content: SizedBox(
-          width: 500,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'Customer', label: Text('Customer')),
-                    ButtonSegment(value: 'Supplier', label: Text('Supplier')),
-                    ButtonSegment(value: 'Both', label: Text('Both')),
-                  ],
-                  selected: {type},
-                  onSelectionChanged: (s) => set(() => type = s.first),
-                ),
-                const SizedBox(height: 16),
-                EmpiranTextField(
-                  controller: n,
-                  label: 'Contact / Business Name',
-                  isRequired: true,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: EmpiranTextField(
-                        controller: ph,
-                        label: 'Mobile / Phone',
-                        isRequired: true,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: EmpiranTextField(
-                        controller: em,
-                        label: 'Email',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: EmpiranTextField(
-                        controller: gst,
-                        label: 'GSTIN / Tax ID',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: EmpiranTextField(
-                        controller: balance,
-                        label: 'Opening Balance (₹)',
-                        hint: '0.00',
-                        isNumber: true,
-                        isDecimal: true,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                EmpiranTextField(
-                  controller: address,
-                  label: 'Billing & Shipping Address',
-                  maxLines: 2,
-                ),
-                if (error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
-                ],
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          if (party != null)
-            TextButton(
-              onPressed: () {
-                context.read<PartiesBloc>().add(DeletePartyRequested(party));
-                Navigator.pop(ctx);
-              },
-              child: const Text('Delete', style: TextStyle(color: AppColors.error)),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          EmpiranButton(
-            label: 'Save Contact',
-            onPressed: () {
-              if (n.text.trim().isEmpty || ph.text.trim().isEmpty) {
-                set(() => error = 'Name and phone are required.');
-                return;
-              }
-
-              final savedParty = Party(
-                id: party?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
-                name: n.text.trim(),
-                phone: ph.text.trim(),
-                email: em.text.trim(),
-                type: type,
-                gstin: gst.text.trim(),
-                address: address.text.trim(),
-                balance: double.tryParse(balance.text) ?? 0,
-              );
-
-              context.read<PartiesBloc>().add(SavePartyRequested(savedParty));
-              Navigator.pop(ctx);
-            },
-          ),
-        ],
-      ),
+    builder: (_) => BlocProvider.value(
+      value: context.read<PartiesBloc>(),
+      child: _PartyDialog(party: party, defaultType: defaultType),
     ),
   );
+}
 
-  Future.delayed(const Duration(milliseconds: 500), () {
-    for (final c in [n, ph, em, gst, address, balance]) {
-      c.dispose();
+class _PartyDialog extends StatefulWidget {
+  const _PartyDialog({this.party, this.defaultType});
+  final Party? party;
+  final String? defaultType;
+
+  @override
+  State<_PartyDialog> createState() => _PartyDialogState();
+}
+
+class _PartyDialogState extends State<_PartyDialog> {
+  late final TextEditingController _name;
+  late final TextEditingController _phone;
+  late final TextEditingController _email;
+  late final TextEditingController _gstin;
+  late final TextEditingController _address;
+  late final TextEditingController _balance;
+  late String _type;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.party;
+    _name    = TextEditingController(text: p?.name    ?? '');
+    _phone   = TextEditingController(text: p?.phone   ?? '');
+    _email   = TextEditingController(text: p?.email   ?? '');
+    _gstin   = TextEditingController(text: p?.gstin   ?? '');
+    _address = TextEditingController(text: p?.address ?? '');
+    _balance = TextEditingController(text: '${p?.balance ?? 0}');
+    _type    = p?.type ?? widget.defaultType ?? 'Customer';
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _email.dispose();
+    _gstin.dispose();
+    _address.dispose();
+    _balance.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_name.text.trim().isEmpty || _phone.text.trim().isEmpty) {
+      setState(() => _error = 'Name and phone are required.');
+      return;
     }
-  });
+    final savedParty = Party(
+      id: widget.party?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      name:    _name.text.trim(),
+      phone:   _phone.text.trim(),
+      email:   _email.text.trim(),
+      type:    _type,
+      gstin:   _gstin.text.trim(),
+      address: _address.text.trim(),
+      balance: double.tryParse(_balance.text) ?? 0,
+    );
+    context.read<PartiesBloc>().add(SavePartyRequested(savedParty));
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEdit = widget.party != null;
+    return AlertDialog(
+      title: Text(isEdit ? 'Edit Contact Account' : 'New Contact Account'),
+      content: SizedBox(
+        width: 500,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'Customer', label: Text('Customer')),
+                  ButtonSegment(value: 'Supplier', label: Text('Supplier')),
+                  ButtonSegment(value: 'Both',     label: Text('Both')),
+                ],
+                selected: {_type},
+                onSelectionChanged: (s) => setState(() => _type = s.first),
+              ),
+              const SizedBox(height: 16),
+              EmpiranTextField(
+                controller: _name,
+                label: 'Contact / Business Name',
+                isRequired: true,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: EmpiranTextField(
+                      controller: _phone,
+                      label: 'Mobile / Phone',
+                      isRequired: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: EmpiranTextField(
+                      controller: _email,
+                      label: 'Email',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: EmpiranTextField(
+                      controller: _gstin,
+                      label: 'GSTIN / Tax ID',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: EmpiranTextField(
+                      controller: _balance,
+                      label: 'Opening Balance (₹)',
+                      hint: '0.00',
+                      isNumber: true,
+                      isDecimal: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              EmpiranTextField(
+                controller: _address,
+                label: 'Billing & Shipping Address',
+                maxLines: 2,
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        if (isEdit)
+          TextButton(
+            onPressed: () {
+              context.read<PartiesBloc>().add(DeletePartyRequested(widget.party!));
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        EmpiranButton(
+          label: 'Save Contact',
+          onPressed: _save,
+        ),
+      ],
+    );
+  }
 }
