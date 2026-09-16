@@ -52,7 +52,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     try {
       if (widget.isForgot) {
         await repo.forgotPassword(_emailController.text.trim());
-        _message = 'If an account exists with this email, recovery instructions have been sent.';
+        _message = 'A temporary password has been sent to your email.\n\nLog in with it, then go to Settings → Change Password to set a new password.';
       } else {
         await repo.changePassword(
           currentPassword: _currentPasswordController.text,

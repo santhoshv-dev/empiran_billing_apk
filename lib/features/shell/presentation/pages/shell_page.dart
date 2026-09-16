@@ -25,6 +25,97 @@ class ShellPage extends StatefulWidget {
 class _ShellPageState extends State<ShellPage> {
   int _selectedIndex = 0;
 
+  void _showLogoutConfirm(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    size: 36,
+                    color: AppColors.error,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Sign Out',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Are you sure you want to sign out?\nAny unsaved work will be lost.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+                ),
+                const SizedBox(height: 28),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          context.read<AuthBloc>().add(const AuthLogoutRequested());
+                        },
+                        child: const Text(
+                          'Sign Out',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 900;
@@ -183,7 +274,7 @@ class _ShellPageState extends State<ShellPage> {
                         IconButton(
                           tooltip: 'Logout',
                           icon: const Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
-                          onPressed: () => context.read<AuthBloc>().add(const AuthLogoutRequested()),
+                          onPressed: () => _showLogoutConfirm(context),
                         ),
                       ],
                     ),
@@ -259,7 +350,7 @@ class _ShellPageState extends State<ShellPage> {
           IconButton(
             tooltip: 'Logout',
             icon: const Icon(Icons.logout_rounded, color: AppColors.error),
-            onPressed: () => context.read<AuthBloc>().add(const AuthLogoutRequested()),
+            onPressed: () => _showLogoutConfirm(context),
           ),
         ],
       ),
