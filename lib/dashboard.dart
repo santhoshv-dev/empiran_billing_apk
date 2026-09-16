@@ -46,7 +46,8 @@ class DashboardScreen extends StatelessWidget {
         t.type == 'purchase_bill' &&
         !t.date.isBefore(todayStart) &&
         t.date.isBefore(todayEnd));
-    final todayPurchasesTotal = todayPurchases.fold<double>(0, (s, t) => s + t.total);
+    final todayPurchasesTotal =
+        todayPurchases.fold<double>(0, (s, t) => s + t.total);
 
     final totalReceivables = store.parties.fold<double>(
       0,
@@ -60,7 +61,8 @@ class DashboardScreen extends StatelessWidget {
     final recentTransactions = store.transactions.take(6).toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x6, vertical: AppSpacing.x5),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.x6, vertical: AppSpacing.x5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -70,14 +72,18 @@ class DashboardScreen extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.x6),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF0066FF), Color(0xFF0052CC), Color(0xFF1E40AF)],
+                colors: [
+                  Color(0xFF007F73),
+                  Color(0xFF005E55),
+                  Color(0xFF1E40AF)
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(AppRadii.extraLarge),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x350066FF),
+                  color: Color(0x35007F73),
                   blurRadius: 20,
                   offset: Offset(0, 8),
                 ),
@@ -96,7 +102,8 @@ class DashboardScreen extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -104,7 +111,8 @@ class DashboardScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.verified, color: Colors.white, size: 14),
+                              const Icon(Icons.verified,
+                                  color: Colors.white, size: 14),
                               const SizedBox(width: 6),
                               Text(
                                 store.company.name,
@@ -118,7 +126,8 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -126,7 +135,8 @@ class DashboardScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.shield_outlined, color: Colors.white, size: 14),
+                              const Icon(Icons.shield_outlined,
+                                  color: Colors.white, size: 14),
                               const SizedBox(width: 5),
                               Text(
                                 '${store.currentUserRole} Mode',
@@ -189,12 +199,6 @@ class DashboardScreen extends StatelessWidget {
                         }
                       },
                     ),
-                    EmpiranSyncIndicator(
-                      isOnline: store.remoteMode,
-                      isSyncing: store.syncing,
-                      pendingCount: 0,
-                      onTap: onOpenSync,
-                    ),
                   ],
                 );
 
@@ -254,7 +258,8 @@ class DashboardScreen extends StatelessWidget {
                     }
                   },
                 ),
-                if (PermissionService.canManageProducts(store.currentUserRole)) ...[
+                if (PermissionService.canManageProducts(
+                    store.currentUserRole)) ...[
                   const SizedBox(width: AppSpacing.x3),
                   _buildQuickActionBtn(
                     context,
@@ -310,7 +315,8 @@ class DashboardScreen extends StatelessWidget {
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 900;
-                final isTablet = constraints.maxWidth > 600 && constraints.maxWidth <= 900;
+                final isTablet =
+                    constraints.maxWidth > 600 && constraints.maxWidth <= 900;
                 final crossAxisCount = isWide ? 4 : (isTablet ? 2 : 2);
                 final childAspectRatio = isWide ? 1.6 : (isTablet ? 1.7 : 1.28);
 
@@ -331,10 +337,12 @@ class DashboardScreen extends StatelessWidget {
                       badgeType: EmpiranStatusType.info,
                       onTap: () => onNavigate(2),
                     ),
-                    if (PermissionService.canViewPurchases(store.currentUserRole))
+                    if (PermissionService.canViewPurchases(
+                        store.currentUserRole))
                       EmpiranStatCard(
                         title: 'Today\'s Purchases',
-                        value: AppTypography.formatCurrency(todayPurchasesTotal),
+                        value:
+                            AppTypography.formatCurrency(todayPurchasesTotal),
                         icon: Icons.shopping_bag_rounded,
                         iconColor: const Color(0xFF0284C7),
                         badgeText: '${todayPurchases.length} bills',
@@ -364,9 +372,15 @@ class DashboardScreen extends StatelessWidget {
                       title: 'Inventory Status',
                       value: '${store.items.length} Items',
                       icon: Icons.inventory_2_rounded,
-                      iconColor: lowStockItems.isNotEmpty ? AppColors.error : AppColors.primary,
-                      badgeText: lowStockItems.isNotEmpty ? '${lowStockItems.length} Low Stock' : 'Optimal',
-                      badgeType: lowStockItems.isNotEmpty ? EmpiranStatusType.error : EmpiranStatusType.success,
+                      iconColor: lowStockItems.isNotEmpty
+                          ? AppColors.error
+                          : AppColors.primary,
+                      badgeText: lowStockItems.isNotEmpty
+                          ? '${lowStockItems.length} Low Stock'
+                          : 'Optimal',
+                      badgeType: lowStockItems.isNotEmpty
+                          ? EmpiranStatusType.error
+                          : EmpiranStatusType.success,
                       onTap: () => onNavigate(3),
                     ),
                   ],
@@ -385,7 +399,8 @@ class DashboardScreen extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 1050;
-              final isTablet = constraints.maxWidth > 650 && constraints.maxWidth <= 1050;
+              final isTablet =
+                  constraints.maxWidth > 650 && constraints.maxWidth <= 1050;
               final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
               final childAspectRatio = isDesktop ? 2.1 : (isTablet ? 2.2 : 2.6);
 
@@ -402,7 +417,8 @@ class DashboardScreen extends StatelessWidget {
                     subtitle: 'Create GST bills, orders & receipts',
                     icon: Icons.receipt_long_rounded,
                     accentColor: AppColors.primary,
-                    statBadge: '${store.transactions.where((t) => t.type == 'order' || t.type == 'sale_invoice').length} sales recorded',
+                    statBadge:
+                        '${store.transactions.where((t) => t.type == 'order' || t.type == 'sale_invoice').length} sales recorded',
                     onTap: () => onNavigate(2),
                   ),
                   EmpiranFeatureCard(
@@ -426,18 +442,21 @@ class DashboardScreen extends StatelessWidget {
                     subtitle: 'Draft estimates & convert to orders',
                     icon: Icons.request_quote_rounded,
                     accentColor: const Color(0xFF0D9488),
-                    statBadge: '${store.transactions.where((t) => t.type == 'quotation' || t.type == 'estimate').length} quotes issued',
+                    statBadge:
+                        '${store.transactions.where((t) => t.type == 'quotation' || t.type == 'estimate').length} quotes issued',
                     onTap: () => onNavigate(1),
                   ),
                   if (PermissionService.canViewReports(store.currentUserRole))
                     EmpiranFeatureCard(
                       title: 'Reports & Analytics',
-                      subtitle: 'Financial insights, GST summaries & CSV export',
+                      subtitle:
+                          'Financial insights, GST summaries & CSV export',
                       icon: Icons.analytics_rounded,
                       accentColor: const Color(0xFFE11D48),
                       onTap: () => onNavigate(5),
                     ),
-                  if (PermissionService.canAccessSettings(store.currentUserRole))
+                  if (PermissionService.canAccessSettings(
+                      store.currentUserRole))
                     EmpiranFeatureCard(
                       title: 'Settings & Cloud Sync',
                       subtitle: 'Business profiles, sequences & cloud sync',
@@ -465,7 +484,8 @@ class DashboardScreen extends StatelessWidget {
                       color: Color(0xFFFEE2E2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
+                    child: const Icon(Icons.warning_amber_rounded,
+                        color: AppColors.error, size: 22),
                   ),
                   const SizedBox(width: AppSpacing.x4),
                   Expanded(
@@ -485,7 +505,9 @@ class DashboardScreen extends StatelessWidget {
                           'Reorder: ${lowStockItems.take(3).map((e) => e.name).join(", ")}${lowStockItems.length > 3 ? "..." : ""}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -530,12 +552,14 @@ class DashboardScreen extends StatelessWidget {
                         color: AppColors.primarySubtle,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.receipt_long_rounded, color: AppColors.primary, size: 28),
+                      child: const Icon(Icons.receipt_long_rounded,
+                          color: AppColors.primary, size: 28),
                     ),
                     const SizedBox(height: 12),
                     const Text(
                       'No transactions recorded yet',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
                     const SizedBox(height: 4),
                     const Text(
@@ -556,7 +580,8 @@ class DashboardScreen extends StatelessWidget {
                 final t = recentTransactions[i];
                 final isPaid = t.status.toLowerCase() == 'paid';
                 return EmpiranCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   onTap: () => onPreviewTransaction?.call(t),
                   child: Row(
                     children: [
@@ -566,9 +591,11 @@ class DashboardScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.primarySubtle,
                           borderRadius: BorderRadius.circular(AppRadii.medium),
-                          border: Border.all(color: const Color(0xFFDCEAF9), width: 1),
+                          border: Border.all(
+                              color: const Color(0xFFDCEAF9), width: 1),
                         ),
-                        child: const Icon(Icons.receipt_rounded, color: AppColors.primary, size: 22),
+                        child: const Icon(Icons.receipt_rounded,
+                            color: AppColors.primary, size: 22),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -576,15 +603,20 @@ class DashboardScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              t.partyName.isEmpty ? 'Cash Customer' : t.partyName,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                              t.partyName.isEmpty
+                                  ? 'Cash Customer'
+                                  : t.partyName,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 14),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               '${t.number} • ${t.isGst ? "GST" : "Non-GST"} • ${t.type.replaceAll('_', ' ').toUpperCase()}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
                               ),
                             ),
                           ],
@@ -595,12 +627,15 @@ class DashboardScreen extends StatelessWidget {
                         children: [
                           Text(
                             AppTypography.formatCurrency(t.total),
-                            style: AppTypography.number.copyWith(fontSize: 15, color: AppColors.primaryDark),
+                            style: AppTypography.number.copyWith(
+                                fontSize: 15, color: AppColors.primaryDark),
                           ),
                           const SizedBox(height: 4),
                           EmpiranStatusChip(
                             label: t.status.toUpperCase(),
-                            type: isPaid ? EmpiranStatusType.success : EmpiranStatusType.warning,
+                            type: isPaid
+                                ? EmpiranStatusType.success
+                                : EmpiranStatusType.warning,
                             small: true,
                           ),
                         ],
@@ -638,7 +673,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x080066FF),
+              color: Color(0x08007F73),
               blurRadius: 8,
               offset: Offset(0, 2),
             ),
@@ -661,7 +696,9 @@ class DashboardScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E293B),
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : const Color(0xFF1E293B),
               ),
             ),
           ],

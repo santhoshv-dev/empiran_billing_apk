@@ -54,14 +54,18 @@ class _EmpiranCardState extends State<EmpiranCard> {
           : Matrix4.identity(),
       decoration: BoxDecoration(
         color: widget.gradient == null
-            ? (widget.color ?? (isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurface))
+            ? (widget.color ??
+                (isDark
+                    ? AppColors.darkSurfaceContainer
+                    : AppColors.lightSurface))
             : null,
         gradient: widget.gradient,
         borderRadius: r,
         border: Border.all(
           color: _isHovered && widget.onTap != null
               ? AppColors.primary.withValues(alpha: 0.6)
-              : (widget.borderColor ?? (isDark ? AppColors.darkBorder : AppColors.lightBorder)),
+              : (widget.borderColor ??
+                  (isDark ? AppColors.darkBorder : AppColors.lightBorder)),
           width: 1.2,
         ),
         boxShadow: [
@@ -75,7 +79,7 @@ class _EmpiranCardState extends State<EmpiranCard> {
             BoxShadow(
               color: isDark
                   ? Colors.black.withValues(alpha: 0.3)
-                  : const Color(0x0E0066FF),
+                  : const Color(0x0E007F73),
               blurRadius: 12,
               offset: const Offset(0, 4),
             )
@@ -83,7 +87,7 @@ class _EmpiranCardState extends State<EmpiranCard> {
             BoxShadow(
               color: isDark
                   ? Colors.black.withValues(alpha: 0.15)
-                  : const Color(0x060066FF),
+                  : const Color(0x06007F73),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -97,9 +101,15 @@ class _EmpiranCardState extends State<EmpiranCard> {
           splashColor: AppColors.primary.withValues(alpha: 0.08),
           highlightColor: AppColors.primary.withValues(alpha: 0.04),
           onTap: widget.onTap,
-          onTapDown: widget.onTap != null ? (_) => setState(() => _isPressed = true) : null,
-          onTapUp: widget.onTap != null ? (_) => setState(() => _isPressed = false) : null,
-          onTapCancel: widget.onTap != null ? () => setState(() => _isPressed = false) : null,
+          onTapDown: widget.onTap != null
+              ? (_) => setState(() => _isPressed = true)
+              : null,
+          onTapUp: widget.onTap != null
+              ? (_) => setState(() => _isPressed = false)
+              : null,
+          onTapCancel: widget.onTap != null
+              ? () => setState(() => _isPressed = false)
+              : null,
           child: Padding(
             padding: widget.padding ?? const EdgeInsets.all(AppSpacing.x5),
             child: widget.child,
@@ -175,9 +185,12 @@ class _EmpiranButtonState extends State<EmpiranButton> {
         ];
         break;
       case EmpiranButtonVariant.secondary:
-        bg = isDark ? AppColors.darkSurfaceContainerHighest : AppColors.primarySubtle;
+        bg = isDark
+            ? AppColors.darkSurfaceContainerHighest
+            : AppColors.primarySubtle;
         fg = AppColors.primary;
-        side = BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorderStrong);
+        side = BorderSide(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorderStrong);
         break;
       case EmpiranButtonVariant.outlined:
         bg = Colors.transparent;
@@ -201,7 +214,8 @@ class _EmpiranButtonState extends State<EmpiranButton> {
         break;
     }
 
-    final effectiveRadius = widget.borderRadius ?? BorderRadius.circular(AppRadii.medium);
+    final effectiveRadius =
+        widget.borderRadius ?? BorderRadius.circular(AppRadii.medium);
 
     final childWidget = widget.isLoading
         ? SizedBox(
@@ -213,7 +227,8 @@ class _EmpiranButtonState extends State<EmpiranButton> {
             ),
           )
         : Row(
-            mainAxisSize: widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize:
+                widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (widget.icon != null) ...[
@@ -243,7 +258,8 @@ class _EmpiranButtonState extends State<EmpiranButton> {
         width: widget.isFullWidth ? double.infinity : null,
         decoration: BoxDecoration(
           borderRadius: effectiveRadius,
-          boxShadow: widget.onPressed != null && !widget.isLoading ? shadows : null,
+          boxShadow:
+              widget.onPressed != null && !widget.isLoading ? shadows : null,
         ),
         child: Material(
           color: widget.onPressed == null ? bg.withValues(alpha: 0.5) : bg,
@@ -253,9 +269,15 @@ class _EmpiranButtonState extends State<EmpiranButton> {
           ),
           child: InkWell(
             borderRadius: effectiveRadius,
-            onTapDown: widget.onPressed != null ? (_) => setState(() => _isPressed = true) : null,
-            onTapUp: widget.onPressed != null ? (_) => setState(() => _isPressed = false) : null,
-            onTapCancel: widget.onPressed != null ? () => setState(() => _isPressed = false) : null,
+            onTapDown: widget.onPressed != null
+                ? (_) => setState(() => _isPressed = true)
+                : null,
+            onTapUp: widget.onPressed != null
+                ? (_) => setState(() => _isPressed = false)
+                : null,
+            onTapCancel: widget.onPressed != null
+                ? () => setState(() => _isPressed = false)
+                : null,
             onTap: widget.isLoading ? null : widget.onPressed,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x5),
@@ -329,7 +351,9 @@ class EmpiranTextField extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
                   ),
                 ),
                 if (isRequired)
@@ -351,32 +375,41 @@ class EmpiranTextField extends StatelessWidget {
           enabled: enabled,
           maxLines: maxLines,
           keyboardType: isNumber
-              ? TextInputType.numberWithOptions(decimal: isDecimal, signed: false)
+              ? TextInputType.numberWithOptions(
+                  decimal: isDecimal, signed: false)
               : TextInputType.text,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+            color:
+                isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
           ),
           decoration: InputDecoration(
             hintText: hint,
             helperText: helperText,
-            prefixIcon: prefixWidget ?? (prefixIcon != null ? Icon(prefixIcon, size: 20) : null),
+            prefixIcon: prefixWidget ??
+                (prefixIcon != null ? Icon(prefixIcon, size: 20) : null),
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurface,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            fillColor: isDark
+                ? AppColors.darkSurfaceContainer
+                : AppColors.lightSurface,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadii.medium),
-              borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              borderSide: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadii.medium),
-              borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              borderSide: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadii.medium),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.8),
             ),
           ),
           onChanged: onChanged,
@@ -423,9 +456,13 @@ class SWeShareStepIndicator extends StatelessWidget {
           height: 30,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: (isActive || isPassed) ? AppColors.primary : const Color(0xFFF1F5F9),
+            color: (isActive || isPassed)
+                ? AppColors.primary
+                : const Color(0xFFF1F5F9),
             border: Border.all(
-              color: (isActive || isPassed) ? AppColors.primary : const Color(0xFFCBD5E1),
+              color: (isActive || isPassed)
+                  ? AppColors.primary
+                  : const Color(0xFFCBD5E1),
               width: 1.5,
             ),
             boxShadow: isActive
@@ -446,7 +483,9 @@ class SWeShareStepIndicator extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: (isActive || isPassed) ? Colors.white : const Color(0xFF64748B),
+                      color: (isActive || isPassed)
+                          ? Colors.white
+                          : const Color(0xFF64748B),
                     ),
                   ),
           ),
@@ -474,7 +513,8 @@ class EmpiranSearchBar extends StatefulWidget {
 }
 
 class _EmpiranSearchBarState extends State<EmpiranSearchBar> {
-  late final TextEditingController _controller = TextEditingController(text: widget.initialValue);
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialValue);
 
   @override
   void dispose() {
@@ -492,10 +532,12 @@ class _EmpiranSearchBarState extends State<EmpiranSearchBar> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(AppRadii.medium),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder, width: 1.2),
+        border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            width: 1.2),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x080066FF),
+            color: Color(0x08007F73),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -513,7 +555,8 @@ class _EmpiranSearchBarState extends State<EmpiranSearchBar> {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           hintText: widget.hint,
           prefixIcon: Icon(
             Icons.search,
@@ -659,10 +702,14 @@ class EmpiranStatCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.primarySubtle,
+                  color: isDark
+                      ? AppColors.darkSurfaceContainerHighest
+                      : AppColors.primarySubtle,
                   borderRadius: BorderRadius.circular(AppRadii.medium),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorderStrong,
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : AppColors.lightBorderStrong,
                     width: 1,
                   ),
                 ),
@@ -670,7 +717,8 @@ class EmpiranStatCard extends StatelessWidget {
               ),
               if (badgeText != null)
                 Flexible(
-                  child: EmpiranStatusChip(label: badgeText!, type: badgeType, small: true),
+                  child: EmpiranStatusChip(
+                      label: badgeText!, type: badgeType, small: true),
                 ),
             ],
           ),
@@ -682,7 +730,9 @@ class EmpiranStatCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 2),
@@ -694,7 +744,9 @@ class EmpiranStatCard extends StatelessWidget {
               style: AppTypography.number.copyWith(
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary,
               ),
             ),
           ),
@@ -740,7 +792,9 @@ class EmpiranFeatureCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.primarySubtle,
+                  color: isDark
+                      ? AppColors.darkSurfaceContainerHighest
+                      : AppColors.primarySubtle,
                   borderRadius: BorderRadius.circular(AppRadii.medium),
                 ),
                 child: Icon(icon, color: accentColor, size: 26),
@@ -749,7 +803,9 @@ class EmpiranFeatureCard extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceContainer : const Color(0xFFF1F5F9),
+                  color: isDark
+                      ? AppColors.darkSurfaceContainer
+                      : const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -773,7 +829,9 @@ class EmpiranFeatureCard extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
               fontSize: 13,
             ),
             maxLines: 1,
@@ -895,9 +953,13 @@ class EmpiranEmptyState extends StatelessWidget {
               width: 76,
               height: 76,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.primarySubtle,
+                color: isDark
+                    ? AppColors.darkSurfaceContainerHighest
+                    : AppColors.primarySubtle,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1.5),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    width: 1.5),
               ),
               child: Icon(
                 icon,
@@ -909,7 +971,9 @@ class EmpiranEmptyState extends StatelessWidget {
             Text(
               title,
               style: AppTypography.titleLarge.copyWith(
-                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary,
                 fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.center,
@@ -920,7 +984,9 @@ class EmpiranEmptyState extends StatelessWidget {
               child: Text(
                 description,
                 style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -969,11 +1035,14 @@ class EmpiranErrorState extends StatelessWidget {
             const SizedBox(height: AppSpacing.x3),
             Text(
               isOffline ? 'You\'re offline' : 'Unable to complete request',
-              style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
+              style: AppTypography.titleLarge
+                  .copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             Text(
-              isOffline ? 'Displaying locally saved data. Connect to the internet to sync.' : message,
+              isOffline
+                  ? 'Displaying locally saved data. Connect to the internet to sync.'
+                  : message,
               style: AppTypography.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -1026,8 +1095,10 @@ class _EmpiranShimmerState extends State<EmpiranShimmer>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF18223B) : const Color(0xFFE8F2FD);
-    final highlightColor = isDark ? const Color(0xFF26375E) : const Color(0xFFFFFFFF);
+    final baseColor =
+        isDark ? const Color(0xFF18223B) : const Color(0xFFE8F2FD);
+    final highlightColor =
+        isDark ? const Color(0xFF26375E) : const Color(0xFFFFFFFF);
 
     return AnimatedBuilder(
       animation: _ctrl,
@@ -1036,7 +1107,8 @@ class _EmpiranShimmerState extends State<EmpiranShimmer>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(AppRadii.medium),
+            borderRadius:
+                widget.borderRadius ?? BorderRadius.circular(AppRadii.medium),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1173,7 +1245,9 @@ class EmpiranSectionHeader extends StatelessWidget {
                     subtitle!,
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                   ),
                 ],

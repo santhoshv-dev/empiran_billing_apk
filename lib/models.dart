@@ -2,10 +2,10 @@ import 'dart:convert';
 
 double _d(dynamic value) => (value as num?)?.toDouble() ?? 0;
 String _transactionType(dynamic value) => switch ('$value') {
-  'sale_invoice' => 'order',
-  'estimate' => 'quotation',
-  final value => value,
-};
+      'sale_invoice' => 'order',
+      'estimate' => 'quotation',
+      final value => value,
+    };
 Map<String, dynamic> _transactionMeta(dynamic value) {
   if (value is! String || !value.trimLeft().startsWith('{')) return {};
   try {
@@ -47,37 +47,37 @@ class Company {
       role;
   String? logo;
   factory Company.fromJson(Map<String, dynamic> j) => Company(
-    id: '${j['id'] ?? 'local'}',
-    name: j['name'] ?? 'Empiran Traders',
-    gstin: j['gstin'] ?? '',
-    address: j['address'] ?? j['addressLine1'] ?? '',
-    phone: j['phone'] ?? '',
-    state: j['state'] ?? 'Tamil Nadu',
-    stateCode: j['stateCode'] ?? '33',
-    email: j['email'] ?? '',
-    bankName: j['bankName'] ?? '',
-    accountNo: j['accountNo'] ?? '',
-    branch: j['branch'] ?? '',
-    ifsc: j['ifsc'] ?? '',
-    logo: j['logo'],
-    role: j['role'] ?? 'Owner',
-  );
+        id: '${j['id'] ?? 'local'}',
+        name: j['name'] ?? 'Empiran Traders',
+        gstin: j['gstin'] ?? '',
+        address: j['address'] ?? j['addressLine1'] ?? '',
+        phone: j['phone'] ?? '',
+        state: j['state'] ?? 'Tamil Nadu',
+        stateCode: j['stateCode'] ?? '33',
+        email: j['email'] ?? '',
+        bankName: j['bankName'] ?? '',
+        accountNo: j['accountNo'] ?? '',
+        branch: j['branch'] ?? '',
+        ifsc: j['ifsc'] ?? '',
+        logo: j['logo'],
+        role: j['role'] ?? 'Owner',
+      );
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'gstin': gstin,
-    'address': address,
-    'phone': phone,
-    'state': state,
-    'stateCode': stateCode,
-    'email': email,
-    'bankName': bankName,
-    'accountNo': accountNo,
-    'branch': branch,
-    'ifsc': ifsc,
-    'logo': logo,
-    'role': role,
-  };
+        'id': id,
+        'name': name,
+        'gstin': gstin,
+        'address': address,
+        'phone': phone,
+        'state': state,
+        'stateCode': stateCode,
+        'email': email,
+        'bankName': bankName,
+        'accountNo': accountNo,
+        'branch': branch,
+        'ifsc': ifsc,
+        'logo': logo,
+        'role': role,
+      };
 }
 
 class Item {
@@ -100,33 +100,33 @@ class Item {
   bool isService;
   String? image;
   factory Item.fromJson(Map<String, dynamic> j) => Item(
-    id: '${j['id']}',
-    name: j['name'] ?? '',
-    category: j['category'] ?? 'General',
-    itemCode: j['itemCode'] ?? '',
-    hsn: j['hsn'] ?? '',
-    unit: j['unit'] ?? 'Pcs',
-    salesPrice: _d(j['salesPrice']),
-    purchasePrice: _d(j['purchasePrice']),
-    isService: j['isService'] ?? false,
-    currentStock: _d(j['currentStock']),
-    lowStockLimit: _d(j['lowStockLimit']),
-    image: j['image'] ?? j['imageUrl'],
-  );
+        id: '${j['id']}',
+        name: j['name'] ?? '',
+        category: j['category'] ?? 'General',
+        itemCode: j['itemCode'] ?? '',
+        hsn: j['hsn'] ?? '',
+        unit: j['unit'] ?? 'Pcs',
+        salesPrice: _d(j['salesPrice']),
+        purchasePrice: _d(j['purchasePrice']),
+        isService: j['isService'] ?? false,
+        currentStock: _d(j['currentStock']),
+        lowStockLimit: _d(j['lowStockLimit']),
+        image: j['image'] ?? j['imageUrl'],
+      );
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'category': category,
-    'itemCode': itemCode,
-    'hsn': hsn,
-    'unit': unit,
-    'salesPrice': salesPrice,
-    'purchasePrice': purchasePrice,
-    'isService': isService ? 1 : 0,
-    'currentStock': currentStock,
-    'lowStockLimit': lowStockLimit,
-    'image': image,
-  };
+        'id': id,
+        'name': name,
+        'category': category,
+        'itemCode': itemCode,
+        'hsn': hsn,
+        'unit': unit,
+        'salesPrice': salesPrice,
+        'purchasePrice': purchasePrice,
+        'isService': isService ? 1 : 0,
+        'currentStock': currentStock,
+        'lowStockLimit': lowStockLimit,
+        'image': image,
+      };
 }
 
 class Category {
@@ -138,14 +138,14 @@ class Category {
   String id, name;
 
   factory Category.fromJson(Map<String, dynamic> j) => Category(
-    id: j['id'] ?? j['Id'] ?? '',
-    name: j['name'] ?? j['Name'] ?? '',
-  );
+        id: j['id'] ?? j['Id'] ?? '',
+        name: j['name'] ?? j['Name'] ?? '',
+      );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-  };
+        'id': id,
+        'name': name,
+      };
 }
 
 class Party {
@@ -162,25 +162,25 @@ class Party {
   String id, name, phone, email, type, gstin, address;
   double balance;
   factory Party.fromJson(Map<String, dynamic> j) => Party(
-    id: '${j['id']}',
-    name: j['name'] ?? '',
-    phone: j['phone'] ?? '',
-    email: j['email'] ?? '',
-    type: j['type'] ?? 'Customer',
-    gstin: j['gstin'] ?? '',
-    address: j['address'] ?? '',
-    balance: _d(j['balance'] ?? j['currentBalance']),
-  );
+        id: '${j['id']}',
+        name: j['name'] ?? '',
+        phone: j['phone'] ?? '',
+        email: j['email'] ?? '',
+        type: j['type'] ?? 'Customer',
+        gstin: j['gstin'] ?? '',
+        address: j['address'] ?? '',
+        balance: _d(j['balance'] ?? j['currentBalance']),
+      );
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'phone': phone,
-    'email': email,
-    'type': type,
-    'gstin': gstin,
-    'address': address,
-    'balance': balance,
-  };
+        'id': id,
+        'name': name,
+        'phone': phone,
+        'email': email,
+        'type': type,
+        'gstin': gstin,
+        'address': address,
+        'balance': balance,
+      };
 }
 
 class InvoiceLine {
@@ -196,26 +196,26 @@ class InvoiceLine {
   double quantity, price;
   double get total => quantity * price;
   factory InvoiceLine.fromJson(Map<String, dynamic> j) => InvoiceLine(
-    itemId: '${j['itemId']}',
-    name: j['name'] ?? '',
-    quantity: _d(j['quantity']),
-    unit: j['unit'] ?? 'Pcs',
-    price: _d(j['price']),
-    hsn: j['hsn'] ?? '',
-  );
+        itemId: '${j['itemId']}',
+        name: j['name'] ?? '',
+        quantity: _d(j['quantity']),
+        unit: j['unit'] ?? 'Pcs',
+        price: _d(j['price']),
+        hsn: j['hsn'] ?? '',
+      );
   Map<String, dynamic> toJson() => {
-    'itemId': itemId,
-    'name': name,
-    'quantity': quantity,
-    'unit': unit,
-    'price': price,
-    'hsn': hsn,
-    'discountPercent': 0,
-    'discountAmount': 0,
-    'taxRate': 0,
-    'taxAmount': 0,
-    'total': total,
-  };
+        'itemId': itemId,
+        'name': name,
+        'quantity': quantity,
+        'unit': unit,
+        'price': price,
+        'hsn': hsn,
+        'discountPercent': 0,
+        'discountAmount': 0,
+        'taxRate': 0,
+        'taxAmount': 0,
+        'total': total,
+      };
 }
 
 class BusinessTransaction {
@@ -265,54 +265,57 @@ class BusinessTransaction {
   double get balance => total - paid;
   factory BusinessTransaction.fromJson(
     Map<String, dynamic> j,
-  ) => BusinessTransaction(
-    id: '${j['id']}',
-    partyId: j['partyId']?.toString(),
-    convertedFrom: (j['convertedFrom'] ?? j['referenceNo'])?.toString(),
-    referredBy: j['referredBy']?.toString(),
-    discount: _d(j['discount'] ?? j['discountAmount']),
-    shipping: _d(j['shipping'] ?? j['shippingCharges']),
-    notes: _transactionMeta(j['notes'])['text']?.toString() ?? j['notes'] ?? '',
-    type: _transactionType(j['type'] ?? j['txnType'] ?? 'order'),
-    number: j['number'] ?? j['txnNo'] ?? '',
-    date: DateTime.tryParse('${j['date']}') ?? DateTime.now(),
-    lines: ((j['lines'] ?? j['lineItems'] ?? []) as List)
-        .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e)))
-        .toList(),
-    partyName: j['partyName'] ?? '',
-    partyPhone: j['partyPhone'] ?? '',
-    partyAddress: j['partyAddress'] ?? '',
-    partyGstin: j['partyGstin'] ?? '',
-    isGst: j['isGst'] ?? (_d(j['cgst']) > 0),
-    paid: _d(j['paid'] ?? j['paidAmount']),
-    paymentMode: j['paymentMode'] ?? 'Cash',
-    status: j['status'] ?? 'Unpaid',
-    dispatch: Map<String, String>.from(
-      j['dispatch'] ?? _transactionMeta(j['notes'])['dispatch'] ?? {},
-    ),
-  );
+  ) =>
+      BusinessTransaction(
+        id: '${j['id']}',
+        partyId: j['partyId']?.toString(),
+        convertedFrom: (j['convertedFrom'] ?? j['referenceNo'])?.toString(),
+        referredBy: j['referredBy']?.toString(),
+        discount: _d(j['discount'] ?? j['discountAmount']),
+        shipping: _d(j['shipping'] ?? j['shippingCharges']),
+        notes: _transactionMeta(j['notes'])['text']?.toString() ??
+            j['notes'] ??
+            '',
+        type: _transactionType(j['type'] ?? j['txnType'] ?? 'order'),
+        number: j['number'] ?? j['txnNo'] ?? '',
+        date: DateTime.tryParse('${j['date']}') ?? DateTime.now(),
+        lines: ((j['lines'] ?? j['lineItems'] ?? []) as List)
+            .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
+        partyName: j['partyName'] ?? '',
+        partyPhone: j['partyPhone'] ?? '',
+        partyAddress: j['partyAddress'] ?? '',
+        partyGstin: j['partyGstin'] ?? '',
+        isGst: j['isGst'] ?? (_d(j['cgst']) > 0),
+        paid: _d(j['paid'] ?? j['paidAmount']),
+        paymentMode: j['paymentMode'] ?? 'Cash',
+        status: j['status'] ?? 'Unpaid',
+        dispatch: Map<String, String>.from(
+          j['dispatch'] ?? _transactionMeta(j['notes'])['dispatch'] ?? {},
+        ),
+      );
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type,
-    'number': number,
-    'date': date.toIso8601String(),
-    'lines': lines.map((e) => e.toJson()).toList(),
-    'partyName': partyName,
-    'partyPhone': partyPhone,
-    'partyAddress': partyAddress,
-    'partyGstin': partyGstin,
-    'isGst': isGst,
-    'paid': paid,
-    'paymentMode': paymentMode,
-    'status': status,
-    'dispatch': dispatch,
-    'partyId': partyId,
-    'convertedFrom': convertedFrom,
-    'referredBy': referredBy,
-    'discount': discount,
-    'shipping': shipping,
-    'notes': notes,
-  };
+        'id': id,
+        'type': type,
+        'number': number,
+        'date': date.toIso8601String(),
+        'lines': lines.map((e) => e.toJson()).toList(),
+        'partyName': partyName,
+        'partyPhone': partyPhone,
+        'partyAddress': partyAddress,
+        'partyGstin': partyGstin,
+        'isGst': isGst,
+        'paid': paid,
+        'paymentMode': paymentMode,
+        'status': status,
+        'dispatch': dispatch,
+        'partyId': partyId,
+        'convertedFrom': convertedFrom,
+        'referredBy': referredBy,
+        'discount': discount,
+        'shipping': shipping,
+        'notes': notes,
+      };
 }
 
 class InvoiceSettings {
@@ -325,17 +328,17 @@ class InvoiceSettings {
   String gstYear, nonGstPrefix;
   int gstCounter, nonGstCounter;
   factory InvoiceSettings.fromJson(Map<String, dynamic> j) => InvoiceSettings(
-    gstYear: j['gstYear'] ?? '25-26',
-    gstCounter: j['gstCounter'] ?? 1,
-    nonGstPrefix: j['nonGstPrefix'] ?? 'ORD-',
-    nonGstCounter: j['nonGstCounter'] ?? 1001,
-  );
+        gstYear: j['gstYear'] ?? '25-26',
+        gstCounter: j['gstCounter'] ?? 1,
+        nonGstPrefix: j['nonGstPrefix'] ?? 'ORD-',
+        nonGstCounter: j['nonGstCounter'] ?? 1001,
+      );
   Map<String, dynamic> toJson() => {
-    'gstYear': gstYear,
-    'gstCounter': gstCounter,
-    'nonGstPrefix': nonGstPrefix,
-    'nonGstCounter': nonGstCounter,
-  };
+        'gstYear': gstYear,
+        'gstCounter': gstCounter,
+        'nonGstPrefix': nonGstPrefix,
+        'nonGstCounter': nonGstCounter,
+      };
 }
 
 String encodeList(Iterable<Map<String, dynamic>> value) =>

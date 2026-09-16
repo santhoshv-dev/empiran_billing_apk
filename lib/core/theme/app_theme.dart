@@ -22,16 +22,17 @@ abstract final class AppRadii {
 }
 
 abstract final class AppColors {
-  // SWeShare Vibrant Royal Electric Blue & Accents
-  static const Color primary = Color(0xFF0066FF); // SWeShare Signature Electric Blue
-  static const Color primaryDark = Color(0xFF0052CC);
-  static const Color primaryLight = Color(0xFF388BFD);
-  static const Color primarySubtle = Color(0xFFEBF3FC); // Soft ice-blue background tint
-  static const Color primaryGlow = Color(0x330066FF);
+  // Billing App Modern Executive Blue & Crisp White Palette
+  static const Color primary =
+      Color(0xFF1E50D8); // Rich Executive Royal Blue
+  static const Color primaryDark = Color(0xFF1338A8);
+  static const Color primaryLight = Color(0xFF3B82F6);
+  static const Color primarySubtle = Color(0xFFEFF6FF); // Crisp soft ice-blue tint
+  static const Color primaryGlow = Color(0x331E50D8);
 
-  static const Color secondary = Color(0xFF0284C7); // Sky blue secondary
+  static const Color secondary = Color(0xFF0284C7); // Sky / Ocean Accent Blue
   static const Color secondaryDark = Color(0xFF0369A1);
-  static const Color secondaryLight = Color(0xFFBAE6FD);
+  static const Color secondaryLight = Color(0xFFE0F2FE);
 
   // Semantics
   static const Color success = Color(0xFF10B981); // Emerald
@@ -46,64 +47,67 @@ abstract final class AppColors {
   static const Color errorLight = Color(0xFFFEF2F2);
   static const Color errorDark = Color(0xFFB91C1C);
 
-  static const Color info = Color(0xFF0066FF); // Blue
+  static const Color info = Color(0xFF1E50D8);
   static const Color infoLight = Color(0xFFEFF6FF);
 
-  static const Color offline = Color(0xFFEA580C); // Deep orange
+  static const Color offline = Color(0xFFEA580C);
 
-  // SWeShare Light Palette: Clean White mixed with Soft Ice Blue
-  static const Color lightBackground = Color(0xFFF4F7FC); // Air light ice-blue tinted canvas
-  static const Color lightSurface = Color(0xFFFFFFFF); // Pure pristine white card
-  static const Color lightSurfaceContainer = Color(0xFFEBF3FC); // Soft blue tint container
-  static const Color lightSurfaceContainerHighest = Color(0xFFE1EDFA); // Interactive blue tint
-  static const Color lightBorder = Color(0xFFE2EDF9); // Light blue-tinted border
-  static const Color lightBorderStrong = Color(0xFFC7DCF5); // Accent outline
-  static const Color lightTextPrimary = Color(0xFF0F172A); // Midnight navy slate
-  static const Color lightTextSecondary = Color(0xFF475569); // Slate grey
-  static const Color lightTextMuted = Color(0xFF94A3B8); // Muted slate
+  // Blue with White Mixed Palette
+  static const Color lightBackground = Color(0xFFF8FAFC); // Airy, crisp soft slate-blue white canvas
+  static const Color lightSurface =
+      Color(0xFFFFFFFF); // Pure pristine white card
+  static const Color lightSurfaceContainer = Color(0xFFF1F5F9); // Light container
+  static const Color lightSurfaceContainerHighest =
+      Color(0xFFE2E8F0); // Subtle divider container
+  static const Color lightBorder = Color(0xFFE2E8F0); // Modern slate border
+  static const Color lightBorderStrong = Color(0xFFCBD5E1); // Accent outline
+  static const Color lightTextPrimary = Color(0xFF0F172A); // Deep Slate Navy for perfect readability
+  static const Color lightTextSecondary = Color(0xFF475569); // Refined Slate Grey
+  static const Color lightTextMuted = Color(0xFF94A3B8);
 
-  // Dark Palette (Deep Navy Slate with crisp contrast — NO pure black)
-  static const Color darkBackground = Color(0xFF0A0F1D); // Deep midnight navy
-  static const Color darkSurface = Color(0xFF11192E); // Navy slate surface
-  static const Color darkSurfaceContainer = Color(0xFF18223B); // Container
-  static const Color darkSurfaceContainerHighest = Color(0xFF222F50); // Container highest
-  static const Color darkBorder = Color(0xFF263556); // Navy border
-  static const Color darkBorderStrong = Color(0xFF384D7A); // Strong border
-  static const Color darkTextPrimary = Color(0xFFF8FAFC); // White slate
-  static const Color darkTextSecondary = Color(0xFF94A3B8); // Soft grey
-  static const Color darkTextMuted = Color(0xFF64748B); // Muted
+  // Unified compatibility mappings (ensuring any legacy reference renders in the clean Blue & White palette)
+  static const Color darkBackground = Color(0xFFF8FAFC);
+  static const Color darkSurface = Color(0xFFFFFFFF);
+  static const Color darkSurfaceContainer = Color(0xFFF1F5F9);
+  static const Color darkSurfaceContainerHighest =
+      Color(0xFFE2E8F0);
+  static const Color darkBorder = Color(0xFFE2E8F0);
+  static const Color darkBorderStrong = Color(0xFFCBD5E1);
+  static const Color darkTextPrimary = Color(0xFF0F172A);
+  static const Color darkTextSecondary = Color(0xFF475569);
+  static const Color darkTextMuted = Color(0xFF94A3B8);
 }
 
 abstract final class AppGradients {
   static const LinearGradient primary = LinearGradient(
-    colors: [Color(0xFF0066FF), Color(0xFF0052CC)],
+    colors: [Color(0xFF1E50D8), Color(0xFF173DB0)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient primaryLight = LinearGradient(
-    colors: [Color(0xFF2575FC), Color(0xFF6A11CB)],
+    colors: [Color(0xFF3B82F6), Color(0xFF1E50D8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient heroCard = LinearGradient(
-    colors: [Color(0xFF0066FF), Color(0xFF1A73E8), Color(0xFF2563EB)],
+    colors: [Color(0xFF1E50D8), Color(0xFF2563EB), Color(0xFF1D4ED8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient iceBlue = LinearGradient(
-    colors: [Color(0xFFEBF3FC), Color(0xFFF6F9FE)],
+    colors: [Color(0xFFEFF6FF), Color(0xFFF8FAFC)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient shimmerLight = LinearGradient(
     colors: [
-      Color(0xFFEBF2FA),
+      Color(0xFFE2E8F0),
       Color(0xFFFFFFFF),
-      Color(0xFFEBF2FA),
+      Color(0xFFE2E8F0),
     ],
     stops: [0.1, 0.5, 0.9],
     begin: Alignment(-1.0, -0.3),
@@ -112,9 +116,9 @@ abstract final class AppGradients {
 
   static const LinearGradient shimmerDark = LinearGradient(
     colors: [
-      Color(0xFF18223B),
-      Color(0xFF243254),
-      Color(0xFF18223B),
+      Color(0xFFE2E8F0),
+      Color(0xFFFFFFFF),
+      Color(0xFFE2E8F0),
     ],
     stops: [0.1, 0.5, 0.9],
     begin: Alignment(-1.0, -0.3),
@@ -125,7 +129,7 @@ abstract final class AppGradients {
 abstract final class AppShadows {
   static const List<BoxShadow> soft = [
     BoxShadow(
-      color: Color(0x0A0066FF),
+      color: Color(0x0A1E50D8),
       blurRadius: 10,
       offset: Offset(0, 4),
     ),
@@ -138,7 +142,7 @@ abstract final class AppShadows {
 
   static const List<BoxShadow> elevated = [
     BoxShadow(
-      color: Color(0x140066FF),
+      color: Color(0x141E50D8),
       blurRadius: 20,
       offset: Offset(0, 8),
     ),
@@ -151,7 +155,7 @@ abstract final class AppShadows {
 
   static const List<BoxShadow> primaryGlow = [
     BoxShadow(
-      color: Color(0x400066FF),
+      color: Color(0x401E50D8),
       blurRadius: 16,
       offset: Offset(0, 6),
     ),
@@ -238,35 +242,35 @@ abstract final class AppTypography {
 }
 
 abstract final class AppTheme {
-  static ThemeData get light => _buildTheme(Brightness.light);
-  static ThemeData get dark => _buildTheme(Brightness.dark);
+  static ThemeData get theme => _buildTheme(Brightness.light);
+  static ThemeData get light => theme;
+  static ThemeData get dark => theme;
 
   static ThemeData _buildTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-
     final colorScheme = ColorScheme(
-      brightness: brightness,
+      brightness: Brightness.light,
       primary: AppColors.primary,
       onPrimary: Colors.white,
-      primaryContainer: isDark ? const Color(0xFF1E2D4E) : AppColors.primarySubtle,
-      onPrimaryContainer: isDark ? const Color(0xFFBAE6FD) : AppColors.primaryDark,
+      primaryContainer: AppColors.primarySubtle,
+      onPrimaryContainer: AppColors.primaryDark,
       secondary: AppColors.secondary,
       onSecondary: Colors.white,
-      secondaryContainer: isDark ? const Color(0xFF16324A) : const Color(0xFFE0F2FE),
-      onSecondaryContainer: isDark ? const Color(0xFFBAE6FD) : AppColors.secondaryDark,
+      secondaryContainer: const Color(0xFFE0F2FE),
+      onSecondaryContainer: AppColors.secondaryDark,
       error: AppColors.error,
       onError: Colors.white,
-      errorContainer: isDark ? const Color(0xFF5A1E1E) : AppColors.errorLight,
-      onErrorContainer: isDark ? AppColors.errorLight : AppColors.errorDark,
-      surface: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      onSurface: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-      surfaceContainerLowest: isDark ? const Color(0xFF070B16) : Colors.white,
-      surfaceContainerLow: isDark ? const Color(0xFF0C1326) : const Color(0xFFF9FBFE),
-      surfaceContainer: isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurface,
-      surfaceContainerHigh: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.lightSurfaceContainer,
-      surfaceContainerHighest: isDark ? const Color(0xFF2B3A60) : AppColors.lightSurfaceContainerHighest,
-      outline: isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong,
-      outlineVariant: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+      errorContainer: AppColors.errorLight,
+      onErrorContainer: AppColors.errorDark,
+      surface: AppColors.lightBackground,
+      onSurface: AppColors.lightTextPrimary,
+      surfaceContainerLowest: Colors.white,
+      surfaceContainerLow: const Color(0xFFF8FAFC),
+      surfaceContainer: AppColors.lightSurface,
+      surfaceContainerHigh: AppColors.lightSurfaceContainer,
+      surfaceContainerHighest: AppColors.lightSurfaceContainerHighest,
+      outline: AppColors.lightBorderStrong,
+      outlineVariant: AppColors.lightBorder,
     );
 
     final base = ThemeData(
@@ -296,14 +300,22 @@ abstract final class AppTheme {
         ),
       ),
       textTheme: base.textTheme.copyWith(
-        displaySmall: AppTypography.display.copyWith(color: colorScheme.onSurface),
-        headlineLarge: AppTypography.heading1.copyWith(color: colorScheme.onSurface),
-        headlineMedium: AppTypography.heading2.copyWith(color: colorScheme.onSurface),
-        titleLarge: AppTypography.titleLarge.copyWith(color: colorScheme.onSurface),
-        titleMedium: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface),
-        bodyLarge: AppTypography.bodyLarge.copyWith(color: colorScheme.onSurface),
+        displaySmall:
+            AppTypography.display.copyWith(color: colorScheme.onSurface),
+        headlineLarge:
+            AppTypography.heading1.copyWith(color: colorScheme.onSurface),
+        headlineMedium:
+            AppTypography.heading2.copyWith(color: colorScheme.onSurface),
+        titleLarge:
+            AppTypography.titleLarge.copyWith(color: colorScheme.onSurface),
+        titleMedium:
+            AppTypography.titleMedium.copyWith(color: colorScheme.onSurface),
+        bodyLarge:
+            AppTypography.bodyLarge.copyWith(color: colorScheme.onSurface),
         bodyMedium: AppTypography.bodyMedium.copyWith(
-          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+          color: isDark
+              ? AppColors.darkTextSecondary
+              : AppColors.lightTextSecondary,
         ),
         bodySmall: AppTypography.bodySmall.copyWith(
           color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
@@ -337,7 +349,9 @@ abstract final class AppTheme {
           fontSize: 14,
         ),
         labelStyle: TextStyle(
-          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+          color: isDark
+              ? AppColors.darkTextSecondary
+              : AppColors.lightTextSecondary,
           fontSize: 14,
         ),
         border: OutlineInputBorder(
@@ -366,7 +380,8 @@ abstract final class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size(44, 46),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x4, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.x4, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.medium),
           ),
@@ -376,9 +391,10 @@ abstract final class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           minimumSize: const Size(44, 46),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x4, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.x4, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.medium),
           ),
@@ -388,7 +404,7 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.small),
           ),
@@ -396,15 +412,19 @@ abstract final class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        backgroundColor:
+            isDark ? AppColors.darkSurface : AppColors.lightSurface,
         elevation: 0,
-        indicatorColor: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12),
+        indicatorColor:
+            AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: AppColors.primary, size: 24);
           }
           return IconThemeData(
-            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            color: isDark
+                ? AppColors.darkTextSecondary
+                : AppColors.lightTextSecondary,
             size: 24,
           );
         }),
@@ -415,20 +435,25 @@ abstract final class AppTheme {
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected
                 ? AppColors.primary
-                : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                : (isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary),
           );
         }),
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: AppColors.primary,
-        unselectedLabelColor: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+        unselectedLabelColor:
+            isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
         indicatorColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.tab,
         labelStyle: AppTypography.button,
-        unselectedLabelStyle: AppTypography.button.copyWith(fontWeight: FontWeight.w500),
+        unselectedLabelStyle:
+            AppTypography.button.copyWith(fontWeight: FontWeight.w500),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        backgroundColor:
+            isDark ? AppColors.darkSurface : AppColors.lightSurface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.large),
@@ -436,22 +461,27 @@ abstract final class AppTheme {
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        backgroundColor:
+            isDark ? AppColors.darkSurface : AppColors.lightSurface,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.extraLarge)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadii.extraLarge)),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.lightTextPrimary,
+        backgroundColor: isDark
+            ? AppColors.darkSurfaceContainerHighest
+            : AppColors.lightTextPrimary,
         contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.medium),
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: isDark ? AppColors.darkSurfaceContainer : AppColors.primarySubtle,
+        backgroundColor:
+            isDark ? AppColors.darkSurfaceContainer : AppColors.primarySubtle,
         selectedColor: AppColors.primary.withValues(alpha: 0.18),
         labelStyle: TextStyle(
           fontSize: 13,

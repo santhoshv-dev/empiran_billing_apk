@@ -25,8 +25,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final canManage = PermissionService.canManageProducts(widget.store.currentUserRole);
-    final canViewCost = PermissionService.canViewCostPrice(widget.store.currentUserRole);
+    final canManage =
+        PermissionService.canManageProducts(widget.store.currentUserRole);
+    final canViewCost =
+        PermissionService.canViewCostPrice(widget.store.currentUserRole);
 
     // Filter items based on selected category, query and stock status
     final filteredItems = widget.store.items.where((i) {
@@ -42,7 +44,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
       if (stockFilter == 'In Stock') {
         return !i.isService && i.currentStock > i.lowStockLimit;
       } else if (stockFilter == 'Low Stock') {
-        return !i.isService && i.currentStock > 0 && i.currentStock <= i.lowStockLimit;
+        return !i.isService &&
+            i.currentStock > 0 &&
+            i.currentStock <= i.lowStockLimit;
       } else if (stockFilter == 'Out of Stock') {
         return !i.isService && i.currentStock <= 0;
       }
@@ -74,7 +78,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     '${widget.store.items.length} items catalogued across ${widget.store.categories.length} categories',
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -102,7 +108,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 )
               else
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -110,7 +117,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.visibility_outlined, size: 14, color: Color(0xFF10B981)),
+                      Icon(Icons.visibility_outlined,
+                          size: 14, color: Color(0xFF10B981)),
                       SizedBox(width: 6),
                       Text(
                         'Read-Only Catalog',
@@ -184,7 +192,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
               const SizedBox(width: 12),
               // Stock Filter Chips
-              for (final filter in ['All', 'In Stock', 'Low Stock', 'Out of Stock'])
+              for (final filter in [
+                'All',
+                'In Stock',
+                'Low Stock',
+                'Out of Stock'
+              ])
                 Padding(
                   padding: const EdgeInsets.only(left: 6),
                   child: FilterChip(
@@ -207,7 +220,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         : 'Get started by creating your first product or importing inventory.',
                     icon: Icons.inventory_2_outlined,
                     actionLabel: canManage ? 'Add Product' : null,
-                    onAction: canManage ? () => _productDialog(context, widget.store).then((_) => setState(() {})) : null,
+                    onAction: canManage
+                        ? () => _productDialog(context, widget.store)
+                            .then((_) => setState(() {}))
+                        : null,
                   )
                 : ListView.separated(
                     itemCount: filteredItems.length,
@@ -245,20 +261,29 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   Wrap(
                                     spacing: 8,
                                     runSpacing: 4,
-                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.lightSurfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(4),
+                                          color: isDark
+                                              ? AppColors
+                                                  .darkSurfaceContainerHighest
+                                              : AppColors
+                                                  .lightSurfaceContainerHighest,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                         ),
                                         child: Text(
                                           item.category,
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
-                                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                            color: isDark
+                                                ? AppColors.darkTextSecondary
+                                                : AppColors.lightTextSecondary,
                                           ),
                                         ),
                                       ),
@@ -267,7 +292,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                           'SKU: ${item.itemCode}',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                            color: isDark
+                                                ? AppColors.darkTextMuted
+                                                : AppColors.lightTextMuted,
                                           ),
                                         ),
                                       if (item.hsn.isNotEmpty)
@@ -275,7 +302,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                           'HSN: ${item.hsn}',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                            color: isDark
+                                                ? AppColors.darkTextMuted
+                                                : AppColors.lightTextMuted,
                                           ),
                                         ),
                                     ],
@@ -301,7 +330,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     'Cost: ${AppTypography.formatCurrency(item.purchasePrice)}',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                      color: isDark
+                                          ? AppColors.darkTextMuted
+                                          : AppColors.lightTextMuted,
                                     ),
                                   ),
                                 const SizedBox(height: 4),
@@ -319,15 +350,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   if (!item.isService)
                                     IconButton(
                                       tooltip: 'Adjust Stock',
-                                      icon: const Icon(Icons.add_box_outlined, color: AppColors.primary, size: 22),
+                                      icon: const Icon(Icons.add_box_outlined,
+                                          color: AppColors.primary, size: 22),
                                       onPressed: () async {
-                                        await adjustStock(context, widget.store, item);
+                                        await adjustStock(
+                                            context, widget.store, item);
                                         setState(() {});
                                       },
                                     ),
                                   IconButton(
                                     tooltip: 'Edit Product',
-                                    icon: const Icon(Icons.edit_outlined, size: 20),
+                                    icon: const Icon(Icons.edit_outlined,
+                                        size: 20),
                                     onPressed: () => _productDialog(
                                       context,
                                       widget.store,
@@ -353,7 +387,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     if (item.image != null && item.image!.isNotEmpty) {
       try {
-        final clean = item.image!.contains(',') ? item.image!.split(',').last : item.image!;
+        final clean = item.image!.contains(',')
+            ? item.image!.split(',').last
+            : item.image!;
         return ClipRRect(
           borderRadius: BorderRadius.circular(AppRadii.medium),
           child: Image.memory(
@@ -374,7 +410,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.primarySubtle,
+        color: isDark
+            ? AppColors.darkSurfaceContainerHighest
+            : AppColors.primarySubtle,
         borderRadius: BorderRadius.circular(AppRadii.medium),
         border: Border.all(
           color: isDark ? AppColors.darkBorder : const Color(0xFFDCEAF9),
@@ -391,10 +429,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _buildStockBadge(Item item) {
     if (item.isService) {
-      return const EmpiranStatusChip(label: 'Service', type: EmpiranStatusType.info, small: true);
+      return const EmpiranStatusChip(
+          label: 'Service', type: EmpiranStatusType.info, small: true);
     }
     if (item.currentStock <= 0) {
-      return const EmpiranStatusChip(label: 'Out of Stock', type: EmpiranStatusType.error, small: true);
+      return const EmpiranStatusChip(
+          label: 'Out of Stock', type: EmpiranStatusType.error, small: true);
     }
     if (item.currentStock <= item.lowStockLimit) {
       return EmpiranStatusChip(
@@ -486,7 +526,9 @@ Future<void> _productDialog(
                 DropdownButtonFormField<String>(
                   initialValue: selectedCat,
                   decoration: const InputDecoration(labelText: 'Category'),
-                  items: store.categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  items: store.categories
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
                   onChanged: (v) {
                     if (v != null) set(() => selectedCat = v);
                   },
@@ -554,7 +596,8 @@ Future<void> _productDialog(
                         isNumber: true,
                         isDecimal: true,
                         enabled: item == null,
-                        helperText: item != null ? 'Use "Adjust Stock" on list.' : null,
+                        helperText:
+                            item != null ? 'Use "Adjust Stock" on list.' : null,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -580,7 +623,9 @@ Future<void> _productDialog(
                 const SizedBox(height: 10),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Service Item (No Stock Tracking)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  title: const Text('Service Item (No Stock Tracking)',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                   value: isService,
                   onChanged: (v) => set(() => isService = v),
                 ),
@@ -593,7 +638,9 @@ Future<void> _productDialog(
                       ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadii.medium),
                         child: Image.memory(
-                          base64Decode(image!.contains(',') ? image!.split(',').last : image!),
+                          base64Decode(image!.contains(',')
+                              ? image!.split(',').last
+                              : image!),
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
@@ -622,7 +669,8 @@ Future<void> _productDialog(
                       const SizedBox(width: 8),
                       IconButton(
                         tooltip: 'Remove',
-                        icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                        icon: const Icon(Icons.delete_outline,
+                            color: AppColors.error),
                         onPressed: () => set(() => image = null),
                       ),
                     ],
@@ -630,7 +678,9 @@ Future<void> _productDialog(
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                  Text(error!,
+                      style: const TextStyle(
+                          color: AppColors.error, fontSize: 13)),
                 ],
               ],
             ),
@@ -640,12 +690,14 @@ Future<void> _productDialog(
           if (item != null)
             TextButton(
               onPressed: () async {
-                if (await confirmDelete(context, 'Delete product "${item.name}"?')) {
+                if (await confirmDelete(
+                    context, 'Delete product "${item.name}"?')) {
                   await store.deleteItem(item);
                   if (ctx.mounted) Navigator.pop(ctx);
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+              child: const Text('Delete',
+                  style: TextStyle(color: AppColors.error)),
             ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -664,7 +716,8 @@ Future<void> _productDialog(
               try {
                 await store.addItem(
                   Item(
-                    id: item?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+                    id: item?.id ??
+                        DateTime.now().microsecondsSinceEpoch.toString(),
                     name: name.text.trim(),
                     hsn: hsn.text.trim(),
                     itemCode: code.text.trim(),
@@ -689,7 +742,9 @@ Future<void> _productDialog(
     ),
   );
 
-  for (final c in [name, hsn, code, purchase, sales, stock, unit, low]) {
-    c.dispose();
-  }
+  Future.delayed(const Duration(milliseconds: 500), () {
+    for (final c in [name, hsn, code, purchase, sales, stock, unit, low]) {
+      c.dispose();
+    }
+  });
 }

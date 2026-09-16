@@ -55,7 +55,7 @@ class DbHelper {
         image TEXT
       )
     ''');
-    
+
     await db.execute('''
       CREATE TABLE parties (
         id TEXT PRIMARY KEY,
@@ -69,7 +69,7 @@ class DbHelper {
         currentBalance REAL
       )
     ''');
-    
+
     await db.execute('''
       CREATE TABLE categories (
         id TEXT PRIMARY KEY,
@@ -140,9 +140,10 @@ class DbHelper {
       return 1;
     }
     final db = await instance.database;
-    return await db!.insert(table, data, conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db!
+        .insert(table, data, conflictAlgorithm: ConflictAlgorithm.replace);
   }
-  
+
   Future<int> update(String table, Map<String, dynamic> data, String id) async {
     if (kIsWeb) {
       final list = _webStore.putIfAbsent(table, () => []);
@@ -160,7 +161,7 @@ class DbHelper {
     final db = await instance.database;
     return await db!.update(table, data, where: 'id = ?', whereArgs: [id]);
   }
-  
+
   Future<int> delete(String table, String id) async {
     if (kIsWeb) {
       final list = _webStore.putIfAbsent(table, () => []);
@@ -175,7 +176,7 @@ class DbHelper {
     final db = await instance.database;
     return await db!.delete(table, where: 'id = ?', whereArgs: [id]);
   }
-  
+
   Future<List<Map<String, dynamic>>> queryAll(String table) async {
     if (kIsWeb) {
       if (!_webStore.containsKey(table)) {
@@ -185,7 +186,8 @@ class DbHelper {
           if (raw != null && raw.isNotEmpty) {
             final decoded = jsonDecode(raw);
             if (decoded is List) {
-              _webStore[table] = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+              _webStore[table] =
+                  decoded.map((e) => Map<String, dynamic>.from(e)).toList();
             }
           }
         } catch (_) {}

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'models.dart';
 import 'data/remote/api_client.dart';
 import 'data/local/db_helper.dart';
@@ -9,6 +10,7 @@ import 'data/remote/sync_engine.dart';
 
 class AppStore extends ChangeNotifier {
   final ApiClient api = ApiClient();
+  static const sessionStorage = FlutterSecureStorage();
   late final SyncEngine syncEngine;
 
   AppStore() {
@@ -25,8 +27,9 @@ class AppStore extends ChangeNotifier {
   List<Party> parties = [];
   List<BusinessTransaction> transactions = [];
   Map<String, String>? currentUser;
-  String get currentUserRole => currentUser?['role'] ?? 'Admin';
-  String get currentUserName => currentUser?['name'] ?? currentUser?['username'] ?? 'User';
+  String get currentUserRole => currentUser?['role'] ?? 'Biller';
+  String get currentUserName =>
+      currentUser?['name'] ?? currentUser?['username'] ?? 'User';
   String get currentApiUrl => api.baseUrl;
   void notify() => notifyListeners();
 
@@ -37,7 +40,13 @@ class AppStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<String> categories = ['General', 'Electronics', 'Hardware', 'Grocery', 'Services'];
+  List<String> categories = [
+    'General',
+    'Electronics',
+    'Hardware',
+    'Grocery',
+    'Services'
+  ];
 
   Future<void> addCategory(String cat) async {
     final trimmed = cat.trim();
@@ -54,36 +63,16 @@ class AppStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<Map<String, String>> users = [
-    {
-      'name': 'Business Admin',
-      'username': 'empirantraders',
-      'email': 'admin@empiran.com',
-      'password': '123456',
-      'role': 'Admin',
-    },
-    {
-      'name': 'Store Manager',
-      'username': 'manager',
-      'email': 'manager@empiran.com',
-      'password': '123456',
-      'role': 'Manager',
-    },
-    {
-      'name': 'POS Biller',
-      'username': 'biller',
-      'email': 'biller@empiran.com',
-      'password': '123456',
-      'role': 'Biller',
-    },
-  ];
+  List<Map<String, String>> users = [];
   List<Map<String, dynamic>> expenses = [], bankAccounts = [];
-  bool darkMode = true;
+  bool darkMode = false;
   Map<String, dynamic> firms = {};
   bool ready = false;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    api.token = p.getString('apiToken');
+    // Old tokens were stored in plaintext preferences; require a fresh login.
+    await p.remove('apiToken');
+    api.token = await sessionStorage.read(key: 'apiToken');
     remoteMode = api.token != null && api.token!.isNotEmpty;
     Map<String, dynamic>? map(String k) {
       final v = p.getString(k);
@@ -95,13 +84,13 @@ class AppStore extends ChangeNotifier {
       return v == null
           ? []
           : (jsonDecode(v) as List)
-                .map((e) => Map<String, dynamic>.from(e))
-                .toList();
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
     }
 
     expenses = list('expenses');
     bankAccounts = list('bankAccounts');
-    darkMode = p.getBool('darkMode') ?? true;
+    darkMode = false;
     final c = map('company');
     firms = map('firms') ?? {};
     if (c != null) company = Company.fromJson(c);
@@ -120,78 +109,66 @@ class AppStore extends ChangeNotifier {
     final savedApiUrl = p.getString('apiUrl');
     if (savedApiUrl != null && savedApiUrl.isNotEmpty) {
       api.baseUrl = savedApiUrl;
+      if (savedApiUrl.startsWith('http://empiran-api.runasp.net')) {
+        await p.setString('apiUrl', api.baseUrl);
+      }
     }
-    
+
     // SQLite Loading
     final dbItems = await DbHelper.instance.queryAll('items');
     if (dbItems.isEmpty && p.containsKey('items')) {
-       // Migrate from SharedPreferences to SQLite once
-       items = list('items').map(Item.fromJson).toList();
-       for (var item in items) {
-         final j = item.toJson();
-         j['isService'] = item.isService ? 1 : 0;
-         await DbHelper.instance.insert('items', j);
-       }
-       p.remove('items');
+      // Migrate from SharedPreferences to SQLite once
+      items = list('items').map(Item.fromJson).toList();
+      for (var item in items) {
+        final j = item.toJson();
+        j['isService'] = item.isService ? 1 : 0;
+        await DbHelper.instance.insert('items', j);
+      }
+      p.remove('items');
     } else {
-       items = dbItems.map((j) {
-         final data = Map<String, dynamic>.from(j);
-         data['isService'] = (data['isService'] as int) == 1;
-         return Item.fromJson(data);
-       }).toList();
+      items = dbItems.map((j) {
+        final data = Map<String, dynamic>.from(j);
+        data['isService'] = (data['isService'] as int) == 1;
+        return Item.fromJson(data);
+      }).toList();
     }
 
     final dbParties = await DbHelper.instance.queryAll('parties');
     if (dbParties.isEmpty && p.containsKey('parties')) {
-       parties = list('parties').map(Party.fromJson).toList();
-       for (var party in parties) {
-         await DbHelper.instance.insert('parties', party.toJson());
-       }
-       p.remove('parties');
+      parties = list('parties').map(Party.fromJson).toList();
+      for (var party in parties) {
+        await DbHelper.instance.insert('parties', party.toJson());
+      }
+      p.remove('parties');
     } else {
-       parties = dbParties.map((j) => Party.fromJson(j)).toList();
+      parties = dbParties.map((j) => Party.fromJson(j)).toList();
     }
 
     final dbTxns = await DbHelper.instance.queryAll('transactions');
     if (dbTxns.isEmpty && p.containsKey('transactions')) {
-       transactions = list('transactions').map(BusinessTransaction.fromJson).toList();
-       for (var t in transactions) {
-         final j = t.toJson();
-         j['isGst'] = t.isGst ? 1 : 0;
-         j['lines'] = jsonEncode(j['lines']);
-         j['dispatch'] = jsonEncode(j['dispatch']);
-         await DbHelper.instance.insert('transactions', j);
-       }
-       p.remove('transactions');
+      transactions =
+          list('transactions').map(BusinessTransaction.fromJson).toList();
+      for (var t in transactions) {
+        final j = t.toJson();
+        j['isGst'] = t.isGst ? 1 : 0;
+        j['lines'] = jsonEncode(j['lines']);
+        j['dispatch'] = jsonEncode(j['dispatch']);
+        await DbHelper.instance.insert('transactions', j);
+      }
+      p.remove('transactions');
     } else {
-       transactions = dbTxns.map((j) {
-         final data = Map<String, dynamic>.from(j);
-         data['isGst'] = (data['isGst'] as int) == 1;
-         data['lines'] = jsonDecode(data['lines'] as String);
-         data['dispatch'] = jsonDecode(data['dispatch'] as String);
-         return BusinessTransaction.fromJson(data);
-       }).toList();
+      transactions = dbTxns.map((j) {
+        final data = Map<String, dynamic>.from(j);
+        data['isGst'] = (data['isGst'] as int) == 1;
+        data['lines'] = jsonDecode(data['lines'] as String);
+        data['dispatch'] = jsonDecode(data['dispatch'] as String);
+        return BusinessTransaction.fromJson(data);
+      }).toList();
     }
 
-    final u = list('users');
-    if (u.isNotEmpty) {
-      users = u.map((e) => e.map((k, v) => MapEntry(k, '$v'))).toList();
-    }
-    // Ensure default RBAC accounts exist (Admin, Manager, Biller)
-    void ensureUser(String username, String name, String email, String role) {
-      if (!users.any((x) => x['username']?.toLowerCase() == username.toLowerCase())) {
-        users.add({
-          'name': name,
-          'username': username,
-          'email': email,
-          'password': '123456',
-          'role': role,
-        });
-      }
-    }
-    ensureUser('empirantraders', 'Business Admin', 'admin@empiran.com', 'Admin');
-    ensureUser('manager', 'Store Manager', 'manager@empiran.com', 'Manager');
-    ensureUser('biller', 'POS Biller', 'biller@empiran.com', 'Biller');
+    // Discard legacy local accounts; authentication is API-only.
+    await p.remove('users');
+    await p.remove('sessionToken');
 
     final savedUser = p.getString('currentUser');
     if (savedUser != null && savedUser.isNotEmpty) {
@@ -220,7 +197,7 @@ class AppStore extends ChangeNotifier {
   ) async {
     final auth = await api.login(email, password);
     final p = await SharedPreferences.getInstance();
-    await p.setString('apiToken', api.token!);
+    await sessionStorage.write(key: 'apiToken', value: api.token!);
     await p.setString('sessionExpiry', '${auth['expiresAt']}');
     remoteMode = true;
 
@@ -230,25 +207,11 @@ class AppStore extends ChangeNotifier {
         'name': authUser['name']?.toString() ?? email,
         'username': email.split('@').first,
         'email': authUser['email']?.toString() ?? email,
-        'role': authUser['role']?.toString() ?? 'Admin',
+        'role': authUser['role']?.toString() ?? 'Biller',
       };
       await p.setString('currentUser', jsonEncode(currentUser));
     }
 
-    await syncFromApi(createFirstBusiness: true);
-    return auth;
-  }
-
-  Future<Map<String, dynamic>> remoteRegister(
-    String name,
-    String email,
-    String password,
-  ) async {
-    final auth = await api.register(name, email, password);
-    final p = await SharedPreferences.getInstance();
-    await p.setString('apiToken', api.token!);
-    await p.setString('sessionExpiry', '${auth['expiresAt']}');
-    remoteMode = true;
     await syncFromApi(createFirstBusiness: true);
     return auth;
   }
@@ -260,6 +223,7 @@ class AppStore extends ChangeNotifier {
     syncError = null;
     final p = await SharedPreferences.getInstance();
     await p.remove('apiToken');
+    await sessionStorage.delete(key: 'apiToken');
   }
 
   Future<void> syncFromApi({bool createFirstBusiness = false}) async {
@@ -278,9 +242,9 @@ class AppStore extends ChangeNotifier {
         throw StateError('Create a business before syncing records.');
       }
       final selected = remoteBusinesses.cast<Map<String, dynamic>>().firstWhere(
-        (b) => '${b['id']}' == company.id,
-        orElse: () => remoteBusinesses.first,
-      );
+            (b) => '${b['id']}' == company.id,
+            orElse: () => remoteBusinesses.first,
+          );
       company = Company.fromJson(selected);
       final results = await Future.wait([
         api.getItems(company.id),
@@ -309,7 +273,8 @@ class AppStore extends ChangeNotifier {
         final name = s['name']?.toString() ?? '';
         final role = s['role']?.toString() ?? 'Biller';
         if (email.isNotEmpty) {
-          final idx = users.indexWhere((u) => u['email']?.toLowerCase() == email.toLowerCase());
+          final idx = users.indexWhere(
+              (u) => u['email']?.toLowerCase() == email.toLowerCase());
           if (idx != -1) {
             users[idx]['role'] = role;
             users[idx]['name'] = name;
@@ -345,7 +310,8 @@ class AppStore extends ChangeNotifier {
       p.setString('settings', jsonEncode(settings.toJson())),
       p.setString('categories', jsonEncode(categories)),
       p.setString('users', jsonEncode(users)),
-      p.setString('currentUser', currentUser != null ? jsonEncode(currentUser) : ''),
+      p.setString(
+          'currentUser', currentUser != null ? jsonEncode(currentUser) : ''),
     ]);
     // Persist items, parties, transactions to SQLite to ensure in-memory changes are saved
     for (var item in items) {
@@ -377,30 +343,36 @@ class AppStore extends ChangeNotifier {
 
   Future<void> saveSettings() => _save();
   Future<void> addItem(Item value) async {
-    final isNew = value.id.length != 36 && !value.id.startsWith(RegExp(r'[0-9]{16}'));
+    final isNew =
+        value.id.length != 36 && !value.id.startsWith(RegExp(r'[0-9]{16}'));
     if (isNew && value.id.length < 13) {
       value.id = DateTime.now().microsecondsSinceEpoch.toString();
     }
     items.removeWhere((i) => i.id == value.id);
     items.add(value);
     await _save();
-    
+
     if (remoteMode) {
-      await syncEngine.queueOperation('item', value.id, isNew ? 'CREATE' : 'UPDATE', _itemPayload(value), businessId: company.id);
+      await syncEngine.queueOperation(
+          'item', value.id, isNew ? 'CREATE' : 'UPDATE', _itemPayload(value),
+          businessId: company.id);
     }
   }
 
   Future<void> addParty(Party value) async {
-    final isNew = value.id.length != 36 && !value.id.startsWith(RegExp(r'[0-9]{16}'));
+    final isNew =
+        value.id.length != 36 && !value.id.startsWith(RegExp(r'[0-9]{16}'));
     if (isNew && value.id.length < 13) {
       value.id = DateTime.now().microsecondsSinceEpoch.toString();
     }
     parties.removeWhere((p) => p.id == value.id);
     parties.add(value);
     await _save();
-    
+
     if (remoteMode) {
-      await syncEngine.queueOperation('party', value.id, isNew ? 'CREATE' : 'UPDATE', _partyPayload(value), businessId: company.id);
+      await syncEngine.queueOperation(
+          'party', value.id, isNew ? 'CREATE' : 'UPDATE', _partyPayload(value),
+          businessId: company.id);
     }
   }
 
@@ -441,16 +413,21 @@ class AppStore extends ChangeNotifier {
     String? password,
     String? role,
   }) async {
-    final idx = users.indexWhere((u) => u['username']?.toLowerCase() == targetUsername.toLowerCase());
+    final idx = users.indexWhere(
+        (u) => u['username']?.toLowerCase() == targetUsername.toLowerCase());
     if (idx != -1) {
       final existing = Map<String, String>.from(users[idx]);
-      if (name != null && name.trim().isNotEmpty) existing['name'] = name.trim();
+      if (name != null && name.trim().isNotEmpty)
+        existing['name'] = name.trim();
       if (email != null) existing['email'] = email.trim();
-      if (password != null && password.trim().isNotEmpty) existing['password'] = password.trim();
-      if (role != null && role.trim().isNotEmpty) existing['role'] = role.trim();
+      if (password != null && password.trim().isNotEmpty)
+        existing['password'] = password.trim();
+      if (role != null && role.trim().isNotEmpty)
+        existing['role'] = role.trim();
       users[idx] = existing;
 
-      if (currentUser?['username']?.toLowerCase() == targetUsername.toLowerCase()) {
+      if (currentUser?['username']?.toLowerCase() ==
+          targetUsername.toLowerCase()) {
         currentUser = existing;
       }
       await _save();
@@ -460,7 +437,8 @@ class AppStore extends ChangeNotifier {
 
   Future<bool> deleteUser(String targetUsername) async {
     if (targetUsername.toLowerCase() == 'empirantraders') return false;
-    users.removeWhere((u) => u['username']?.toLowerCase() == targetUsername.toLowerCase());
+    users.removeWhere(
+        (u) => u['username']?.toLowerCase() == targetUsername.toLowerCase());
     await _save();
     notifyListeners();
     return true;
@@ -468,14 +446,14 @@ class AppStore extends ChangeNotifier {
 
   Future<void> persist() => _save();
   Map<String, dynamic> snapshot() => {
-    'company': company.toJson(),
-    'settings': settings.toJson(),
-    'items': items.map((e) => e.toJson()).toList(),
-    'parties': parties.map((e) => e.toJson()).toList(),
-    'transactions': transactions.map((e) => e.toJson()).toList(),
-    'expenses': expenses,
-    'bankAccounts': bankAccounts,
-  };
+        'company': company.toJson(),
+        'settings': settings.toJson(),
+        'items': items.map((e) => e.toJson()).toList(),
+        'parties': parties.map((e) => e.toJson()).toList(),
+        'transactions': transactions.map((e) => e.toJson()).toList(),
+        'expenses': expenses,
+        'bankAccounts': bankAccounts,
+      };
   void restore(Map<String, dynamic> data) {
     final nextCompany = Company.fromJson(
       Map<String, dynamic>.from(data['company']),
@@ -551,29 +529,27 @@ class AppStore extends ChangeNotifier {
   }
 
   int stockDirection(String type) => switch (type) {
-    'order' || 'sale_invoice' || 'purchase_return' => -1,
-    'purchase_bill' || 'sale_return' => 1,
-    _ => 0,
-  };
+        'order' || 'sale_invoice' || 'purchase_return' => -1,
+        'purchase_bill' || 'sale_return' => 1,
+        _ => 0,
+      };
   double partyBalance(Party p) => remoteMode
       ? p.balance
       : p.balance +
-            transactions
-                .where((t) => t.partyId == p.id)
-                .fold<double>(
-                  0,
-                  (sum, t) =>
-                      sum +
-                      switch (t.type) {
-                        'order' || 'sale_invoice' => t.balance,
-                        'purchase_bill' => -t.balance,
-                        'payment_in' => -t.total,
-                        'sale_return' => -t.balance,
-                        'payment_out' => t.total,
-                        'purchase_return' => t.balance,
-                        _ => 0,
-                      },
-                );
+          transactions.where((t) => t.partyId == p.id).fold<double>(
+                0,
+                (sum, t) =>
+                    sum +
+                    switch (t.type) {
+                      'order' || 'sale_invoice' => t.balance,
+                      'purchase_bill' => -t.balance,
+                      'payment_in' => -t.total,
+                      'sale_return' => -t.balance,
+                      'payment_out' => t.total,
+                      'purchase_return' => t.balance,
+                      _ => 0,
+                    },
+              );
   Future<void> deleteTransaction(BusinessTransaction t) async {
     final direction = stockDirection(t.type);
     for (final l in t.lines) {
@@ -583,9 +559,10 @@ class AppStore extends ChangeNotifier {
     }
     transactions.removeWhere((x) => x.id == t.id);
     await _save();
-    
+
     if (remoteMode) {
-      await syncEngine.queueOperation('transaction', t.id, 'DELETE', {}, businessId: company.id);
+      await syncEngine.queueOperation('transaction', t.id, 'DELETE', {},
+          businessId: company.id);
     }
   }
 
@@ -634,15 +611,19 @@ class AppStore extends ChangeNotifier {
     final String no;
     if (quote) {
       settings.nonGstCounter++;
-      no = FinancialYearService.generateDocumentNumber('QT', settings.nonGstCounter, date: date);
+      no = FinancialYearService.generateDocumentNumber(
+          'QT', settings.nonGstCounter,
+          date: date);
     } else if (gst) {
       settings.gstCounter++;
-      no = FinancialYearService.generateDocumentNumber('INV', settings.gstCounter, date: date);
+      no = FinancialYearService.generateDocumentNumber(
+          'INV', settings.gstCounter,
+          date: date);
     } else {
       settings.nonGstCounter++;
       no = '${settings.nonGstPrefix}${settings.nonGstCounter}';
     }
-    
+
     final t = BusinessTransaction(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: type,
@@ -672,9 +653,9 @@ class AppStore extends ChangeNotifier {
     t.status = t.balance <= 0
         ? 'Paid'
         : paid > 0
-        ? 'Partial'
-        : 'Unpaid';
-        
+            ? 'Partial'
+            : 'Unpaid';
+
     transactions.insert(0, t);
     final direction = deductStock ? stockDirection(type) : 0;
     for (final l in lines) {
@@ -685,11 +666,13 @@ class AppStore extends ChangeNotifier {
     // Counter incremented during generation to ensure no duplication
 
     await _save();
-    
+
     if (remoteMode) {
-      await syncEngine.queueOperation('transaction', t.id, 'CREATE', _transactionPayload(t), businessId: company.id);
+      await syncEngine.queueOperation(
+          'transaction', t.id, 'CREATE', _transactionPayload(t),
+          businessId: company.id);
     }
-    
+
     return t;
   }
 
@@ -784,123 +767,123 @@ class AppStore extends ChangeNotifier {
   }
 
   static Map<String, dynamic> _businessPayload(Company c) => {
-    'name': c.name,
-    'legalName': c.name,
-    'gstin': c.gstin.isEmpty ? null : c.gstin,
-    'pan': null,
-    'phone': c.phone,
-    'email': c.email,
-    'addressLine1': c.address,
-    'addressLine2': null,
-    'city': null,
-    'stateCode': c.stateCode,
-    'pincode': null,
-    'invoicePrefix': 'INV',
-    'defaultTerms': null,
-  };
+        'name': c.name,
+        'legalName': c.name,
+        'gstin': c.gstin.isEmpty ? null : c.gstin,
+        'pan': null,
+        'phone': c.phone,
+        'email': c.email,
+        'addressLine1': c.address,
+        'addressLine2': null,
+        'city': null,
+        'stateCode': c.stateCode,
+        'pincode': null,
+        'invoicePrefix': 'INV',
+        'defaultTerms': null,
+      };
   static Map<String, dynamic> _itemPayload(Item i) => {
-    'name': i.name,
-    'category': i.category,
-    'itemCode': i.itemCode,
-    'barcode': null,
-    'hsn': i.hsn,
-    'unit': i.unit,
-    'secondaryUnit': null,
-    'conversionFactor': 1,
-    'salesPrice': i.salesPrice,
-    'salesPriceIncludesTax': false,
-    'purchasePrice': i.purchasePrice,
-    'purchasePriceIncludesTax': false,
-    'mrp': i.salesPrice,
-    'minimumPrice': 0,
-    'openingStock': i.currentStock,
-    'currentStock': i.currentStock,
-    'lowStockLimit': i.lowStockLimit,
-    'taxRate': 0,
-    'isService': i.isService,
-    'batchNumber': null,
-    'manufacturingDate': null,
-    'expiryDate': null,
-    'warehouse': null,
-    'rawMaterialsJson': null,
-  };
+        'name': i.name,
+        'category': i.category,
+        'itemCode': i.itemCode,
+        'barcode': null,
+        'hsn': i.hsn,
+        'unit': i.unit,
+        'secondaryUnit': null,
+        'conversionFactor': 1,
+        'salesPrice': i.salesPrice,
+        'salesPriceIncludesTax': false,
+        'purchasePrice': i.purchasePrice,
+        'purchasePriceIncludesTax': false,
+        'mrp': i.salesPrice,
+        'minimumPrice': 0,
+        'openingStock': i.currentStock,
+        'currentStock': i.currentStock,
+        'lowStockLimit': i.lowStockLimit,
+        'taxRate': 0,
+        'isService': i.isService,
+        'batchNumber': null,
+        'manufacturingDate': null,
+        'expiryDate': null,
+        'warehouse': null,
+        'rawMaterialsJson': null,
+      };
   static Map<String, dynamic> _partyPayload(Party p) => {
-    'name': p.name,
-    'phone': p.phone,
-    'email': p.email,
-    'type': p.type.toLowerCase(),
-    'gstin': p.gstin,
-    'pan': null,
-    'address': p.address,
-    'shippingAddress': null,
-    'openingBalance': p.balance.abs(),
-    'openingBalanceType': p.balance < 0 ? 'payable' : 'receivable',
-    'creditLimit': 0,
-    'creditPeriodDays': 0,
-    'group': null,
-  };
+        'name': p.name,
+        'phone': p.phone,
+        'email': p.email,
+        'type': p.type.toLowerCase(),
+        'gstin': p.gstin,
+        'pan': null,
+        'address': p.address,
+        'shippingAddress': null,
+        'openingBalance': p.balance.abs(),
+        'openingBalanceType': p.balance < 0 ? 'payable' : 'receivable',
+        'creditLimit': 0,
+        'creditPeriodDays': 0,
+        'group': null,
+      };
   static String _remoteType(String type) => switch (type) {
-    'order' => 'sale_invoice',
-    'quotation' => 'estimate',
-    _ => type,
-  };
+        'order' => 'sale_invoice',
+        'quotation' => 'estimate',
+        _ => type,
+      };
   static Map<String, dynamic> _transactionPayload(BusinessTransaction t) => {
-    'txnType': _remoteType(t.type),
-    'txnNo': t.number,
-    'partyId': t.partyId?.length == 36 ? t.partyId : null,
-    'partyName': t.partyName,
-    'date': t.date.toIso8601String(),
-    'dueDate': null,
-    'lineItems': t.lines
-        .map(
-          (l) => {
-            'itemId': l.itemId.length == 36 ? l.itemId : null,
-            'name': l.name,
-            'hsn': l.hsn,
-            'quantity': l.quantity,
-            'unit': l.unit,
-            'price': l.price,
-            'discountPercent': 0,
-            'discountAmount': 0,
-            'taxRate': t.isGst ? 18 : 0,
-            'taxAmount': t.isGst ? l.total * .18 : 0,
-            'total': l.total,
-          },
-        )
-        .toList(),
-    'subTotal': t.subtotal,
-    'discountPercent': 0,
-    'discountAmount': t.discount,
-    'taxTotal': t.cgst + t.sgst,
-    'cgst': t.cgst,
-    'sgst': t.sgst,
-    'igst': 0,
-    'shippingCharges': t.shipping,
-    'grandTotal': t.total,
-    'paidAmount': t.paid,
-    'balanceDue': t.balance,
-    'paymentMode': t.paymentMode.toLowerCase(),
-    'bankAccountId': null,
-    'status': t.status.toLowerCase(),
-    'referenceNo': t.convertedFrom,
-    'notes': jsonEncode({'text': t.notes, 'dispatch': t.dispatch}),
-    'expenseCategory': null,
-  };
+        'txnType': _remoteType(t.type),
+        'txnNo': t.number,
+        'partyId': t.partyId?.length == 36 ? t.partyId : null,
+        'partyName': t.partyName,
+        'date': t.date.toIso8601String(),
+        'dueDate': null,
+        'lineItems': t.lines
+            .map(
+              (l) => {
+                'itemId': l.itemId.length == 36 ? l.itemId : null,
+                'name': l.name,
+                'hsn': l.hsn,
+                'quantity': l.quantity,
+                'unit': l.unit,
+                'price': l.price,
+                'discountPercent': 0,
+                'discountAmount': 0,
+                'taxRate': t.isGst ? 18 : 0,
+                'taxAmount': t.isGst ? l.total * .18 : 0,
+                'total': l.total,
+              },
+            )
+            .toList(),
+        'subTotal': t.subtotal,
+        'discountPercent': 0,
+        'discountAmount': t.discount,
+        'taxTotal': t.cgst + t.sgst,
+        'cgst': t.cgst,
+        'sgst': t.sgst,
+        'igst': 0,
+        'shippingCharges': t.shipping,
+        'grandTotal': t.total,
+        'paidAmount': t.paid,
+        'balanceDue': t.balance,
+        'paymentMode': t.paymentMode.toLowerCase(),
+        'bankAccountId': null,
+        'status': t.status.toLowerCase(),
+        'referenceNo': t.convertedFrom,
+        'notes': jsonEncode({'text': t.notes, 'dispatch': t.dispatch}),
+        'expenseCategory': null,
+      };
   static Map<String, dynamic> _expenseFromApi(Map<String, dynamic> e) => {
-    ...e,
-    'Expense name': e['paidTo'] ?? e['category'],
-    'Category': e['category'],
-    'Amount': '${e['amount']}',
-    'Payment mode': e['paymentMode'] ?? '',
-    'Notes': e['notes'] ?? '',
-  };
+        ...e,
+        'Expense name': e['paidTo'] ?? e['category'],
+        'Category': e['category'],
+        'Amount': '${e['amount']}',
+        'Payment mode': e['paymentMode'] ?? '',
+        'Notes': e['notes'] ?? '',
+      };
   static Map<String, dynamic> _bankFromApi(Map<String, dynamic> b) => {
-    ...b,
-    'Account name': b['accountName'],
-    'Bank name': b['bankName'],
-    'Account number': b['accountNo'] ?? '',
-    'IFSC': b['ifsc'] ?? '',
-    'Opening balance': '${b['currentBalance'] ?? b['openingBalance']}',
-    'amount': b['currentBalance'] ?? b['openingBalance'] ?? 0,
-  };
+        ...b,
+        'Account name': b['accountName'],
+        'Bank name': b['bankName'],
+        'Account number': b['accountNo'] ?? '',
+        'IFSC': b['ifsc'] ?? '',
+        'Opening balance': '${b['currentBalance'] ?? b['openingBalance']}',
+        'amount': b['currentBalance'] ?? b['openingBalance'] ?? 0,
+      };
 }

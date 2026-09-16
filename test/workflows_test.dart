@@ -18,14 +18,14 @@ void main() {
     await store.addParty(Party(id: 'party', name: 'Customer'));
   });
   List<InvoiceLine> lines() => [
-    InvoiceLine(
-      itemId: 'item',
-      name: 'Product',
-      quantity: 2,
-      unit: 'Pcs',
-      price: 100,
-    ),
-  ];
+        InvoiceLine(
+          itemId: 'item',
+          name: 'Product',
+          quantity: 2,
+          unit: 'Pcs',
+          price: 100,
+        ),
+      ];
 
   test('reports escape CSV fields and generate PDF documents', () async {
     final t = await store.create(

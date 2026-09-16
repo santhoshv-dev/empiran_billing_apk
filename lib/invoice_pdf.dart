@@ -162,17 +162,18 @@ pw.Widget _cell(
   bool bold = false,
   pw.Alignment align = pw.Alignment.centerLeft,
   double pad = 3,
-}) => pw.Container(
-  alignment: align,
-  padding: pw.EdgeInsets.all(pad),
-  child: pw.Text(
-    value,
-    style: pw.TextStyle(
-      fontSize: 7,
-      fontWeight: bold ? pw.FontWeight.bold : null,
-    ),
-  ),
-);
+}) =>
+    pw.Container(
+      alignment: align,
+      padding: pw.EdgeInsets.all(pad),
+      child: pw.Text(
+        value,
+        style: pw.TextStyle(
+          fontSize: 7,
+          fontWeight: bold ? pw.FontWeight.bold : null,
+        ),
+      ),
+    );
 
 Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
   final doc = pw.Document();
@@ -209,12 +210,12 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
             t.type == 'quotation' || t.type == 'estimate'
                 ? 'QUOTATION'
                 : t.type.startsWith('payment_')
-                ? 'PAYMENT RECEIPT'
-                : t.type == 'report'
-                ? 'TRANSACTION REPORT'
-                : t.isGst
-                ? 'TAX INVOICE'
-                : t.type.replaceAll('_', ' ').toUpperCase(),
+                    ? 'PAYMENT RECEIPT'
+                    : t.type == 'report'
+                        ? 'TRANSACTION REPORT'
+                        : t.isGst
+                            ? 'TAX INVOICE'
+                            : t.type.replaceAll('_', ' ').toUpperCase(),
             style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
           ),
         ),
@@ -357,19 +358,18 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
           children: [
             pw.TableRow(
               decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-              children:
-                  [
-                        'Sl No',
-                        'Description of Goods',
-                        'Quantity',
-                        'Rate',
-                        'per',
-                        'Amount',
-                      ]
-                      .map(
-                        (x) => _cell(x, bold: true, align: pw.Alignment.center),
-                      )
-                      .toList(),
+              children: [
+                'Sl No',
+                'Description of Goods',
+                'Quantity',
+                'Rate',
+                'per',
+                'Amount',
+              ]
+                  .map(
+                    (x) => _cell(x, bold: true, align: pw.Alignment.center),
+                  )
+                  .toList(),
             ),
             for (int i = 0; i < t.lines.length; i++)
               pw.TableRow(
@@ -547,14 +547,18 @@ Future<Uint8List> buildThermalReceiptPdf(
   final money = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs.');
   final dateFormat = DateFormat('dd-MM-yyyy hh:mm a');
 
+  final contentHeight = 220.0 + (t.lines.length * 22.0) + 180.0;
+  final format = PdfPageFormat.roll80.copyWith(
+    height: contentHeight < 250 ? 250 : contentHeight,
+    marginTop: 6,
+    marginBottom: 6,
+    marginLeft: 8,
+    marginRight: 8,
+  );
+
   doc.addPage(
     pw.MultiPage(
-      pageFormat: PdfPageFormat.roll80.copyWith(
-        marginTop: 6,
-        marginBottom: 6,
-        marginLeft: 8,
-        marginRight: 8,
-      ),
+      pageFormat: format,
       build: (ctx) => [
         pw.Center(
           child: pw.Text(
@@ -588,45 +592,90 @@ Future<Uint8List> buildThermalReceiptPdf(
             ),
           ),
         pw.SizedBox(height: 4),
-        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Text('------------------------------------------------',
+            style: const pw.TextStyle(fontSize: 8)),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Bill No: ${t.number}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
-            pw.Text(t.paymentMode.toUpperCase(), style: const pw.TextStyle(fontSize: 8)),
+            pw.Text('Bill No: ${t.number}',
+                style:
+                    pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            pw.Text(t.paymentMode.toUpperCase(),
+                style: const pw.TextStyle(fontSize: 8)),
           ],
         ),
-        pw.Text('Date: ${dateFormat.format(t.date)}', style: const pw.TextStyle(fontSize: 8)),
-        if (t.partyName.isNotEmpty && t.partyName.toLowerCase() != 'walk-in customer')
-          pw.Text('Customer: ${t.partyName}', style: const pw.TextStyle(fontSize: 8)),
-        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Text('Date: ${dateFormat.format(t.date)}',
+            style: const pw.TextStyle(fontSize: 8)),
+        if (t.partyName.isNotEmpty &&
+            t.partyName.toLowerCase() != 'walk-in customer')
+          pw.Text('Customer: ${t.partyName}',
+              style: const pw.TextStyle(fontSize: 8)),
+        pw.Text('------------------------------------------------',
+            style: const pw.TextStyle(fontSize: 8)),
         pw.Row(
           children: [
-            pw.Expanded(flex: 5, child: pw.Text('Item', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
-            pw.Expanded(flex: 2, child: pw.Text('Qty', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
-            pw.Expanded(flex: 3, child: pw.Text('Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
-            pw.Expanded(flex: 3, child: pw.Text('Total', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
+            pw.Expanded(
+                flex: 5,
+                child: pw.Text('Item',
+                    style: pw.TextStyle(
+                        fontSize: 8, fontWeight: pw.FontWeight.bold))),
+            pw.Expanded(
+                flex: 2,
+                child: pw.Text('Qty',
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(
+                        fontSize: 8, fontWeight: pw.FontWeight.bold))),
+            pw.Expanded(
+                flex: 3,
+                child: pw.Text('Price',
+                    textAlign: pw.TextAlign.right,
+                    style: pw.TextStyle(
+                        fontSize: 8, fontWeight: pw.FontWeight.bold))),
+            pw.Expanded(
+                flex: 3,
+                child: pw.Text('Total',
+                    textAlign: pw.TextAlign.right,
+                    style: pw.TextStyle(
+                        fontSize: 8, fontWeight: pw.FontWeight.bold))),
           ],
         ),
-        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Text('------------------------------------------------',
+            style: const pw.TextStyle(fontSize: 8)),
         for (final li in t.lines)
           pw.Padding(
             padding: const pw.EdgeInsets.symmetric(vertical: 2),
             child: pw.Row(
               children: [
-                pw.Expanded(flex: 5, child: pw.Text(li.name, style: const pw.TextStyle(fontSize: 8))),
-                pw.Expanded(flex: 2, child: pw.Text('${li.quantity}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8))),
-                pw.Expanded(flex: 3, child: pw.Text(li.price.toStringAsFixed(2), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8))),
-                pw.Expanded(flex: 3, child: pw.Text(li.total.toStringAsFixed(2), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8))),
+                pw.Expanded(
+                    flex: 5,
+                    child: pw.Text(li.name,
+                        style: const pw.TextStyle(fontSize: 8))),
+                pw.Expanded(
+                    flex: 2,
+                    child: pw.Text('${li.quantity}',
+                        textAlign: pw.TextAlign.center,
+                        style: const pw.TextStyle(fontSize: 8))),
+                pw.Expanded(
+                    flex: 3,
+                    child: pw.Text(li.price.toStringAsFixed(2),
+                        textAlign: pw.TextAlign.right,
+                        style: const pw.TextStyle(fontSize: 8))),
+                pw.Expanded(
+                    flex: 3,
+                    child: pw.Text(li.total.toStringAsFixed(2),
+                        textAlign: pw.TextAlign.right,
+                        style: const pw.TextStyle(fontSize: 8))),
               ],
             ),
           ),
-        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Text('------------------------------------------------',
+            style: const pw.TextStyle(fontSize: 8)),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text('Sub Total:', style: const pw.TextStyle(fontSize: 8)),
-            pw.Text(money.format(t.subtotal), style: const pw.TextStyle(fontSize: 8)),
+            pw.Text(money.format(t.subtotal),
+                style: const pw.TextStyle(fontSize: 8)),
           ],
         ),
         if (t.discount > 0)
@@ -634,7 +683,8 @@ Future<Uint8List> buildThermalReceiptPdf(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('Discount:', style: const pw.TextStyle(fontSize: 8)),
-              pw.Text('-${money.format(t.discount)}', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text('-${money.format(t.discount)}',
+                  style: const pw.TextStyle(fontSize: 8)),
             ],
           ),
         if (t.cgst + t.sgst > 0)
@@ -642,21 +692,27 @@ Future<Uint8List> buildThermalReceiptPdf(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('Tax / GST:', style: const pw.TextStyle(fontSize: 8)),
-              pw.Text(money.format(t.cgst + t.sgst), style: const pw.TextStyle(fontSize: 8)),
+              pw.Text(money.format(t.cgst + t.sgst),
+                  style: const pw.TextStyle(fontSize: 8)),
             ],
           ),
         pw.SizedBox(height: 2),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('GRAND TOTAL:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-            pw.Text(money.format(t.total), style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            pw.Text('GRAND TOTAL:',
+                style:
+                    pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.Text(money.format(t.total),
+                style:
+                    pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
           ],
         ),
-        pw.Text('------------------------------------------------', style: const pw.TextStyle(fontSize: 8)),
+        pw.Text('------------------------------------------------',
+            style: const pw.TextStyle(fontSize: 8)),
         pw.Center(
           child: pw.Text(
-            'Total Items: ${t.lines.length} • Qty: ${t.lines.fold<double>(0, (acc, l) => acc + l.quantity)}',
+            'Total Items: ${t.lines.length} | Qty: ${t.lines.fold<double>(0, (acc, l) => acc + l.quantity)}',
             style: const pw.TextStyle(fontSize: 8),
           ),
         ),
@@ -673,4 +729,3 @@ Future<Uint8List> buildThermalReceiptPdf(
 
   return doc.save();
 }
-

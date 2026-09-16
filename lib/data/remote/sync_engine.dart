@@ -23,10 +23,9 @@ class SyncEngine {
     try {
       store.syncing = true;
       store.notify();
-      
+
       await _pushChanges();
       await store.syncFromApi(); // Pull
-      
     } catch (e) {
       store.syncError = e.toString();
     } finally {
@@ -55,7 +54,7 @@ class SyncEngine {
       'businessId': businessId,
     };
     await DbHelper.instance.insert('sync_queue', queueItem);
-    
+
     // Attempt sync if online
     final connectivity = await Connectivity().checkConnectivity();
     if (!connectivity.contains(ConnectivityResult.none)) {
@@ -65,21 +64,26 @@ class SyncEngine {
 
   Future<void> _pushChanges() async {
     final queue = await DbHelper.instance.queryAll('sync_queue');
-    final pending = queue.where((q) => q['status'] == 'pending' || q['status'] == 'failed');
-    
+    final pending =
+        queue.where((q) => q['status'] == 'pending' || q['status'] == 'failed');
+
     for (var item in pending) {
       if ((item['retryCount'] as int) > 5) continue; // Skip after 5 retries
-      
+
       try {
         await _executeOperation(item);
-        await DbHelper.instance.update('sync_queue', {'status': 'completed'}, item['id']);
+        await DbHelper.instance
+            .update('sync_queue', {'status': 'completed'}, item['id']);
       } catch (e) {
-        await DbHelper.instance.update('sync_queue', {
-          'status': 'failed',
-          'retryCount': (item['retryCount'] as int) + 1,
-          'errorMessage': e.toString(),
-          'lastAttemptAt': DateTime.now().toIso8601String()
-        }, item['id']);
+        await DbHelper.instance.update(
+            'sync_queue',
+            {
+              'status': 'failed',
+              'retryCount': (item['retryCount'] as int) + 1,
+              'errorMessage': e.toString(),
+              'lastAttemptAt': DateTime.now().toIso8601String()
+            },
+            item['id']);
       }
     }
   }
@@ -136,7 +140,8 @@ class SyncEngine {
             if (idx != -1) {
               store.parties[idx].id = newId;
               await DbHelper.instance.delete('parties', entityId);
-              await DbHelper.instance.insert('parties', store.parties[idx].toJson());
+              await DbHelper.instance
+                  .insert('parties', store.parties[idx].toJson());
             }
           }
         } else if (operation == 'UPDATE') {

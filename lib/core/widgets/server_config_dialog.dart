@@ -78,7 +78,8 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     final isCloudSelected = inputUrl == ServerConfigDialog.cloudPreset;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.large)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.large)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 540),
         child: Padding(
@@ -97,7 +98,8 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(AppRadii.medium),
                     ),
-                    child: const Icon(Icons.dns_rounded, color: AppColors.primary, size: 24),
+                    child: const Icon(Icons.dns_rounded,
+                        color: AppColors.primary, size: 24),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -106,13 +108,16 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                       children: [
                         const Text(
                           'Backend Server Settings',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           'Choose between local development or cloud production',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
                           ),
                         ),
                       ],
@@ -129,7 +134,10 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
               // Presets
               const Text(
                 'Select Environment Preset',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.3),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3),
               ),
               const SizedBox(height: 10),
 
@@ -188,24 +196,31 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                 suffixIcon: IconButton(
                   tooltip: 'Test Connection',
                   icon: const Icon(Icons.refresh_rounded, size: 20),
-                  onPressed: _testing ? null : () => _testConnection(_urlController.text),
+                  onPressed: _testing
+                      ? null
+                      : () => _testConnection(_urlController.text),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Live Status / Health Box
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: _healthResult == null
-                      ? (isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurfaceContainer)
+                      ? (isDark
+                          ? AppColors.darkSurfaceContainer
+                          : AppColors.lightSurfaceContainer)
                       : (_healthResult!['healthy'] == true
                           ? AppColors.success.withValues(alpha: 0.12)
                           : AppColors.error.withValues(alpha: 0.12)),
                   borderRadius: BorderRadius.circular(AppRadii.medium),
                   border: Border.all(
                     color: _healthResult == null
-                        ? (isDark ? AppColors.darkBorder : AppColors.lightBorder)
+                        ? (isDark
+                            ? AppColors.darkBorder
+                            : AppColors.lightBorder)
                         : (_healthResult!['healthy'] == true
                             ? AppColors.success.withValues(alpha: 0.4)
                             : AppColors.error.withValues(alpha: 0.4)),
@@ -267,14 +282,16 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                       ),
                       if (_healthResult!['latencyMs'] != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: isDark ? Colors.black26 : Colors.white54,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             '${_healthResult!['latencyMs']} ms',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
                     ] else ...[
@@ -310,9 +327,13 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                   ),
                   const SizedBox(width: 10),
                   EmpiranButton(
-                    label: inputUrl == currentActive ? 'Saved & Active' : 'Save & Connect',
+                    label: inputUrl == currentActive
+                        ? 'Saved & Active'
+                        : 'Save & Connect',
                     icon: Icons.check_rounded,
-                    onPressed: inputUrl.isEmpty ? null : () => _applyUrl(_urlController.text),
+                    onPressed: inputUrl.isEmpty
+                        ? null
+                        : () => _applyUrl(_urlController.text),
                   ),
                 ],
               ),
@@ -353,7 +374,9 @@ class _PresetCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1)
-              : (isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurfaceContainer),
+              : (isDark
+                  ? AppColors.darkSurfaceContainer
+                  : AppColors.lightSurfaceContainer),
           borderRadius: BorderRadius.circular(AppRadii.medium),
           border: Border.all(
             color: isSelected
@@ -370,11 +393,14 @@ class _PresetCard extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.black54),
+                  color: isSelected
+                      ? AppColors.primary
+                      : (isDark ? Colors.white70 : Colors.black54),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary
@@ -406,7 +432,9 @@ class _PresetCard extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

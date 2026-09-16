@@ -7,15 +7,14 @@ import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'app_store.dart';
+import 'password_screen.dart';
 import 'invoice_pdf.dart';
 import 'models.dart';
 import 'dashboard.dart';
 import 'products_screen.dart';
-import 'sync_screen.dart';
 import 'core/services/permission_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/empiran_components.dart';
-import 'core/widgets/server_config_dialog.dart';
 
 part 'workflows.dart';
 
@@ -74,10 +73,6 @@ class _SuiteShellState extends State<SuiteShell> {
           }
         },
         onPreviewTransaction: (t) => previewDocument(context, widget.store, t),
-        onOpenSync: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => SyncScreen(widget.store)),
-        ),
       ),
     );
     addNav(
@@ -105,7 +100,8 @@ class _SuiteShellState extends State<SuiteShell> {
       addNav('Reports', Icons.analytics_outlined, ReportsPage(widget.store));
     }
     if (PermissionService.canAccessSettings(widget.store.currentUserRole)) {
-      addNav('Settings & Users', Icons.settings_outlined, SettingsPage(widget.store));
+      addNav('Settings & Users', Icons.settings_outlined,
+          SettingsPage(widget.store));
     }
 
     if (page >= allowedPages.length) page = 0;
@@ -160,31 +156,29 @@ class _SuiteShellState extends State<SuiteShell> {
             Image.asset(
               'assets/images/empiran_traders_logo.png',
               height: 28,
-              errorBuilder: (_, __, ___) => const Icon(Icons.account_balance, color: AppColors.primary, size: 24),
+              errorBuilder: (_, __, ___) => const Icon(Icons.account_balance,
+                  color: AppColors.primary, size: 24),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 allowedNavItems[page].$1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
               ),
             ),
           ],
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: EmpiranSyncIndicator(
-              isOnline: widget.store.remoteMode,
-              isSyncing: widget.store.syncing,
-              pendingCount: 0,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => SyncScreen(widget.store)),
-              ),
-            ),
-          ),
+          IconButton(
+              tooltip: 'Update password',
+              icon: const Icon(Icons.lock_reset_rounded),
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => PasswordScreen(
+                          api: widget.store.api,
+                          action: PasswordAction.update)))),
           IconButton(
             tooltip: 'Search',
             onPressed: () => showSearch(
@@ -192,19 +186,6 @@ class _SuiteShellState extends State<SuiteShell> {
               delegate: BusinessSearch(widget.store),
             ),
             icon: const Icon(Icons.search, size: 22),
-          ),
-          IconButton(
-            tooltip: 'Toggle Theme',
-            onPressed: widget.store.toggleTheme,
-            icon: Icon(
-              widget.store.darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-              size: 22,
-            ),
-          ),
-          IconButton(
-            tooltip: 'Businesses',
-            onPressed: () => switchBusiness(context, widget.store),
-            icon: const Icon(Icons.business_outlined, size: 22),
           ),
         ],
       ),
@@ -267,7 +248,8 @@ class _SuiteShellState extends State<SuiteShell> {
     return 0;
   }
 
-  Widget _buildDesktopSidebar(BuildContext context, List<(String, IconData)> items) {
+  Widget _buildDesktopSidebar(
+      BuildContext context, List<(String, IconData)> items) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -294,16 +276,21 @@ class _SuiteShellState extends State<SuiteShell> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.primarySubtle,
+                      color: isDark
+                          ? AppColors.darkSurfaceContainerHighest
+                          : AppColors.primarySubtle,
                       borderRadius: BorderRadius.circular(AppRadii.medium),
-                      border: Border.all(color: const Color(0xFFDCEAF9), width: 1),
+                      border:
+                          Border.all(color: const Color(0xFFDCEAF9), width: 1),
                     ),
                     clipBehavior: Clip.antiAlias,
                     padding: const EdgeInsets.all(6),
                     child: Image.asset(
                       'assets/images/empiran_traders_logo.png',
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.account_balance, color: AppColors.primary),
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.account_balance,
+                          color: AppColors.primary),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -334,39 +321,7 @@ class _SuiteShellState extends State<SuiteShell> {
                 ],
               ),
             ),
-
-            // Active Company Card Switcher
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: InkWell(
-                onTap: () => switchBusiness(context, widget.store),
-                borderRadius: BorderRadius.circular(AppRadii.medium),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceContainer : AppColors.primarySubtle,
-                    borderRadius: BorderRadius.circular(AppRadii.medium),
-                    border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFDCEAF9)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.business_rounded, size: 18, color: AppColors.primary),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.store.company.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Icon(Icons.unfold_more, size: 16, color: AppColors.primary),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // Navigation Items List
             Expanded(
@@ -380,14 +335,18 @@ class _SuiteShellState extends State<SuiteShell> {
                     onTap: () => setState(() => page = i),
                     borderRadius: BorderRadius.circular(AppRadii.medium),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 11),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? (isDark ? AppColors.darkSurfaceContainerHighest : AppColors.primarySubtle)
+                            ? (isDark
+                                ? AppColors.darkSurfaceContainerHighest
+                                : AppColors.primarySubtle)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadii.medium),
                         border: isSelected
-                            ? Border.all(color: const Color(0xFFBAE6FD), width: 1)
+                            ? Border.all(
+                                color: const Color(0xFFBAE6FD), width: 1)
                             : null,
                       ),
                       child: Row(
@@ -397,7 +356,9 @@ class _SuiteShellState extends State<SuiteShell> {
                             size: 20,
                             color: isSelected
                                 ? AppColors.primary
-                                : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                : (isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -405,10 +366,14 @@ class _SuiteShellState extends State<SuiteShell> {
                               items[i].$1,
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
                                 color: isSelected
                                     ? AppColors.primary
-                                    : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                                    : (isDark
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.lightTextPrimary),
                               ),
                             ),
                           ),
@@ -433,14 +398,19 @@ class _SuiteShellState extends State<SuiteShell> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE2EDF9))),
+                border: Border(
+                    top: BorderSide(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : const Color(0xFFE2EDF9))),
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: AppColors.primarySubtle,
-                    child: const Icon(Icons.person, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.person,
+                        color: AppColors.primary, size: 20),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -449,7 +419,8 @@ class _SuiteShellState extends State<SuiteShell> {
                       children: [
                         Text(
                           widget.store.currentUserName,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 13),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -457,13 +428,20 @@ class _SuiteShellState extends State<SuiteShell> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: widget.store.currentUserRole.toLowerCase() == 'admin'
+                                color: widget.store.currentUserRole
+                                            .toLowerCase() ==
+                                        'admin'
                                     ? AppColors.primary.withValues(alpha: 0.12)
-                                    : (widget.store.currentUserRole.toLowerCase() == 'manager'
-                                        ? const Color(0xFF0284C7).withValues(alpha: 0.12)
-                                        : const Color(0xFF10B981).withValues(alpha: 0.12)),
+                                    : (widget.store.currentUserRole
+                                                .toLowerCase() ==
+                                            'manager'
+                                        ? const Color(0xFF0284C7)
+                                            .withValues(alpha: 0.12)
+                                        : const Color(0xFF10B981)
+                                            .withValues(alpha: 0.12)),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -471,9 +449,13 @@ class _SuiteShellState extends State<SuiteShell> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: widget.store.currentUserRole.toLowerCase() == 'admin'
+                                  color: widget.store.currentUserRole
+                                              .toLowerCase() ==
+                                          'admin'
                                       ? AppColors.primary
-                                      : (widget.store.currentUserRole.toLowerCase() == 'manager'
+                                      : (widget.store.currentUserRole
+                                                  .toLowerCase() ==
+                                              'manager'
                                           ? const Color(0xFF0284C7)
                                           : const Color(0xFF10B981)),
                                 ),
@@ -487,7 +469,8 @@ class _SuiteShellState extends State<SuiteShell> {
                   IconButton(
                     tooltip: 'Sign out',
                     onPressed: widget.onLogout,
-                    icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF94A3B8)),
+                    icon: const Icon(Icons.logout_rounded,
+                        size: 20, color: Color(0xFF94A3B8)),
                   ),
                 ],
               ),
@@ -525,16 +508,6 @@ class _SuiteShellState extends State<SuiteShell> {
             ),
           ),
           const Spacer(),
-          EmpiranSyncIndicator(
-            isOnline: widget.store.remoteMode,
-            isSyncing: widget.store.syncing,
-            pendingCount: 0,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => SyncScreen(widget.store)),
-            ),
-          ),
-          const SizedBox(width: 12),
           IconButton(
             tooltip: 'Search catalog & records',
             onPressed: () => showSearch(
@@ -542,14 +515,6 @@ class _SuiteShellState extends State<SuiteShell> {
               delegate: BusinessSearch(widget.store),
             ),
             icon: const Icon(Icons.search, size: 22),
-          ),
-          IconButton(
-            tooltip: 'Toggle Theme',
-            onPressed: widget.store.toggleTheme,
-            icon: Icon(
-              widget.store.darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-              size: 22,
-            ),
           ),
           const SizedBox(width: 8),
           EmpiranButton(
@@ -569,7 +534,8 @@ class _SuiteShellState extends State<SuiteShell> {
     );
   }
 
-  Widget _buildMobileDrawer(BuildContext context, List<(String, IconData)> items) {
+  Widget _buildMobileDrawer(
+      BuildContext context, List<(String, IconData)> items) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -586,7 +552,9 @@ class _SuiteShellState extends State<SuiteShell> {
                     'assets/images/empiran_traders_logo.png',
                     width: 36,
                     height: 36,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.account_balance, color: AppColors.primary),
+                    errorBuilder: (_, __, ___) => const Icon(
+                        Icons.account_balance,
+                        color: AppColors.primary),
                   ),
                   const SizedBox(width: 12),
                   const Text(
@@ -605,10 +573,13 @@ class _SuiteShellState extends State<SuiteShell> {
               margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceContainer : AppColors.primarySubtle,
+                color: isDark
+                    ? AppColors.darkSurfaceContainer
+                    : AppColors.primarySubtle,
                 borderRadius: BorderRadius.circular(AppRadii.medium),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : const Color(0xFFDCEAF9),
+                  color:
+                      isDark ? AppColors.darkBorder : const Color(0xFFDCEAF9),
                 ),
               ),
               child: Row(
@@ -620,7 +591,10 @@ class _SuiteShellState extends State<SuiteShell> {
                       widget.store.currentUserName.isNotEmpty
                           ? widget.store.currentUserName[0].toUpperCase()
                           : 'U',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -630,7 +604,8 @@ class _SuiteShellState extends State<SuiteShell> {
                       children: [
                         Text(
                           widget.store.currentUserName,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 13),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -639,9 +614,11 @@ class _SuiteShellState extends State<SuiteShell> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: widget.store.currentUserRole.toLowerCase() == 'admin'
+                            color: widget.store.currentUserRole.toLowerCase() ==
+                                    'admin'
                                 ? AppColors.primary
-                                : (widget.store.currentUserRole.toLowerCase() == 'manager'
+                                : (widget.store.currentUserRole.toLowerCase() ==
+                                        'manager'
                                     ? const Color(0xFF0284C7)
                                     : const Color(0xFF10B981)),
                           ),
@@ -660,7 +637,8 @@ class _SuiteShellState extends State<SuiteShell> {
                   selected: i == page,
                   selectedColor: AppColors.primary,
                   leading: Icon(items[i].$2),
-                  title: Text(items[i].$1, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(items[i].$1,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   onTap: () {
                     setState(() => page = i);
                     Navigator.pop(context);
@@ -669,17 +647,6 @@ class _SuiteShellState extends State<SuiteShell> {
               ),
             ),
             const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.sync, color: AppColors.primary),
-              title: const Text('Cloud & Sync Status'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => SyncScreen(widget.store)),
-                );
-              },
-            ),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.grey),
               title: const Text('Sign out'),
@@ -694,7 +661,8 @@ class _SuiteShellState extends State<SuiteShell> {
     );
   }
 
-  void _showMoreBottomSheet(BuildContext context, List<(String, IconData)> items) {
+  void _showMoreBottomSheet(
+      BuildContext context, List<(String, IconData)> items) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -724,46 +692,42 @@ class _SuiteShellState extends State<SuiteShell> {
               ),
               const SizedBox(height: 12),
               ListTile(
-                leading: const Icon(Icons.groups_outlined, color: Colors.purple),
-                title: const Text('Customers & Suppliers', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading:
+                    const Icon(Icons.groups_outlined, color: Colors.purple),
+                title: const Text('Customers & Suppliers',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: const Text('Parties, ledgers & statements'),
                 onTap: () {
                   Navigator.pop(ctx);
                   setState(() => page = 4);
                 },
               ),
-              if (PermissionService.canViewReports(widget.store.currentUserRole))
+              if (PermissionService.canViewReports(
+                  widget.store.currentUserRole))
                 ListTile(
-                  leading: const Icon(Icons.analytics_outlined, color: Colors.pink),
-                  title: const Text('Reports & Analytics', style: TextStyle(fontWeight: FontWeight.w600)),
+                  leading:
+                      const Icon(Icons.analytics_outlined, color: Colors.pink),
+                  title: const Text('Reports & Analytics',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Sales, tax & transaction reports'),
                   onTap: () {
                     Navigator.pop(ctx);
                     setState(() => page = 5);
                   },
                 ),
-              if (PermissionService.canAccessSettings(widget.store.currentUserRole))
+              if (PermissionService.canAccessSettings(
+                  widget.store.currentUserRole))
                 ListTile(
-                  leading: const Icon(Icons.settings_outlined, color: Colors.blueGrey),
-                  title: const Text('Settings & Staff', style: TextStyle(fontWeight: FontWeight.w600)),
+                  leading: const Icon(Icons.settings_outlined,
+                      color: Colors.blueGrey),
+                  title: const Text('Settings & Staff',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Sequences, business profile & users'),
                   onTap: () {
                     Navigator.pop(ctx);
                     setState(() => page = 6);
                   },
                 ),
-              ListTile(
-                leading: const Icon(Icons.sync_outlined, color: AppColors.primary),
-                title: const Text('Sync & Cloud Mode', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(widget.store.remoteMode ? 'Online - Auto Syncing' : 'Offline Mode'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => SyncScreen(widget.store)),
-                  );
-                },
-              ),
             ],
           ),
         ),
@@ -812,7 +776,9 @@ class PageFrame extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
                       ),
                     ),
                   ],
@@ -859,7 +825,9 @@ class _ProductImage extends StatelessWidget {
       width: 54,
       height: 54,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceContainerHighest : AppColors.lightSurfaceContainerHighest,
+        color: isDark
+            ? AppColors.darkSurfaceContainerHighest
+            : AppColors.lightSurfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadii.medium),
       ),
       child: Icon(
@@ -999,7 +967,9 @@ Future<void> _itemDialog(
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Service Item', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  title: const Text('Service Item',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                   subtitle: const Text('No inventory deduction or tracking'),
                   value: service,
                   onChanged: (v) => set(() => service = v),
@@ -1012,7 +982,9 @@ Future<void> _itemDialog(
                       ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadii.medium),
                         child: Image.memory(
-                          base64Decode(image!.contains(',') ? image!.split(',').last : image!),
+                          base64Decode(image!.contains(',')
+                              ? image!.split(',').last
+                              : image!),
                           width: 58,
                           height: 58,
                           fit: BoxFit.cover,
@@ -1041,7 +1013,8 @@ Future<void> _itemDialog(
                       const SizedBox(width: 8),
                       IconButton(
                         tooltip: 'Remove Image',
-                        icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                        icon: const Icon(Icons.delete_outline,
+                            color: AppColors.error),
                         onPressed: () => set(() => image = null),
                       ),
                     ],
@@ -1049,7 +1022,9 @@ Future<void> _itemDialog(
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                  Text(error!,
+                      style: const TextStyle(
+                          color: AppColors.error, fontSize: 13)),
                 ],
               ],
             ),
@@ -1065,19 +1040,24 @@ Future<void> _itemDialog(
             onPressed: () async {
               if (name.text.trim().isEmpty ||
                   [price, purchase, stock, low].any((c) =>
-                      double.tryParse(c.text) == null || !double.parse(c.text).isFinite) ||
+                      double.tryParse(c.text) == null ||
+                      !double.parse(c.text).isFinite) ||
                   double.parse(price.text) < 0 ||
                   double.parse(purchase.text) < 0 ||
                   double.parse(low.text) < 0) {
-                set(() => error = 'Enter a name and valid numbers for price, stock and limit.');
+                set(() => error =
+                    'Enter a name and valid numbers for price, stock and limit.');
                 return;
               }
               try {
                 await store.addItem(
                   Item(
-                    id: item?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+                    id: item?.id ??
+                        DateTime.now().microsecondsSinceEpoch.toString(),
                     purchasePrice: double.parse(purchase.text),
-                    category: category.text.trim().isEmpty ? 'General' : category.text.trim(),
+                    category: category.text.trim().isEmpty
+                        ? 'General'
+                        : category.text.trim(),
                     unit: unit.text.trim().isEmpty ? 'Pcs' : unit.text.trim(),
                     lowStockLimit: double.parse(low.text),
                     isService: service,
@@ -1100,9 +1080,21 @@ Future<void> _itemDialog(
     ),
   );
 
-  for (final c in [name, code, price, stock, hsn, purchase, category, unit, low]) {
+  Future.delayed(const Duration(milliseconds: 500), () {
+  for (final c in [
+    name,
+    code,
+    price,
+    stock,
+    hsn,
+    purchase,
+    category,
+    unit,
+    low
+  ]) {
     c.dispose();
   }
+  });
 }
 
 Future<void> _partyDialog(
@@ -1123,7 +1115,8 @@ Future<void> _partyDialog(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, set) => AlertDialog(
-        title: Text(party == null ? 'Add Contact / Party' : 'Edit Contact / Party'),
+        title: Text(
+            party == null ? 'Add Contact / Party' : 'Edit Contact / Party'),
         content: SizedBox(
           width: 500,
           child: SingleChildScrollView(
@@ -1163,9 +1156,11 @@ Future<void> _partyDialog(
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         initialValue: type,
-                        decoration: const InputDecoration(labelText: 'Party Type'),
+                        decoration:
+                            const InputDecoration(labelText: 'Party Type'),
                         items: ['Customer', 'Supplier', 'Both']
-                            .map((x) => DropdownMenuItem(value: x, child: Text(x)))
+                            .map((x) =>
+                                DropdownMenuItem(value: x, child: Text(x)))
                             .toList(),
                         onChanged: (v) => set(() => type = v!),
                       ),
@@ -1197,7 +1192,9 @@ Future<void> _partyDialog(
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                  Text(error!,
+                      style: const TextStyle(
+                          color: AppColors.error, fontSize: 13)),
                 ],
               ],
             ),
@@ -1220,7 +1217,8 @@ Future<void> _partyDialog(
               try {
                 await store.addParty(
                   Party(
-                    id: party?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+                    id: party?.id ??
+                        DateTime.now().microsecondsSinceEpoch.toString(),
                     balance: double.parse(balance.text),
                     name: n.text.trim(),
                     phone: ph.text.trim(),
@@ -1241,9 +1239,11 @@ Future<void> _partyDialog(
     ),
   );
 
+  Future.delayed(const Duration(milliseconds: 500), () {
   for (final c in [n, ph, em, gst, address, balance]) {
     c.dispose();
   }
+  });
 }
 
 enum ReportRange { today, month, last30, all }
@@ -1266,7 +1266,13 @@ class _ReportsPageState extends State<ReportsPage> {
           (t) => tab == 0
               ? true
               : tab == 1
-                  ? ['order', 'sale_invoice', 'sale_order', 'quotation', 'estimate'].contains(t.type)
+                  ? [
+                      'order',
+                      'sale_invoice',
+                      'sale_order',
+                      'quotation',
+                      'estimate'
+                    ].contains(t.type)
                   : t.paid > 0 || t.type.startsWith('payment_'),
         )
         .toList();
@@ -1298,7 +1304,11 @@ class _ReportsPageState extends State<ReportsPage> {
     final r = rows,
         total = r.fold<double>(0, (a, b) => a + b.total),
         paid = r.fold<double>(0, (a, b) => a + b.paid);
-    return '${['Transaction Details', 'Sales Details', 'Payment Details'][tab]}\nRecords: ${r.length}\nTotal: ${AppTypography.formatCurrency(total)}\nPaid: ${AppTypography.formatCurrency(paid)}\nOutstanding: ${AppTypography.formatCurrency(total - paid)}';
+    return '${[
+      'Transaction Details',
+      'Sales Details',
+      'Payment Details'
+    ][tab]}\nRecords: ${r.length}\nTotal: ${AppTypography.formatCurrency(total)}\nPaid: ${AppTypography.formatCurrency(paid)}\nOutstanding: ${AppTypography.formatCurrency(total - paid)}';
   }
 
   Future<void> shareWhatsApp() async {
@@ -1341,7 +1351,8 @@ class _ReportsPageState extends State<ReportsPage> {
 
     return PageFrame(
       title: 'Reports & Analytics',
-      subtitle: 'Transaction breakdown, tax liabilities and payment reconciliation',
+      subtitle:
+          'Transaction breakdown, tax liabilities and payment reconciliation',
       child: Column(
         children: [
           // Filter Row
@@ -1353,7 +1364,11 @@ class _ReportsPageState extends State<ReportsPage> {
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text(['All Transactions', 'Sales Only', 'Payments Only'][i]),
+                      label: Text([
+                        'All Transactions',
+                        'Sales Only',
+                        'Payments Only'
+                      ][i]),
                       selected: tab == i,
                       onSelected: (_) => setState(() => tab = i),
                     ),
@@ -1435,7 +1450,9 @@ class _ReportsPageState extends State<ReportsPage> {
                     title: 'Outstanding Balance',
                     value: AppTypography.formatCurrency(total - paid),
                     icon: Icons.pending_actions,
-                    iconColor: (total - paid) > 0 ? AppColors.error : AppColors.success,
+                    iconColor: (total - paid) > 0
+                        ? AppColors.error
+                        : AppColors.success,
                   ),
                 ],
               );
@@ -1478,7 +1495,8 @@ class _ReportsPageState extends State<ReportsPage> {
             child: r.isEmpty
                 ? const EmpiranEmptyState(
                     title: 'No records in this range',
-                    description: 'Try adjusting your date filters or record types.',
+                    description:
+                        'Try adjusting your date filters or record types.',
                   )
                 : ListView.separated(
                     itemCount: r.length,
@@ -1487,7 +1505,8 @@ class _ReportsPageState extends State<ReportsPage> {
                       final item = r[i];
                       return EmpiranCard(
                         padding: const EdgeInsets.all(14),
-                        onTap: () => previewDocument(context, widget.store, item),
+                        onTap: () =>
+                            previewDocument(context, widget.store, item),
                         child: Row(
                           children: [
                             Expanded(
@@ -1496,14 +1515,19 @@ class _ReportsPageState extends State<ReportsPage> {
                                 children: [
                                   Text(
                                     '# ${item.number} • ${item.partyName.isEmpty ? "Cash Customer" : item.partyName}',
-                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${DateFormat.yMMMd().format(item.date)} • ${transactionLabels[item.type] ?? item.type}',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
                                     ),
                                   ),
                                 ],
@@ -1514,7 +1538,8 @@ class _ReportsPageState extends State<ReportsPage> {
                               children: [
                                 Text(
                                   AppTypography.formatCurrency(item.total),
-                                  style: AppTypography.number.copyWith(fontSize: 15),
+                                  style: AppTypography.number
+                                      .copyWith(fontSize: 15),
                                 ),
                                 const SizedBox(height: 4),
                                 EmpiranStatusChip(
@@ -1545,8 +1570,15 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderStateMixin {
-  late final TabController tabs = TabController(length: 6, vsync: this);
+class _SettingsPageState extends State<SettingsPage>
+    with SingleTickerProviderStateMixin {
+  late TabController tabs;
+
+  @override
+  void initState() {
+    super.initState();
+    tabs = TabController(length: 3, vsync: this);
+  }
 
   @override
   void dispose() {
@@ -1557,7 +1589,8 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) => PageFrame(
         title: 'Settings & Administration',
-        subtitle: 'Company profile, invoice controls, staff access, appearance and backend API server.',
+        subtitle:
+            'Company profile, invoice numbering & controls, and staff permissions.',
         child: Column(
           children: [
             TabBar(
@@ -1565,12 +1598,13 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
               isScrollable: true,
               tabAlignment: TabAlignment.start,
               tabs: const [
-                Tab(text: 'Company Profile', icon: Icon(Icons.business_outlined)),
+                Tab(
+                    text: 'Company Profile',
+                    icon: Icon(Icons.business_outlined)),
                 Tab(text: 'Invoice Control', icon: Icon(Icons.pin_outlined)),
-                Tab(text: 'Appearance & Theme', icon: Icon(Icons.palette_outlined)),
-                Tab(text: 'Staff & Roles', icon: Icon(Icons.manage_accounts_outlined)),
-                Tab(text: 'Backend & Cloud', icon: Icon(Icons.dns_outlined)),
-                Tab(text: 'Email & SMTP', icon: Icon(Icons.mail_outline)),
+                Tab(
+                    text: 'Staff & Roles',
+                    icon: Icon(Icons.manage_accounts_outlined)),
               ],
             ),
             const SizedBox(height: 20),
@@ -1580,10 +1614,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                 children: [
                   _CompanyForm(widget.store),
                   _InvoiceControl(widget.store),
-                  _AppearanceSettings(widget.store),
                   _Users(widget.store),
-                  _ServerSettingsTab(widget.store),
-                  _EmailSettingsTab(widget.store),
                 ],
               ),
             ),
@@ -1599,29 +1630,33 @@ class _CompanyForm extends StatefulWidget {
   State<_CompanyForm> createState() => _CompanyFormState();
 }
 
-class _CompanyFormState extends State<_CompanyForm> {
-  late final fields = <String, TextEditingController>{
-    for (final e in {
-      'name': widget.store.company.name,
-      'gstin': widget.store.company.gstin,
-      'address': widget.store.company.address,
-      'phone': widget.store.company.phone,
-      'state': widget.store.company.state,
-      'stateCode': widget.store.company.stateCode,
-      'email': widget.store.company.email,
-      'bankName': widget.store.company.bankName,
-      'accountNo': widget.store.company.accountNo,
-      'branch': widget.store.company.branch,
-      'ifsc': widget.store.company.ifsc,
-    }.entries)
-      e.key: TextEditingController(text: e.value),
-  };
+class _CompanyFormState extends State<_CompanyForm>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
+  late final Map<String, TextEditingController> fields;
   String? logo;
 
   @override
   void initState() {
     super.initState();
+    fields = <String, TextEditingController>{
+      for (final e in {
+        'name': widget.store.company.name,
+        'gstin': widget.store.company.gstin,
+        'address': widget.store.company.address,
+        'phone': widget.store.company.phone,
+        'state': widget.store.company.state,
+        'stateCode': widget.store.company.stateCode,
+        'email': widget.store.company.email,
+        'bankName': widget.store.company.bankName,
+        'accountNo': widget.store.company.accountNo,
+        'branch': widget.store.company.branch,
+        'ifsc': widget.store.company.ifsc,
+      }.entries)
+        e.key: TextEditingController(text: e.value),
+    };
     logo = widget.store.company.logo;
   }
 
@@ -1634,7 +1669,9 @@ class _CompanyFormState extends State<_CompanyForm> {
   }
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
+  Widget build(BuildContext context) {
+    super.build(context);
+    return SingleChildScrollView(
         child: EmpiranCard(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -1695,7 +1732,9 @@ class _CompanyFormState extends State<_CompanyForm> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadii.medium),
                       child: Image.memory(
-                        base64Decode(logo!.contains(',') ? logo!.split(',').last : logo!),
+                        base64Decode(logo!.contains(',')
+                            ? logo!.split(',').last
+                            : logo!),
                         width: 64,
                         height: 64,
                         fit: BoxFit.cover,
@@ -1723,7 +1762,8 @@ class _CompanyFormState extends State<_CompanyForm> {
                     const SizedBox(width: 8),
                     IconButton(
                       tooltip: 'Remove Logo',
-                      icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                      icon: const Icon(Icons.delete_outline,
+                          color: AppColors.error),
                       onPressed: () => setState(() => logo = null),
                     ),
                   ],
@@ -1739,7 +1779,9 @@ class _CompanyFormState extends State<_CompanyForm> {
                     if (['name', 'gstin', 'address', 'phone']
                         .any((k) => fields[k]!.text.trim().isEmpty)) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Complete all mandatory fields (*).')),
+                        const SnackBar(
+                            content:
+                                Text('Complete all mandatory fields (*).')),
                       );
                       return;
                     }
@@ -1759,7 +1801,9 @@ class _CompanyFormState extends State<_CompanyForm> {
                     await widget.store.saveCompany();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Company profile saved successfully.')),
+                        const SnackBar(
+                            content:
+                                Text('Company profile saved successfully.')),
                       );
                     }
                   },
@@ -1778,11 +1822,24 @@ class _InvoiceControl extends StatefulWidget {
   State<_InvoiceControl> createState() => _InvoiceControlState();
 }
 
-class _InvoiceControlState extends State<_InvoiceControl> {
-  late final gy = TextEditingController(text: widget.store.settings.gstYear),
-      gc = TextEditingController(text: '${widget.store.settings.gstCounter}'),
-      np = TextEditingController(text: widget.store.settings.nonGstPrefix),
-      nc = TextEditingController(text: '${widget.store.settings.nonGstCounter}');
+class _InvoiceControlState extends State<_InvoiceControl>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  late final TextEditingController gy;
+  late final TextEditingController gc;
+  late final TextEditingController np;
+  late final TextEditingController nc;
+
+  @override
+  void initState() {
+    super.initState();
+    gy = TextEditingController(text: widget.store.settings.gstYear);
+    gc = TextEditingController(text: '${widget.store.settings.gstCounter}');
+    np = TextEditingController(text: widget.store.settings.nonGstPrefix);
+    nc = TextEditingController(text: '${widget.store.settings.nonGstCounter}');
+  }
 
   @override
   void dispose() {
@@ -1794,7 +1851,9 @@ class _InvoiceControlState extends State<_InvoiceControl> {
   }
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
+  Widget build(BuildContext context) {
+    super.build(context);
+    return SingleChildScrollView(
         child: EmpiranCard(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -1893,13 +1952,16 @@ class _InvoiceControlState extends State<_InvoiceControl> {
                   icon: Icons.save_outlined,
                   onPressed: () async {
                     widget.store.settings.gstYear = gy.text;
-                    widget.store.settings.gstCounter = int.tryParse(gc.text) ?? 1;
+                    widget.store.settings.gstCounter =
+                        int.tryParse(gc.text) ?? 1;
                     widget.store.settings.nonGstPrefix = np.text;
-                    widget.store.settings.nonGstCounter = int.tryParse(nc.text) ?? 1001;
+                    widget.store.settings.nonGstCounter =
+                        int.tryParse(nc.text) ?? 1001;
                     await widget.store.saveSettings();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Numbering sequences updated.')),
+                        const SnackBar(
+                            content: Text('Numbering sequences updated.')),
                       );
                     }
                   },
@@ -1909,186 +1971,6 @@ class _InvoiceControlState extends State<_InvoiceControl> {
           ),
         ),
       );
-}
-
-class _AppearanceSettings extends StatelessWidget {
-  const _AppearanceSettings(this.store);
-  final AppStore store;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = store.darkMode;
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Theme & Interface Appearance',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Select your preferred workspace theme. Dark mode uses an eye-friendly charcoal and slate palette without pure black.',
-            style: TextStyle(fontSize: 13, color: Colors.grey),
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 20,
-            runSpacing: 20,
-            children: [
-              // Light Theme Card Preview
-              _buildThemeCard(
-                title: 'Light Theme',
-                subtitle: 'Clean white surfaces with soft slate canvas',
-                isSelected: !isDark,
-                previewBg: AppColors.lightBackground,
-                previewCard: AppColors.lightSurface,
-                previewText: AppColors.lightTextPrimary,
-                previewBorder: AppColors.lightBorder,
-                onTap: () {
-                  if (store.darkMode) store.toggleTheme();
-                },
-              ),
-
-              // Charcoal / Slate Dark Theme Card Preview
-              _buildThemeCard(
-                title: 'Charcoal Dark',
-                subtitle: 'Deep slate comfort palette (zero pure black)',
-                isSelected: isDark,
-                previewBg: AppColors.darkBackground,
-                previewCard: AppColors.darkSurfaceContainer,
-                previewText: AppColors.darkTextPrimary,
-                previewBorder: AppColors.darkBorder,
-                onTap: () {
-                  if (!store.darkMode) store.toggleTheme();
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeCard({
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required Color previewBg,
-    required Color previewCard,
-    required Color previewText,
-    required Color previewBorder,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadii.large),
-      child: Container(
-        width: 300,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: previewBg,
-          borderRadius: BorderRadius.circular(AppRadii.large),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : previewBorder,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Mock UI preview
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: previewCard,
-                borderRadius: BorderRadius.circular(AppRadii.medium),
-                border: Border.all(color: previewBorder),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 14,
-                        height: 14,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 80,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: previewText.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Container(
-                    width: 120,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: previewText,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: 70,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: previewText,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: previewText.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: isSelected ? AppColors.primary : Colors.grey,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _Users extends StatelessWidget {
@@ -2128,28 +2010,36 @@ class _Users extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (_, i) {
                 final u = store.users[i];
-                final isSuperAdmin = u['username']?.toLowerCase() == 'empirantraders';
+                final isSuperAdmin =
+                    u['username']?.toLowerCase() == 'empirantraders';
                 final roleStr = u['role'] ?? 'Biller';
                 final isAdminRole = roleStr.toLowerCase() == 'admin';
                 final isManagerRole = roleStr.toLowerCase() == 'manager';
 
                 return EmpiranCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
                       CircleAvatar(
                         backgroundColor: isAdminRole
                             ? AppColors.primary.withValues(alpha: 0.12)
                             : (isManagerRole
-                                ? const Color(0xFF0284C7).withValues(alpha: 0.12)
-                                : const Color(0xFF10B981).withValues(alpha: 0.12)),
+                                ? const Color(0xFF0284C7)
+                                    .withValues(alpha: 0.12)
+                                : const Color(0xFF10B981)
+                                    .withValues(alpha: 0.12)),
                         child: Icon(
                           isAdminRole
                               ? Icons.admin_panel_settings_outlined
-                              : (isManagerRole ? Icons.manage_accounts_outlined : Icons.person_outline),
+                              : (isManagerRole
+                                  ? Icons.manage_accounts_outlined
+                                  : Icons.person_outline),
                           color: isAdminRole
                               ? AppColors.primary
-                              : (isManagerRole ? const Color(0xFF0284C7) : const Color(0xFF10B981)),
+                              : (isManagerRole
+                                  ? const Color(0xFF0284C7)
+                                  : const Color(0xFF10B981)),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -2161,12 +2051,15 @@ class _Users extends StatelessWidget {
                               children: [
                                 Text(
                                   u['name']!,
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14),
                                 ),
                                 if (isSuperAdmin) ...[
                                   const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: AppColors.primarySubtle,
                                       borderRadius: BorderRadius.circular(4),
@@ -2186,19 +2079,23 @@ class _Users extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${u['username']} • ${u['email']}',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: isAdminRole
                               ? AppColors.primary.withValues(alpha: 0.12)
                               : (isManagerRole
-                                  ? const Color(0xFF0284C7).withValues(alpha: 0.12)
-                                  : const Color(0xFF10B981).withValues(alpha: 0.12)),
+                                  ? const Color(0xFF0284C7)
+                                      .withValues(alpha: 0.12)
+                                  : const Color(0xFF10B981)
+                                      .withValues(alpha: 0.12)),
                           borderRadius: BorderRadius.circular(AppRadii.pill),
                         ),
                         child: Text(
@@ -2208,23 +2105,28 @@ class _Users extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                             color: isAdminRole
                                 ? AppColors.primary
-                                : (isManagerRole ? const Color(0xFF0284C7) : const Color(0xFF10B981)),
+                                : (isManagerRole
+                                    ? const Color(0xFF0284C7)
+                                    : const Color(0xFF10B981)),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
                         tooltip: 'Edit User & Role',
-                        icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
+                        icon: const Icon(Icons.edit_outlined,
+                            size: 20, color: AppColors.primary),
                         onPressed: () => _editUserDialog(context, store, u),
                       ),
                       if (!isSuperAdmin) ...[
                         const SizedBox(width: 4),
                         IconButton(
                           tooltip: 'Delete Account',
-                          icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                          icon: const Icon(Icons.delete_outline,
+                              size: 20, color: AppColors.error),
                           onPressed: () async {
-                            if (await confirmDelete(context, 'Delete staff account for "${u['name']}"?')) {
+                            if (await confirmDelete(context,
+                                'Delete staff account for "${u['name']}"?')) {
                               await store.deleteUser(u['username']!);
                             }
                           },
@@ -2299,7 +2201,9 @@ Future<void> _userDialog(BuildContext context, AppStore store) async {
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                  Text(error!,
+                      style: const TextStyle(
+                          color: AppColors.error, fontSize: 13)),
                 ],
               ],
             ),
@@ -2313,14 +2217,17 @@ Future<void> _userDialog(BuildContext context, AppStore store) async {
           EmpiranButton(
             label: 'Create Account',
             onPressed: () async {
-              if (n.text.trim().isEmpty || u.text.trim().isEmpty || p.text.trim().isEmpty) {
+              if (n.text.trim().isEmpty ||
+                  u.text.trim().isEmpty ||
+                  p.text.trim().isEmpty) {
                 set(() => error = 'Name, username and password are required.');
                 return;
               }
               if (store.users.any((x) =>
                   x['username']?.toLowerCase() == u.text.trim().toLowerCase() ||
                   (e.text.trim().isNotEmpty &&
-                      x['email']?.toLowerCase() == e.text.trim().toLowerCase()))) {
+                      x['email']?.toLowerCase() ==
+                          e.text.trim().toLowerCase()))) {
                 set(() => error = 'Username or email already exists.');
                 return;
               }
@@ -2339,12 +2246,15 @@ Future<void> _userDialog(BuildContext context, AppStore store) async {
     ),
   );
 
+  Future.delayed(const Duration(milliseconds: 500), () {
   for (final c in [n, u, e, p]) {
     c.dispose();
   }
+  });
 }
 
-Future<void> _editUserDialog(BuildContext context, AppStore store, Map<String, String> user) async {
+Future<void> _editUserDialog(
+    BuildContext context, AppStore store, Map<String, String> user) async {
   final isSuperAdmin = user['username']?.toLowerCase() == 'empirantraders';
   final n = TextEditingController(text: user['name']),
       e = TextEditingController(text: user['email']),
@@ -2365,7 +2275,8 @@ Future<void> _editUserDialog(BuildContext context, AppStore store, Map<String, S
       builder: (ctx, set) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.manage_accounts_outlined, color: AppColors.primary),
+            const Icon(Icons.manage_accounts_outlined,
+                color: AppColors.primary),
             const SizedBox(width: 8),
             Text('Edit Staff: ${user['username']}'),
           ],
@@ -2416,12 +2327,17 @@ Future<void> _editUserDialog(BuildContext context, AppStore store, Map<String, S
                     padding: EdgeInsets.only(top: 6),
                     child: Text(
                       'Primary root administrator role cannot be changed.',
-                      style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                          fontStyle: FontStyle.italic),
                     ),
                   ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                  Text(error!,
+                      style: const TextStyle(
+                          color: AppColors.error, fontSize: 13)),
                 ],
               ],
             ),
@@ -2454,9 +2370,11 @@ Future<void> _editUserDialog(BuildContext context, AppStore store, Map<String, S
     ),
   );
 
+  Future.delayed(const Duration(milliseconds: 500), () {
   n.dispose();
   e.dispose();
   p.dispose();
+  });
 }
 
 class _ServerSettingsTab extends StatefulWidget {
@@ -2475,7 +2393,8 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
   @override
   void initState() {
     super.initState();
-    _customUrlController = TextEditingController(text: widget.store.currentApiUrl);
+    _customUrlController =
+        TextEditingController(text: widget.store.currentApiUrl);
     _checkHealth();
   }
 
@@ -2519,7 +2438,9 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
             'Configure your active ASP.NET Core backend server endpoint, test live latency, and manage sync.',
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 20),
@@ -2539,7 +2460,8 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                         color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppRadii.medium),
                       ),
-                      child: const Icon(Icons.dns_rounded, color: AppColors.primary),
+                      child: const Icon(Icons.dns_rounded,
+                          color: AppColors.primary),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -2551,30 +2473,41 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                               Text(
                                 isLocal
                                     ? 'Local Development Server'
-                                    : (isCloud ? 'Cloud Production Server' : 'Custom Server Endpoint'),
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                    : (isCloud
+                                        ? 'Cloud Production Server'
+                                        : 'Custom Server Endpoint'),
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: (_health?['healthy'] == true)
-                                      ? AppColors.success.withValues(alpha: 0.15)
+                                      ? AppColors.success
+                                          .withValues(alpha: 0.15)
                                       : (_testing
-                                          ? AppColors.info.withValues(alpha: 0.15)
-                                          : AppColors.error.withValues(alpha: 0.15)),
+                                          ? AppColors.info
+                                              .withValues(alpha: 0.15)
+                                          : AppColors.error
+                                              .withValues(alpha: 0.15)),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   _testing
                                       ? 'PINGING...'
-                                      : ((_health?['healthy'] == true) ? 'ONLINE' : 'OFFLINE'),
+                                      : ((_health?['healthy'] == true)
+                                          ? 'ONLINE'
+                                          : 'OFFLINE'),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     color: (_health?['healthy'] == true)
                                         ? AppColors.success
-                                        : (_testing ? AppColors.info : AppColors.error),
+                                        : (_testing
+                                            ? AppColors.info
+                                            : AppColors.error),
                                   ),
                                 ),
                               ),
@@ -2586,7 +2519,9 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'monospace',
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary,
                             ),
                           ),
                         ],
@@ -2604,7 +2539,8 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                 if (_health != null) ...[
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: isDark
                           ? AppColors.darkSurfaceContainerHighest
@@ -2614,9 +2550,13 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                     child: Row(
                       children: [
                         Icon(
-                          _health!['healthy'] == true ? Icons.check_circle_outline : Icons.error_outline,
+                          _health!['healthy'] == true
+                              ? Icons.check_circle_outline
+                              : Icons.error_outline,
                           size: 16,
-                          color: _health!['healthy'] == true ? AppColors.success : AppColors.error,
+                          color: _health!['healthy'] == true
+                              ? AppColors.success
+                              : AppColors.error,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -2626,7 +2566,9 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: _health!['healthy'] == true ? AppColors.success : AppColors.error,
+                            color: _health!['healthy'] == true
+                                ? AppColors.success
+                                : AppColors.error,
                           ),
                         ),
                       ],
@@ -2649,12 +2591,13 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
               Expanded(
                 child: _PresetTile(
                   title: 'Localhost (ASP.NET Core)',
-                  subtitle: 'http://localhost:5186/api/v1',
+                  subtitle: 'https://empiran-api.runasp.net/api/v1',
                   isActive: isLocal,
                   icon: Icons.computer_rounded,
                   badge: 'Local Port 5186',
                   onTap: () async {
-                    await widget.store.setApiUrl(ServerConfigDialog.localPreset);
+                    await widget.store
+                        .setApiUrl(ServerConfigDialog.localPreset);
                     _customUrlController.text = ServerConfigDialog.localPreset;
                     _checkHealth();
                   },
@@ -2669,7 +2612,8 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                   icon: Icons.cloud_done_rounded,
                   badge: 'runasp.net Cloud',
                   onTap: () async {
-                    await widget.store.setApiUrl(ServerConfigDialog.cloudPreset);
+                    await widget.store
+                        .setApiUrl(ServerConfigDialog.cloudPreset);
                     _customUrlController.text = ServerConfigDialog.cloudPreset;
                     _checkHealth();
                   },
@@ -2694,7 +2638,9 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                   'Specify a custom IP address or domain when deploying to a self-hosted server or on a local network.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -2750,8 +2696,12 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                     borderRadius: BorderRadius.circular(AppRadii.medium),
                   ),
                   child: Icon(
-                    widget.store.remoteMode ? Icons.cloud_sync_rounded : Icons.cloud_off_rounded,
-                    color: widget.store.remoteMode ? AppColors.success : AppColors.warning,
+                    widget.store.remoteMode
+                        ? Icons.cloud_sync_rounded
+                        : Icons.cloud_off_rounded,
+                    color: widget.store.remoteMode
+                        ? AppColors.success
+                        : AppColors.warning,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -2760,8 +2710,11 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.store.remoteMode ? 'Cloud Synchronization Active' : 'Offline / Local SQLite Mode',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        widget.store.remoteMode
+                            ? 'Cloud Synchronization Active'
+                            : 'Offline / Local SQLite Mode',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         widget.store.remoteMode
@@ -2769,7 +2722,9 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                             : 'Sign in with cloud credentials to sync businesses, items, and transactions with the backend.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
                         ),
                       ),
                     ],
@@ -2786,7 +2741,8 @@ class _ServerSettingsTabState extends State<_ServerSettingsTab> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Cloud sync completed successfully!'),
+                              content:
+                                  Text('Cloud sync completed successfully!'),
                               backgroundColor: AppColors.success,
                             ),
                           );
@@ -2841,10 +2797,14 @@ class _PresetTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive
               ? AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1)
-              : (isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurfaceContainer),
+              : (isDark
+                  ? AppColors.darkSurfaceContainer
+                  : AppColors.lightSurfaceContainer),
           borderRadius: BorderRadius.circular(AppRadii.medium),
           border: Border.all(
-            color: isActive ? AppColors.primary : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+            color: isActive
+                ? AppColors.primary
+                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
             width: isActive ? 1.8 : 1.0,
           ),
         ),
@@ -2853,7 +2813,9 @@ class _PresetTile extends StatelessWidget {
             Icon(
               icon,
               size: 24,
-              color: isActive ? AppColors.primary : (isDark ? Colors.white70 : Colors.black54),
+              color: isActive
+                  ? AppColors.primary
+                  : (isDark ? Colors.white70 : Colors.black54),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -2872,9 +2834,12 @@ class _PresetTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isActive ? AppColors.primary : (isDark ? Colors.white12 : Colors.black12),
+                          color: isActive
+                              ? AppColors.primary
+                              : (isDark ? Colors.white12 : Colors.black12),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -2893,14 +2858,17 @@ class _PresetTile extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 11,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
               ),
             ),
             if (isActive)
-              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
+              const Icon(Icons.check_circle_rounded,
+                  color: AppColors.primary, size: 20),
           ],
         ),
       ),
@@ -2917,7 +2885,8 @@ class _EmailSettingsTab extends StatefulWidget {
 }
 
 class _EmailSettingsTabState extends State<_EmailSettingsTab> {
-  final TextEditingController _testEmailCtrl = TextEditingController(text: 'empirantraders@gmail.com');
+  final TextEditingController _testEmailCtrl =
+      TextEditingController(text: 'empirantraders@gmail.com');
   bool _loadingStatus = false;
   bool _sendingTest = false;
   Map<String, dynamic>? _smtpStatus;
@@ -3016,7 +2985,9 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
             'Manage outgoing mail credentials, test connectivity to smtp.gmail.com, and review system email templates.',
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 20),
@@ -3037,9 +3008,11 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
                           height: 42,
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(AppRadii.medium),
+                            borderRadius:
+                                BorderRadius.circular(AppRadii.medium),
                           ),
-                          child: const Icon(Icons.mark_email_read_rounded, color: AppColors.primary),
+                          child: const Icon(Icons.mark_email_read_rounded,
+                              color: AppColors.primary),
                         ),
                         const SizedBox(width: 14),
                         Column(
@@ -3047,15 +3020,19 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
                           children: [
                             const Text(
                               'Google SMTP Configuration',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              _smtpStatus != null && _smtpStatus!['configured'] == true
+                              _smtpStatus != null &&
+                                      _smtpStatus!['configured'] == true
                                   ? 'Connected • smtp.gmail.com:587 (TLS)'
                                   : 'Checking status or connecting to backend...',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
                               ),
                             ),
                           ],
@@ -3081,18 +3058,24 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
                           : AppColors.lightSurfaceContainerHighest,
                       borderRadius: BorderRadius.circular(AppRadii.medium),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.lightBorder,
                       ),
                     ),
                     child: Wrap(
                       spacing: 24,
                       runSpacing: 12,
                       children: [
-                        _InfoItem('SMTP Server', '${_smtpStatus!['host']}:${_smtpStatus!['port']}'),
+                        _InfoItem('SMTP Server',
+                            '${_smtpStatus!['host']}:${_smtpStatus!['port']}'),
                         _InfoItem('Security', 'STARTTLS (Enabled)'),
-                        _InfoItem('Sender Account', '${_smtpStatus!['senderEmail']}'),
-                        _InfoItem('Display Name', '${_smtpStatus!['fromName']}'),
-                        _InfoItem('App Password', '${_smtpStatus!['maskedPassword']}'),
+                        _InfoItem(
+                            'Sender Account', '${_smtpStatus!['senderEmail']}'),
+                        _InfoItem(
+                            'Display Name', '${_smtpStatus!['fromName']}'),
+                        _InfoItem('App Password',
+                            '${_smtpStatus!['maskedPassword']}'),
                       ],
                     ),
                   ),
@@ -3117,7 +3100,9 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
                   'Verify that your Google App Password can successfully dispatch authenticated emails.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -3144,7 +3129,8 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
                 if (_testResult != null) ...[
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: _testResult!['success'] == true
                           ? AppColors.success.withValues(alpha: 0.12)
@@ -3154,8 +3140,12 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
                     child: Row(
                       children: [
                         Icon(
-                          _testResult!['success'] == true ? Icons.check_circle_outline : Icons.error_outline,
-                          color: _testResult!['success'] == true ? AppColors.success : AppColors.error,
+                          _testResult!['success'] == true
+                              ? Icons.check_circle_outline
+                              : Icons.error_outline,
+                          color: _testResult!['success'] == true
+                              ? AppColors.success
+                              : AppColors.error,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
@@ -3165,7 +3155,9 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: _testResult!['success'] == true ? AppColors.success : AppColors.error,
+                              color: _testResult!['success'] == true
+                                  ? AppColors.success
+                                  : AppColors.error,
                             ),
                           ),
                         ),
@@ -3190,19 +3182,22 @@ class _EmailSettingsTabState extends State<_EmailSettingsTab> {
             children: const [
               _TemplateTile(
                 title: 'Invoice & Bill Receipt',
-                subtitle: 'Dispatched to customer parties with payment status, breakdown and direct online link.',
+                subtitle:
+                    'Dispatched to customer parties with payment status, breakdown and direct online link.',
                 icon: Icons.receipt_long_rounded,
-                color: Color(0xFF2563EB),
+                color: Color(0xFF007569),
               ),
               _TemplateTile(
                 title: 'Staff Welcome & Credentials',
-                subtitle: 'Automatically dispatched when creating a new Admin, Manager, or Biller account.',
+                subtitle:
+                    'Automatically dispatched when creating a new Admin, Manager, or Biller account.',
                 icon: Icons.badge_outlined,
                 color: Color(0xFF059669),
               ),
               _TemplateTile(
                 title: 'Security Verification OTP',
-                subtitle: 'Provides single-use 6-digit codes with 10-minute expiry for resets and authorizations.',
+                subtitle:
+                    'Provides single-use 6-digit codes with 10-minute expiry for resets and authorizations.',
                 icon: Icons.security_rounded,
                 color: Color(0xFF7C3AED),
               ),
@@ -3230,7 +3225,9 @@ class _InfoItem extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            color: isDark
+                ? AppColors.darkTextSecondary
+                : AppColors.lightTextSecondary,
           ),
         ),
         const SizedBox(height: 2),
@@ -3263,7 +3260,9 @@ class _TemplateTile extends StatelessWidget {
       width: 280,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurfaceContainer,
+        color: isDark
+            ? AppColors.darkSurfaceContainer
+            : AppColors.lightSurfaceContainer,
         borderRadius: BorderRadius.circular(AppRadii.medium),
         border: Border.all(
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -3286,7 +3285,8 @@ class _TemplateTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -3296,7 +3296,9 @@ class _TemplateTile extends StatelessWidget {
             subtitle,
             style: TextStyle(
               fontSize: 12,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
               height: 1.4,
             ),
           ),
@@ -3305,4 +3307,3 @@ class _TemplateTile extends StatelessWidget {
     );
   }
 }
-

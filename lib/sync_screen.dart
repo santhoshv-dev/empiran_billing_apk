@@ -43,7 +43,9 @@ class _SyncScreenState extends State<SyncScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final pending = _queue.where((q) => q['status'] == 'pending' || q['status'] == 'failed').toList();
+    final pending = _queue
+        .where((q) => q['status'] == 'pending' || q['status'] == 'failed')
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -56,7 +58,9 @@ class _SyncScreenState extends State<SyncScreen> {
               icon: Icons.sync,
               isLoading: widget.store.syncing,
               height: 38,
-              onPressed: widget.store.syncing ? null : () => widget.store.syncEngine.syncNow(),
+              onPressed: widget.store.syncing
+                  ? null
+                  : () => widget.store.syncEngine.syncNow(),
             ),
           ),
         ],
@@ -75,7 +79,8 @@ class _SyncScreenState extends State<SyncScreen> {
                     children: [
                       Text(
                         'Change Queue (${_queue.length})',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                       if (pending.isNotEmpty)
                         EmpiranStatusChip(
@@ -90,12 +95,14 @@ class _SyncScreenState extends State<SyncScreen> {
                     child: _queue.isEmpty
                         ? const EmpiranEmptyState(
                             title: 'All Data is Synchronized',
-                            description: 'Local database is fully in sync with the cloud server.',
+                            description:
+                                'Local database is fully in sync with the cloud server.',
                             icon: Icons.cloud_done_outlined,
                           )
                         : ListView.separated(
                             itemCount: _queue.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 8),
                             itemBuilder: (context, index) {
                               final item = _queue[index];
                               final isFailed = item['status'] == 'failed';
@@ -119,43 +126,57 @@ class _SyncScreenState extends State<SyncScreen> {
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
                                         color: opColor.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(AppRadii.medium),
+                                        borderRadius: BorderRadius.circular(
+                                            AppRadii.medium),
                                       ),
-                                      child: Icon(opIcon, color: opColor, size: 20),
+                                      child: Icon(opIcon,
+                                          color: opColor, size: 20),
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             '${item['operation']} ${item['entityType'].toString().toUpperCase()}',
-                                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             'Entity ID: ${item['entityId'] ?? item['id']}',
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                              color: isDark
+                                                  ? AppColors.darkTextMuted
+                                                  : AppColors.lightTextMuted,
                                             ),
                                           ),
                                           if (item['errorMessage'] != null)
                                             Padding(
-                                              padding: const EdgeInsets.only(top: 4),
+                                              padding:
+                                                  const EdgeInsets.only(top: 4),
                                               child: Text(
                                                 'Error: ${item['errorMessage']}',
-                                                style: const TextStyle(color: AppColors.error, fontSize: 12),
+                                                style: const TextStyle(
+                                                    color: AppColors.error,
+                                                    fontSize: 12),
                                               ),
                                             ),
                                         ],
                                       ),
                                     ),
                                     EmpiranStatusChip(
-                                      label: isFailed ? 'Failed' : (isPending ? 'Pending' : 'Synced'),
+                                      label: isFailed
+                                          ? 'Failed'
+                                          : (isPending ? 'Pending' : 'Synced'),
                                       type: isFailed
                                           ? EmpiranStatusType.error
-                                          : (isPending ? EmpiranStatusType.warning : EmpiranStatusType.success),
+                                          : (isPending
+                                              ? EmpiranStatusType.warning
+                                              : EmpiranStatusType.success),
                                       small: true,
                                     ),
                                   ],
@@ -187,7 +208,8 @@ class _SyncScreenState extends State<SyncScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: (isOnline ? AppColors.success : AppColors.offline).withValues(alpha: 0.15),
+              color: (isOnline ? AppColors.success : AppColors.offline)
+                  .withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -208,7 +230,9 @@ class _SyncScreenState extends State<SyncScreen> {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: isOnline ? AppColors.successDark : AppColors.offline,
+                        color: isOnline
+                            ? AppColors.successDark
+                            : AppColors.offline,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -231,7 +255,9 @@ class _SyncScreenState extends State<SyncScreen> {
                           : 'Changes will automatically sync when internet connection is restored.'),
                   style: TextStyle(
                     fontSize: 13,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
                   ),
                 ),
               ],
