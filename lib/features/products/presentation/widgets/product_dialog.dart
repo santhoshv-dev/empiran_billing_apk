@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -95,7 +96,7 @@ class _ProductDialogState extends State<_ProductDialog> {
     }
   }
 
-  List<int>? _decodeImage(String? image) {
+  Uint8List? _decodeImage(String? image) {
     final raw = image?.trim();
     if (raw == null || raw.isEmpty) return null;
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:empiran/core/services/permission_service.dart';
@@ -10,6 +11,7 @@ import 'package:empiran/features/auth/presentation/bloc/auth_state.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_event.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
+import 'package:empiran/models.dart';
 import '../bloc/products_bloc.dart';
 import '../bloc/products_event.dart';
 import '../bloc/products_state.dart';
@@ -49,7 +51,7 @@ class _ProductsPageState extends State<ProductsPage> {
         );
   }
 
-  List<int>? _decodeProductImage(String? image) {
+  Uint8List? _decodeProductImage(String? image) {
     final raw = image?.trim();
     if (raw == null || raw.isEmpty) return null;
 
