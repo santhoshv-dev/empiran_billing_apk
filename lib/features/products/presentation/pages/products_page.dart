@@ -49,6 +49,50 @@ class _ProductsPageState extends State<ProductsPage> {
         );
   }
 
+  List<int>? _decodeProductImage(String? image) {
+    final raw = image?.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    try {
+      final payload = raw.contains(',') ? raw.split(',').last : raw;
+      return base64Decode(payload);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildProductThumbnail(Item item, {double size = 56}) {
+    final imageBytes = _decodeProductImage(item.image);
+    final radius = BorderRadius.circular(AppRadii.medium);
+
+    Widget fallbackIcon() => Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: AppColors.lightSurfaceContainer,
+            borderRadius: radius,
+          ),
+          child: const Icon(
+            Icons.inventory_2_outlined,
+            color: AppColors.primary,
+          ),
+        );
+
+    if (imageBytes == null) return fallbackIcon();
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: Image.memory(
+        imageBytes,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, __, ___) => fallbackIcon(),
+      ),
+    );
+  }
+
   void _addCategoryDialog(BuildContext context) {
     final catController = TextEditingController();
     showDialog(
@@ -354,22 +398,9 @@ class _ProductsPageState extends State<ProductsPage> {
                                     ],
                                   );
 
-                                  final thumbnail = Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.lightSurfaceContainer,
-                                      borderRadius: BorderRadius.circular(AppRadii.medium),
-                                    ),
-                                    child: item.image != null
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(AppRadii.medium),
-                                            child: Image.memory(
-                                              base64Decode(item.image!.contains(',') ? item.image!.split(',').last : item.image!),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : const Icon(Icons.inventory_2_outlined, color: AppColors.primary),
+                                  final thumbnail = _buildProductThumbnail(
+                                    item,
+                                    size: isCardCompact ? 54 : 60,
                                   );
 
                                   final stockBadge = !item.isService

@@ -95,6 +95,18 @@ class _ProductDialogState extends State<_ProductDialog> {
     }
   }
 
+  List<int>? _decodeImage(String? image) {
+    final raw = image?.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    try {
+      final payload = raw.contains(',') ? raw.split(',').last : raw;
+      return base64Decode(payload);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _save() {
     if (_name.text.trim().isEmpty ||
         double.tryParse(_sales.text) == null ||
@@ -131,6 +143,7 @@ class _ProductDialogState extends State<_ProductDialog> {
         : ['General'];
     final isEdit = widget.item != null;
     final isNarrow = MediaQuery.sizeOf(context).width < 560;
+    final imageBytes = _decodeImage(_image);
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -327,11 +340,11 @@ class _ProductDialogState extends State<_ProductDialog> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        if (_image != null) ...[
+                        if (imageBytes != null) ...[
                           ClipRRect(
                             borderRadius: BorderRadius.circular(AppRadii.medium),
                             child: Image.memory(
-                              base64Decode(_image!.contains(',') ? _image!.split(',').last : _image!),
+                              imageBytes,
                               width: 54,
                               height: 54,
                               fit: BoxFit.cover,

@@ -7,7 +7,6 @@ import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_event.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_state.dart';
-import 'package:empiran/features/auth/presentation/pages/change_password_page.dart';
 import 'package:empiran/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:empiran/features/invoices/presentation/pages/invoices_page.dart';
 import 'package:empiran/features/parties/presentation/pages/parties_page.dart';
@@ -435,14 +434,6 @@ class _ShellPageState extends State<ShellPage> {
                         ),
                         Row(
                           children: [
-                            IconButton(
-                              tooltip: 'Update Password',
-                              icon: const Icon(Icons.lock_reset_rounded, size: 20),
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
                             CircleAvatar(
                               radius: 16,
                               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
@@ -474,13 +465,6 @@ class _ShellPageState extends State<ShellPage> {
             onPressed: () => showGlobalSearchDialog(
               context,
               onNavigate: _selectRoute,
-            ),
-          ),
-          IconButton(
-            tooltip: 'Update Password',
-            icon: const Icon(Icons.lock_reset_rounded),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
             ),
           ),
           IconButton(

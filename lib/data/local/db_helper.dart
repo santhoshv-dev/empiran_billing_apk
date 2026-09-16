@@ -32,7 +32,7 @@ class DbHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -122,6 +122,14 @@ class DbHelper {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE sync_queue ADD COLUMN businessId TEXT');
     }
+    if (oldVersion < 3 && !await _columnExists(db, 'items', 'image')) {
+      await db.execute('ALTER TABLE items ADD COLUMN image TEXT');
+    }
+  }
+
+  Future<bool> _columnExists(Database db, String table, String column) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    return columns.any((row) => row['name'] == column);
   }
 
   // Generic methods with full Web support
@@ -140,8 +148,10 @@ class DbHelper {
       return 1;
     }
     final db = await instance.database;
+    final row = Map<String, dynamic>.from(data);
+    row.updateAll((_, v) => v is bool ? (v ? 1 : 0) : v);
     return await db!
-        .insert(table, data, conflictAlgorithm: ConflictAlgorithm.replace);
+        .insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<int> insertOrUpdate(
@@ -170,7 +180,9 @@ class DbHelper {
       return 0;
     }
     final db = await instance.database;
-    return await db!.update(table, data, where: 'id = ?', whereArgs: [id]);
+    final row = Map<String, dynamic>.from(data);
+    row.updateAll((_, v) => v is bool ? (v ? 1 : 0) : v);
+    return await db!.update(table, row, where: 'id = ?', whereArgs: [id]);
   }
 
   Future<int> delete(String table, String id) async {

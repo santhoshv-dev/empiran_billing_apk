@@ -158,7 +158,7 @@ class Item {
         isService: _b(j['isService']),
         currentStock: _d(j['currentStock']),
         lowStockLimit: _d(j['lowStockLimit']),
-        image: j['image'] ?? j['imageUrl'],
+        image: j['image'] ?? j['Image'] ?? j['imageUrl'],
       );
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -169,7 +169,7 @@ class Item {
         'unit': unit,
         'salesPrice': salesPrice,
         'purchasePrice': purchasePrice,
-        'isService': isService ? 1 : 0,
+        'isService': isService,
         'currentStock': currentStock,
         'lowStockLimit': lowStockLimit,
         'image': image,
