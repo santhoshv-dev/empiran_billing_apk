@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:empiran/core/services/permission_service.dart';
 import 'package:empiran/core/theme/app_theme.dart';
@@ -11,6 +12,7 @@ import 'package:empiran/features/invoices/presentation/pages/invoices_page.dart'
 import 'package:empiran/features/parties/presentation/pages/parties_page.dart';
 import 'package:empiran/features/products/presentation/pages/products_page.dart';
 import 'package:empiran/features/reports/presentation/pages/reports_page.dart';
+import 'package:empiran/features/search/presentation/widgets/global_search_dialog.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
 import 'package:empiran/features/settings/presentation/pages/settings_page.dart';
@@ -145,8 +147,8 @@ class _ShellPageState extends State<ShellPage> {
 
     final currentWidget = navItems[_selectedIndex].$3;
 
-    if (wide) {
-      return Scaffold(
+    final Widget shell = wide
+        ? Scaffold(
         backgroundColor: AppColors.lightBackground,
         body: Row(
           children: [
@@ -302,6 +304,47 @@ class _ShellPageState extends State<ShellPage> {
                           navItems[_selectedIndex].$1,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                         ),
+                        InkWell(
+                          onTap: () => showGlobalSearchDialog(
+                            context,
+                            onNavigate: (i) => setState(() => _selectedIndex = i),
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: 320,
+                            height: 38,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightBackground,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.lightBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search_rounded, size: 18, color: Colors.grey),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Search everything...',
+                                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: Colors.black12),
+                                  ),
+                                  child: const Text(
+                                    'Ctrl+K',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         Row(
                           children: [
                             IconButton(
@@ -331,15 +374,20 @@ class _ShellPageState extends State<ShellPage> {
             ),
           ],
         ),
-      );
-    }
-
-    // Mobile Layout
-    return Scaffold(
+      )
+        : Scaffold(
       backgroundColor: AppColors.lightBackground,
       appBar: AppBar(
         title: Text(navItems[_selectedIndex].$1),
         actions: [
+          IconButton(
+            tooltip: 'Search (Ctrl+K)',
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () => showGlobalSearchDialog(
+              context,
+              onNavigate: (i) => setState(() => _selectedIndex = i),
+            ),
+          ),
           IconButton(
             tooltip: 'Update Password',
             icon: const Icon(Icons.lock_reset_rounded),
@@ -400,6 +448,19 @@ class _ShellPageState extends State<ShellPage> {
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Sales'),
           NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: 'Products'),
         ],
+      ),
+    );
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
+            showGlobalSearchDialog(context, onNavigate: (i) => setState(() => _selectedIndex = i)),
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
+            showGlobalSearchDialog(context, onNavigate: (i) => setState(() => _selectedIndex = i)),
+      },
+      child: Focus(
+        autofocus: true,
+        child: shell,
       ),
     );
   }

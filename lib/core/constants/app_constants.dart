@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'Empiran Business Suite';
+  static const String appName = 'Billing App';
   static const String defaultApiUrl = 'https://empiran-api.runasp.net/api/v1';
 
   // Secure Storage Keys

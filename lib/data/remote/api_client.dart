@@ -370,6 +370,25 @@ class ApiClient {
   Future<void> deleteUser(String businessId, String userId) =>
       deleteStaff(businessId, userId);
 
+  /// Unified fast global search across all business entities
+  Future<Map<String, dynamic>> globalSearch(
+    String businessId, {
+    required String query,
+    String? type,
+    int page = 1,
+  }) async {
+    return _map(
+      await dio.get(
+        '/businesses/$businessId/search',
+        queryParameters: {
+          'q': query,
+          if (type != null && type.isNotEmpty && type != 'all') 'type': type,
+          'page': page,
+        },
+      ),
+    );
+  }
+
   /// Resolves the current active business GUID.
   /// If cached ID is not a valid GUID or is 'local', fetches businesses from API.
   Future<String?> getActiveBusinessId() async {
