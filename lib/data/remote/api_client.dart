@@ -281,6 +281,25 @@ class ApiClient {
   Future<void> deleteCategory(String id, String categoryId) async =>
       dio.delete('/businesses/$id/categories/$categoryId');
 
+  Future<Map<String, dynamic>?> getCategoryImage(
+      String businessId, String categoryId) async {
+    try {
+      return _map(await dio
+          .get('/businesses/$businessId/categories/$categoryId/image'));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadCategoryImageBase64(
+          String businessId, String categoryId, String base64) async =>
+      _map(await dio.post(
+          '/businesses/$businessId/categories/$categoryId/image/base64',
+          data: {'base64Data': base64}));
+
+  Future<void> deleteCategoryImage(String businessId, String categoryId) async =>
+      dio.delete('/businesses/$businessId/categories/$categoryId/image');
+
   Future<List<Map<String, dynamic>>> getStaff(String id) async =>
       _list(await dio.get('/businesses/$id/staff'));
   Future<Map<String, dynamic>> createStaff(
@@ -418,4 +437,3 @@ class ApiClient {
     ).hasMatch(val.trim());
   }
 }
-

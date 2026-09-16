@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:empiran/core/services/permission_service.dart';
 import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/core/utils/formatters.dart';
@@ -97,34 +98,102 @@ class _ProductsPageState extends State<ProductsPage> {
 
   void _addCategoryDialog(BuildContext context) {
     final catController = TextEditingController();
+    String? imageBase64;
+    Uint8List? imageBytes;
+
+    Future<void> pickCategoryImage(StateSetter setDialogState) async {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 75,
+        maxWidth: 1000,
+      );
+      if (file == null) return;
+
+      final bytes = await file.readAsBytes();
+      setDialogState(() {
+        imageBytes = bytes;
+        imageBase64 = base64Encode(bytes);
+      });
+    }
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Product Category'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 380),
-          child: EmpiranTextField(
-            controller: catController,
-            label: 'Category Name',
-            hint: 'e.g. Cables, Switches, LED',
-            isRequired: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Product Category'),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                EmpiranTextField(
+                  controller: catController,
+                  label: 'Category Name',
+                  hint: 'e.g. Cables, Switches, LED',
+                  isRequired: true,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: AppColors.lightSurfaceContainer,
+                        borderRadius: BorderRadius.circular(AppRadii.medium),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: imageBytes == null
+                          ? const Icon(
+                              Icons.category_outlined,
+                              color: AppColors.primary,
+                            )
+                          : Image.memory(
+                              imageBytes!,
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: EmpiranButton(
+                        label: imageBytes == null
+                            ? 'Add Category Image'
+                            : 'Change Category Image',
+                        icon: Icons.photo_library_outlined,
+                        variant: EmpiranButtonVariant.outlined,
+                        height: 40,
+                        onPressed: () => pickCategoryImage(setDialogState),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            EmpiranButton(
+              label: 'Save Category',
+              onPressed: () {
+                final name = catController.text.trim();
+                if (name.isNotEmpty) {
+                  context.read<SettingsBloc>().add(
+                        AddCategoryRequested(
+                          name,
+                          imageBase64: imageBase64,
+                        ),
+                      );
+                }
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          EmpiranButton(
-            label: 'Save Category',
-            onPressed: () {
-              if (catController.text.trim().isNotEmpty) {
-                context.read<SettingsBloc>().add(AddCategoryRequested(catController.text.trim()));
-              }
-              Navigator.pop(ctx);
-            },
-          ),
-        ],
       ),
     ).then((_) => catController.dispose());
   }

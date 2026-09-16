@@ -51,7 +51,7 @@ class InvoicesRepository {
       try {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
-          await apiClient.createTransaction(companyId, txn.toJson());
+          await apiClient.createTransaction(companyId, txn.toApiJson());
         }
       } catch (_) {}
     }

@@ -32,11 +32,12 @@ class SaveInvoiceSettingsRequested extends SettingsEvent {
 
 class AddCategoryRequested extends SettingsEvent {
   final String category;
+  final String? imageBase64;
 
-  const AddCategoryRequested(this.category);
+  const AddCategoryRequested(this.category, {this.imageBase64});
 
   @override
-  List<Object?> get props => [category];
+  List<Object?> get props => [category, imageBase64];
 }
 
 class DeleteCategoryRequested extends SettingsEvent {

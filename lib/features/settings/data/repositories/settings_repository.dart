@@ -98,6 +98,36 @@ class SettingsRepository {
     await prefs.setString(AppConstants.categoriesKey, jsonEncode(categories));
   }
 
+  Future<void> addCategory(String category, {String? imageBase64}) async {
+    final trimmed = category.trim();
+    if (trimmed.isEmpty) return;
+
+    final existing = await loadCategories();
+    if (!existing.contains(trimmed)) {
+      await saveCategories([...existing, trimmed]);
+    }
+
+    final companyId = await apiClient.getActiveBusinessId();
+    if (apiClient.token == null || apiClient.token!.isEmpty || companyId == null) {
+      return;
+    }
+
+    try {
+      final created = await apiClient.createCategory(companyId, {'name': trimmed});
+      final categoryId = created['id']?.toString();
+      if (categoryId != null &&
+          categoryId.isNotEmpty &&
+          imageBase64 != null &&
+          imageBase64.trim().isNotEmpty) {
+        await apiClient.uploadCategoryImageBase64(
+          companyId,
+          categoryId,
+          imageBase64,
+        );
+      }
+    } catch (_) {}
+  }
+
   Future<List<Map<String, String>>> loadUsers() async {
     final companyId = await apiClient.getActiveBusinessId();
     if (apiClient.token != null && apiClient.token!.isNotEmpty && companyId != null) {

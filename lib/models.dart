@@ -12,6 +12,12 @@ String _transactionType(dynamic value) => switch ('$value') {
       'estimate' => 'quotation',
       final value => value,
     };
+String _apiTransactionType(String value) => switch (value) {
+      'order' => 'sale_invoice',
+      'quotation' => 'estimate',
+      'purchase' => 'purchase_bill',
+      final value => value,
+    };
 Map<String, dynamic> _transactionMeta(dynamic value) {
   if (value is! String || !value.trimLeft().startsWith('{')) return {};
   try {
@@ -263,6 +269,19 @@ class InvoiceLine {
         'taxAmount': 0,
         'total': total,
       };
+  Map<String, dynamic> toApiJson() => {
+        'itemId': itemId.trim().isEmpty ? null : itemId,
+        'name': name,
+        'quantity': quantity,
+        'unit': unit,
+        'price': price,
+        'hsn': hsn,
+        'discountPercent': 0,
+        'discountAmount': 0,
+        'taxRate': 0,
+        'taxAmount': 0,
+        'total': total,
+      };
 }
 
 class BusinessTransaction {
@@ -342,7 +361,7 @@ class BusinessTransaction {
         'type': type,
         'number': number,
         'date': date.toIso8601String(),
-        'lines': lines.map((e) => e.toJson()).toList(),
+        'lines': jsonEncode(lines.map((e) => e.toJson()).toList()),
         'partyName': partyName,
         'partyPhone': partyPhone,
         'partyAddress': partyAddress,
@@ -351,13 +370,39 @@ class BusinessTransaction {
         'paid': paid,
         'paymentMode': paymentMode,
         'status': status,
-        'dispatch': dispatch,
+        'dispatch': jsonEncode(dispatch),
         'partyId': partyId,
         'convertedFrom': convertedFrom,
         'referredBy': referredBy,
         'discount': discount,
         'shipping': shipping,
         'notes': notes,
+      };
+  Map<String, dynamic> toApiJson() => {
+        'txnType': _apiTransactionType(type),
+        'txnNo': number,
+        'partyId': partyId,
+        'partyName': partyName,
+        'date': date.toIso8601String(),
+        'dueDate': null,
+        'lineItems': lines.map((e) => e.toApiJson()).toList(),
+        'subTotal': subtotal,
+        'discountPercent': 0,
+        'discountAmount': discount,
+        'taxTotal': cgst + sgst,
+        'cgst': cgst,
+        'sgst': sgst,
+        'igst': 0,
+        'shippingCharges': shipping,
+        'grandTotal': total,
+        'paidAmount': paid,
+        'balanceDue': balance,
+        'paymentMode': paymentMode,
+        'bankAccountId': null,
+        'status': status,
+        'referenceNo': convertedFrom,
+        'notes': notes,
+        'expenseCategory': null,
       };
 }
 

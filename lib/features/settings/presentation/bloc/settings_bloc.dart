@@ -82,8 +82,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final trimmed = event.category.trim();
     if (trimmed.isEmpty || current.categories.contains(trimmed)) return;
 
+    await settingsRepository.addCategory(
+      trimmed,
+      imageBase64: event.imageBase64,
+    );
     final updated = List<String>.from(current.categories)..add(trimmed);
-    await settingsRepository.saveCategories(updated);
     emit(current.copyWith(categories: updated));
   }
 
