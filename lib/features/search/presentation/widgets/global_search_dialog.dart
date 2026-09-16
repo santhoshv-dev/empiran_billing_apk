@@ -1,19 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:empiran/core/routing/app_routes.dart';
 import 'package:empiran/core/theme/app_theme.dart';
-import 'package:empiran/data/remote/api_client.dart';
 import 'package:empiran/features/search/models/search_models.dart';
 import 'package:empiran/features/products/presentation/bloc/products_bloc.dart';
 import 'package:empiran/features/products/presentation/bloc/products_state.dart';
 import 'package:empiran/features/products/presentation/widgets/product_dialog.dart';
+import 'package:empiran/models.dart';
+import 'package:empiran/features/invoices/presentation/bloc/invoices_bloc.dart';
+import 'package:empiran/features/invoices/presentation/bloc/invoices_state.dart';
 import 'package:empiran/features/parties/presentation/bloc/parties_bloc.dart';
 import 'package:empiran/features/parties/presentation/bloc/parties_state.dart';
 import 'package:empiran/features/parties/presentation/widgets/party_dialog.dart';
+import 'package:empiran/features/search/data/local_search_service.dart';
 
 void showGlobalSearchDialog(
   BuildContext context, {
-  void Function(int tabIndex)? onNavigate,
+  void Function(ShellRoute route)? onNavigate,
 }) {
   showDialog(
     context: context,
@@ -22,6 +26,7 @@ void showGlobalSearchDialog(
       providers: [
         BlocProvider.value(value: context.read<ProductsBloc>()),
         BlocProvider.value(value: context.read<PartiesBloc>()),
+        BlocProvider.value(value: context.read<InvoicesBloc>()),
       ],
       child: GlobalSearchDialog(onNavigate: onNavigate),
     ),
@@ -30,7 +35,7 @@ void showGlobalSearchDialog(
 
 class GlobalSearchDialog extends StatefulWidget {
   const GlobalSearchDialog({super.key, this.onNavigate});
-  final void Function(int tabIndex)? onNavigate;
+  final void Function(ShellRoute route)? onNavigate;
 
   @override
   State<GlobalSearchDialog> createState() => _GlobalSearchDialogState();
@@ -55,9 +60,6 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
-    });
   }
 
   @override
@@ -109,17 +111,34 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
     }
 
     try {
-      final apiClient = context.read<ApiClient>();
-      final businessId = await apiClient.getActiveBusinessId() ?? '00000000-0000-0000-0000-000000000000';
+      List<Item>? activeItems;
+      List<Party>? activeParties;
+      List<BusinessTransaction>? activeTransactions;
 
-      final resMap = await apiClient.globalSearch(
-        businessId,
+      try {
+        final pState = context.read<ProductsBloc>().state;
+        if (pState is ProductsLoaded) activeItems = pState.items;
+      } catch (_) {}
+
+      try {
+        final partyState = context.read<PartiesBloc>().state;
+        if (partyState is PartiesLoaded) activeParties = partyState.parties;
+      } catch (_) {}
+
+      try {
+        final invState = context.read<InvoicesBloc>().state;
+        if (invState is InvoicesLoaded) activeTransactions = invState.transactions;
+      } catch (_) {}
+
+      final searchResponse = await LocalSearchService.search(
         query: query,
         type: _selectedType,
         page: _page,
+        pageSize: 20,
+        activeItems: activeItems,
+        activeParties: activeParties,
+        activeTransactions: activeTransactions,
       );
-
-      final searchResponse = GlobalSearchResponse.fromJson(resMap);
 
       if (mounted) {
         setState(() {
@@ -177,7 +196,7 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
             }
           }
         } catch (_) {}
-        widget.onNavigate?.call(3); // Products tab
+        widget.onNavigate?.call(ShellRoute.products);
         break;
 
       case 'customer':
@@ -192,27 +211,27 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
             }
           }
         } catch (_) {}
-        widget.onNavigate?.call(4); // Parties tab
+        widget.onNavigate?.call(ShellRoute.parties);
         break;
 
       case 'quotation':
-        widget.onNavigate?.call(1); // Quotation tab
+        widget.onNavigate?.call(ShellRoute.quotations);
         break;
 
       case 'invoice':
-        widget.onNavigate?.call(2); // Orders & Invoices tab
+        widget.onNavigate?.call(ShellRoute.invoices);
         break;
 
       case 'category':
-        widget.onNavigate?.call(3); // Products tab
+        widget.onNavigate?.call(ShellRoute.products);
         break;
 
       case 'staff':
-        widget.onNavigate?.call(6); // Settings / Staff tab
+        widget.onNavigate?.call(ShellRoute.settings);
         break;
 
       case 'expense':
-        widget.onNavigate?.call(0); // Dashboard / Expenses
+        widget.onNavigate?.call(ShellRoute.dashboard);
         break;
 
       default:
@@ -270,6 +289,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
     final isCompact = screenSize.width < 600;
+    final dialogWidth = isCompact ? screenSize.width - 24 : 680.0;
+    final dialogHeight = screenSize.height * (isCompact ? 0.9 : 0.84);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -277,13 +298,10 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
         horizontal: isCompact ? 12 : 32,
         vertical: isCompact ? 16 : 40,
       ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 680,
-          maxHeight: screenSize.height * 0.84,
-        ),
+      child: SizedBox(
+        width: dialogWidth,
+        height: dialogHeight,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Top Search Input Box
@@ -300,6 +318,7 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                     child: TextField(
                       controller: _searchController,
                       focusNode: _focusNode,
+                      autofocus: true,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                       decoration: const InputDecoration(
                         hintText: 'Search products, customers, invoices, codes...',

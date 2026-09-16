@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:empiran/core/routing/app_routes.dart';
 import 'package:empiran/core/services/permission_service.dart';
 import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_bloc.dart';
@@ -17,6 +18,20 @@ import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
 import 'package:empiran/features/settings/presentation/pages/settings_page.dart';
 
+class _ShellNavItem {
+  const _ShellNavItem({
+    required this.route,
+    required this.label,
+    required this.icon,
+    required this.page,
+  });
+
+  final ShellRoute route;
+  final String label;
+  final IconData icon;
+  final Widget page;
+}
+
 class ShellPage extends StatefulWidget {
   const ShellPage({super.key});
 
@@ -25,7 +40,34 @@ class ShellPage extends StatefulWidget {
 }
 
 class _ShellPageState extends State<ShellPage> {
-  int _selectedIndex = 0;
+  ShellRoute _selectedRoute = ShellRoute.dashboard;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyK &&
+        (HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed)) {
+      showGlobalSearchDialog(context, onNavigate: _selectRoute);
+      return true;
+    }
+    return false;
+  }
+
+  void _selectRoute(ShellRoute route) {
+    if (_selectedRoute == route) return;
+    setState(() => _selectedRoute = route);
+  }
 
   void _showLogoutConfirm(BuildContext context) {
     showDialog(
@@ -128,24 +170,70 @@ class _ShellPageState extends State<ShellPage> {
     final settingsState = context.watch<SettingsBloc>().state;
     final company = settingsState is SettingsLoaded ? settingsState.company : null;
 
-    final navItems = <(String, IconData, Widget)>[
-      ('Dashboard', Icons.dashboard_outlined, DashboardPage(onNavigate: (i) => setState(() => _selectedIndex = i))),
-      ('Quotation Maker', Icons.request_quote_outlined, const InvoicesPage(type: 'quotation', key: ValueKey('quotes'))),
-      ('Orders & Invoices', Icons.receipt_long_outlined, const InvoicesPage(type: 'order', key: ValueKey('orders'))),
-      ('Products & Inventory', Icons.inventory_2_outlined, const ProductsPage(key: ValueKey('products'))),
-      ('Customers & Suppliers', Icons.groups_outlined, const PartiesPage(key: ValueKey('parties'))),
+    final navItems = <_ShellNavItem>[
+      _ShellNavItem(
+        route: ShellRoute.dashboard,
+        label: 'Dashboard',
+        icon: Icons.dashboard_outlined,
+        page: DashboardPage(onNavigate: _selectRoute),
+      ),
+      const _ShellNavItem(
+        route: ShellRoute.quotations,
+        label: 'Quotation Maker',
+        icon: Icons.request_quote_outlined,
+        page: InvoicesPage(type: 'quotation', key: ValueKey('quotes')),
+      ),
+      const _ShellNavItem(
+        route: ShellRoute.invoices,
+        label: 'Orders & Invoices',
+        icon: Icons.receipt_long_outlined,
+        page: InvoicesPage(type: 'order', key: ValueKey('orders')),
+      ),
+      const _ShellNavItem(
+        route: ShellRoute.products,
+        label: 'Products & Inventory',
+        icon: Icons.inventory_2_outlined,
+        page: ProductsPage(key: ValueKey('products')),
+      ),
+      const _ShellNavItem(
+        route: ShellRoute.parties,
+        label: 'Customers & Suppliers',
+        icon: Icons.groups_outlined,
+        page: PartiesPage(key: ValueKey('parties')),
+      ),
     ];
 
     if (PermissionService.canViewReports(role)) {
-      navItems.add(('Reports', Icons.analytics_outlined, const ReportsPage(key: ValueKey('reports'))));
+      navItems.add(
+        const _ShellNavItem(
+          route: ShellRoute.reports,
+          label: 'Reports',
+          icon: Icons.analytics_outlined,
+          page: ReportsPage(key: ValueKey('reports')),
+        ),
+      );
     }
     if (PermissionService.canAccessSettings(role)) {
-      navItems.add(('Settings & Users', Icons.settings_outlined, const SettingsPage(key: ValueKey('settings'))));
+      navItems.add(
+        const _ShellNavItem(
+          route: ShellRoute.settings,
+          label: 'Settings & Users',
+          icon: Icons.settings_outlined,
+          page: SettingsPage(key: ValueKey('settings')),
+        ),
+      );
     }
 
-    if (_selectedIndex >= navItems.length) _selectedIndex = 0;
-
-    final currentWidget = navItems[_selectedIndex].$3;
+    final selectedIndex = navItems.indexWhere((item) => item.route == _selectedRoute);
+    final currentIndex = selectedIndex >= 0 ? selectedIndex : 0;
+    final currentRoute = navItems[currentIndex].route;
+    final currentLabel = navItems[currentIndex].label;
+    final currentContent = IndexedStack(
+      index: currentIndex,
+      children: [for (final item in navItems) item.page],
+    );
+    final mobileNavItems = navItems.take(5).toList(growable: false);
+    final mobileSelectedIndex = mobileNavItems.indexWhere((item) => item.route == currentRoute);
 
     final Widget shell = wide
         ? Scaffold(
@@ -205,10 +293,10 @@ class _ShellPageState extends State<ShellPage> {
                       separatorBuilder: (_, __) => const SizedBox(height: 4),
                       itemBuilder: (context, i) {
                         final item = navItems[i];
-                        final isSelected = _selectedIndex == i;
+                        final isSelected = currentRoute == item.route;
 
                         return InkWell(
-                          onTap: () => setState(() => _selectedIndex = i),
+                          onTap: () => _selectRoute(item.route),
                           borderRadius: BorderRadius.circular(AppRadii.medium),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -219,14 +307,14 @@ class _ShellPageState extends State<ShellPage> {
                             child: Row(
                               children: [
                                 Icon(
-                                  item.$2,
+                                  item.icon,
                                   size: 20,
                                   color: isSelected ? AppColors.primary : AppColors.lightTextSecondary,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    item.$1,
+                                    item.label,
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -301,13 +389,13 @@ class _ShellPageState extends State<ShellPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          navItems[_selectedIndex].$1,
+                          currentLabel,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                         ),
                         InkWell(
                           onTap: () => showGlobalSearchDialog(
                             context,
-                            onNavigate: (i) => setState(() => _selectedIndex = i),
+                            onNavigate: _selectRoute,
                           ),
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
@@ -368,7 +456,7 @@ class _ShellPageState extends State<ShellPage> {
                       ],
                     ),
                   ),
-                  Expanded(child: currentWidget),
+                  Expanded(child: currentContent),
                 ],
               ),
             ),
@@ -378,14 +466,14 @@ class _ShellPageState extends State<ShellPage> {
         : Scaffold(
       backgroundColor: AppColors.lightBackground,
       appBar: AppBar(
-        title: Text(navItems[_selectedIndex].$1),
+        title: Text(currentLabel),
         actions: [
           IconButton(
             tooltip: 'Search (Ctrl+K)',
             icon: const Icon(Icons.search_rounded),
             onPressed: () => showGlobalSearchDialog(
               context,
-              onNavigate: (i) => setState(() => _selectedIndex = i),
+              onNavigate: _selectRoute,
             ),
           ),
           IconButton(
@@ -427,41 +515,54 @@ class _ShellPageState extends State<ShellPage> {
             ),
             for (int i = 0; i < navItems.length; i++)
               ListTile(
-                leading: Icon(navItems[i].$2, color: _selectedIndex == i ? AppColors.primary : null),
-                title: Text(navItems[i].$1),
-                selected: _selectedIndex == i,
+                leading: Icon(
+                  navItems[i].icon,
+                  color: currentRoute == navItems[i].route ? AppColors.primary : null,
+                ),
+                title: Text(navItems[i].label),
+                selected: currentRoute == navItems[i].route,
                 onTap: () {
-                  setState(() => _selectedIndex = i);
+                  _selectRoute(navItems[i].route);
                   Navigator.pop(context);
                 },
               ),
           ],
         ),
       ),
-      body: currentWidget,
+      body: currentContent,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex.clamp(0, 3),
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+        selectedIndex: mobileSelectedIndex >= 0 ? mobileSelectedIndex : 0,
+        onDestinationSelected: (i) => _selectRoute(mobileNavItems[i].route),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.request_quote_outlined), selectedIcon: Icon(Icons.request_quote), label: 'Quotes'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Sales'),
-          NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: 'Products'),
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.request_quote_outlined),
+            selectedIcon: Icon(Icons.request_quote),
+            label: 'Quotes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long),
+            label: 'Sales',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: 'Products',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups),
+            label: 'Parties',
+          ),
         ],
       ),
     );
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
-            showGlobalSearchDialog(context, onNavigate: (i) => setState(() => _selectedIndex = i)),
-        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
-            showGlobalSearchDialog(context, onNavigate: (i) => setState(() => _selectedIndex = i)),
-      },
-      child: Focus(
-        autofocus: true,
-        child: shell,
-      ),
-    );
+    return shell;
   }
 }

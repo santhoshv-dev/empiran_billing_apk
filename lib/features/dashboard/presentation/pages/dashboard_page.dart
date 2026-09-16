@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:empiran/core/routing/app_routes.dart';
 import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/core/utils/formatters.dart';
 import 'package:empiran/core/widgets/empiran_components.dart';
@@ -15,7 +16,7 @@ import 'package:empiran/features/products/presentation/bloc/products_state.dart'
 import 'package:empiran/features/products/presentation/widgets/product_dialog.dart';
 
 class DashboardPage extends StatelessWidget {
-  final ValueChanged<int> onNavigate;
+  final ValueChanged<ShellRoute> onNavigate;
 
   const DashboardPage({super.key, required this.onNavigate});
 
@@ -233,7 +234,7 @@ class DashboardPage extends StatelessWidget {
                           children: [
                             const Text('Recent Transactions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                             TextButton(
-                              onPressed: () => onNavigate(2), // Navigate to Orders & Invoices
+                              onPressed: () => onNavigate(ShellRoute.invoices),
                               child: const Text('View All →'),
                             ),
                           ],
@@ -305,7 +306,7 @@ class DashboardPage extends StatelessWidget {
                           children: [
                             const Text('Low Stock Alerts', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                             TextButton(
-                              onPressed: () => onNavigate(3), // Navigate to Products
+                              onPressed: () => onNavigate(ShellRoute.products),
                               child: const Text('Manage →'),
                             ),
                           ],
