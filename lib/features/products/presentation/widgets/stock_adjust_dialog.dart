@@ -53,12 +53,17 @@ class _StockAdjustDialogState extends State<_StockAdjustDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Adjust Stock — ${widget.item.name}'),
-      content: SizedBox(
-        width: 380,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      title: Text(
+        'Adjust Stock — ${widget.item.name}',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Current Available Stock: ${widget.item.currentStock} ${widget.item.unit}',
@@ -84,7 +89,8 @@ class _StockAdjustDialogState extends State<_StockAdjustDialog> {
           ],
         ),
       ),
-      actions: [
+    ),
+    actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),

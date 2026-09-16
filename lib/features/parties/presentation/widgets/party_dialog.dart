@@ -83,79 +83,117 @@ class _PartyDialogState extends State<_PartyDialog> {
     final isEdit = widget.party != null;
     return AlertDialog(
       title: Text(isEdit ? 'Edit Contact Account' : 'New Contact Account'),
-      content: SizedBox(
-        width: 500,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+        ),
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'Customer', label: Text('Customer')),
-                  ButtonSegment(value: 'Supplier', label: Text('Supplier')),
-                  ButtonSegment(value: 'Both',     label: Text('Both')),
-                ],
-                selected: {_type},
-                onSelectionChanged: (s) => setState(() => _type = s.first),
-              ),
-              const SizedBox(height: 16),
-              EmpiranTextField(
-                controller: _name,
-                label: 'Contact / Business Name',
-                isRequired: true,
-              ),
-              const SizedBox(height: 12),
-              Row(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 460;
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: EmpiranTextField(
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'Customer', label: Text('Customer')),
+                        ButtonSegment(value: 'Supplier', label: Text('Supplier')),
+                        ButtonSegment(value: 'Both',     label: Text('Both')),
+                      ],
+                      selected: {_type},
+                      onSelectionChanged: (s) => setState(() => _type = s.first),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  EmpiranTextField(
+                    controller: _name,
+                    label: 'Contact / Business Name',
+                    isRequired: true,
+                  ),
+                  const SizedBox(height: 12),
+                  if (isNarrow) ...[
+                    EmpiranTextField(
                       controller: _phone,
                       label: 'Mobile / Phone',
                       isRequired: true,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _email,
                       label: 'Email',
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _gstin,
                       label: 'GSTIN / Tax ID',
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _balance,
                       label: 'Opening Balance (₹)',
                       hint: '0.00',
                       isNumber: true,
                       isDecimal: true,
                     ),
+                  ] else ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _phone,
+                            label: 'Mobile / Phone',
+                            isRequired: true,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _email,
+                            label: 'Email',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _gstin,
+                            label: 'GSTIN / Tax ID',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _balance,
+                            label: 'Opening Balance (₹)',
+                            hint: '0.00',
+                            isNumber: true,
+                            isDecimal: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  EmpiranTextField(
+                    controller: _address,
+                    label: 'Billing & Shipping Address',
+                    maxLines: 2,
                   ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
                 ],
-              ),
-              const SizedBox(height: 12),
-              EmpiranTextField(
-                controller: _address,
-                label: 'Billing & Shipping Address',
-                maxLines: 2,
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
               ],
-            ],
+            );
+            },
           ),
         ),
       ),

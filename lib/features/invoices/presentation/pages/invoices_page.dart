@@ -94,49 +94,75 @@ class _InvoicesPageState extends State<InvoicesPage> {
           return Column(
             children: [
               // Search & Filter Row
-              Row(
-                children: [
-                  Expanded(
-                    child: EmpiranTextField(
-                      controller: _searchController,
-                      label: '',
-                      hint: 'Search by document # or customer name...',
-                      prefixIcon: Icons.search_rounded,
-                      onChanged: (_) => setState(() {}),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 680;
+                  final searchField = EmpiranTextField(
+                    controller: _searchController,
+                    label: '',
+                    hint: 'Search by document # or customer name...',
+                    prefixIcon: Icons.search_rounded,
+                    onChanged: (_) => setState(() {}),
+                  );
+
+                  final filterChipsAndDate = SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final s in ['All', 'Paid', 'Unpaid'])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: FilterChip(
+                              label: Text(s),
+                              selected: _status == s,
+                              onSelected: (_) => setState(() => _status = s),
+                            ),
+                          ),
+                        const SizedBox(width: 6),
+                        TextButton.icon(
+                          icon: const Icon(Icons.date_range_outlined, size: 18),
+                          label: Text(_range == null
+                              ? 'Filter Dates'
+                              : '${DateFormat.MMMd().format(_range!.start)} - ${DateFormat.MMMd().format(_range!.end)}'),
+                          onPressed: () async {
+                            final val = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2035),
+                            );
+                            if (val != null) setState(() => _range = val);
+                          },
+                        ),
+                        if (_range != null)
+                          IconButton(
+                            tooltip: 'Clear Date Filter',
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setState(() => _range = null),
+                          ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  for (final s in ['All', 'Paid', 'Unpaid'])
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: FilterChip(
-                        label: Text(s),
-                        selected: _status == s,
-                        onSelected: (_) => setState(() => _status = s),
-                      ),
-                    ),
-                  const SizedBox(width: 10),
-                  TextButton.icon(
-                    icon: const Icon(Icons.date_range_outlined, size: 18),
-                    label: Text(_range == null
-                        ? 'Filter Dates'
-                        : '${DateFormat.MMMd().format(_range!.start)} - ${DateFormat.MMMd().format(_range!.end)}'),
-                    onPressed: () async {
-                      final val = await showDateRangePicker(
-                        context: context,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2035),
-                      );
-                      if (val != null) setState(() => _range = val);
-                    },
-                  ),
-                  if (_range != null)
-                    IconButton(
-                      tooltip: 'Clear Date Filter',
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () => setState(() => _range = null),
-                    ),
-                ],
+                  );
+
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        searchField,
+                        const SizedBox(height: 10),
+                        filterChipsAndDate,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: searchField),
+                      const SizedBox(width: 12),
+                      filterChipsAndDate,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
 
@@ -159,71 +185,61 @@ class _InvoicesPageState extends State<InvoicesPage> {
                           final t = displayList[i];
                           final isPaid = t.status.toLowerCase() == 'paid';
 
-                          return EmpiranCard(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                                  child: Icon(
-                                    isQuote ? Icons.request_quote_outlined : Icons.receipt_outlined,
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                          return LayoutBuilder(
+                            builder: (context, cardConstraints) {
+                              final isCompact = cardConstraints.maxWidth < 620;
+
+                              final detailsColumn = Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            t.number,
-                                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: (isPaid ? AppColors.success : AppColors.warning).withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              t.status.toUpperCase(),
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: isPaid ? AppColors.success : AppColors.warning,
-                                              ),
-                                            ),
-                                          ),
-                                          if (t.isGst) ...[
-                                            const SizedBox(width: 6),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.primary.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: const Text('GST 18%', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
-                                            ),
-                                          ],
-                                        ],
+                                      Flexible(
+                                        child: Text(
+                                          t.number,
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)} • ${t.lines.length} items',
-                                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: (isPaid ? AppColors.success : AppColors.warning).withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          t.status.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: isPaid ? AppColors.success : AppColors.warning,
+                                          ),
+                                        ),
                                       ),
+                                      if (t.isGst) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text('GST 18%', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
                                     ],
                                   ),
-                                ),
-                                Text(
-                                  Formatters.money(t.total),
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.primary),
-                                ),
-                                const SizedBox(width: 16),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)} • ${t.lines.length} items',
+                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              );
+
+                              final actions = [
                                 if (isQuote)
                                   IconButton(
                                     tooltip: 'Convert to Invoice',
@@ -249,8 +265,70 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                   icon: const Icon(Icons.receipt_long_outlined),
                                   onPressed: () => showDocumentPreviewDialog(context, t, isThermal: true),
                                 ),
-                              ],
-                            ),
+                              ];
+
+                              if (isCompact) {
+                                return EmpiranCard(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          CircleAvatar(
+                                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                            radius: 18,
+                                            child: Icon(
+                                              isQuote ? Icons.request_quote_outlined : Icons.receipt_outlined,
+                                              color: AppColors.primary,
+                                              size: 18,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(child: detailsColumn),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            Formatters.money(t.total),
+                                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.primary),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Divider(height: 1),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: actions,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              return EmpiranCard(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                      child: Icon(
+                                        isQuote ? Icons.request_quote_outlined : Icons.receipt_outlined,
+                                        color: AppColors.primary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(child: detailsColumn),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      Formatters.money(t.total),
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.primary),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    ...actions,
+                                  ],
+                                ),
+                              );
+                            },
                           );
                         },
                       ),

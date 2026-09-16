@@ -80,25 +80,38 @@ class _InvoiceSequenceFormState extends State<InvoiceSequenceForm>
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: EmpiranTextField(
-                    controller: _gstYear,
-                    label: 'Financial Year Tag',
-                    hint: 'e.g. 25-26',
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: EmpiranTextField(
-                    controller: _gstCounter,
-                    label: 'Starting Counter',
-                    hint: '1',
-                    isNumber: true,
-                  ),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 480;
+                final yearField = EmpiranTextField(
+                  controller: _gstYear,
+                  label: 'Financial Year Tag',
+                  hint: 'e.g. 25-26',
+                );
+                final counterField = EmpiranTextField(
+                  controller: _gstCounter,
+                  label: 'Starting Counter',
+                  hint: '1',
+                  isNumber: true,
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    children: [
+                      yearField,
+                      const SizedBox(height: 12),
+                      counterField,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: yearField),
+                    const SizedBox(width: 14),
+                    Expanded(child: counterField),
+                  ],
+                );
+              },
             ),
             const Divider(height: 40),
             const Text(
@@ -111,25 +124,38 @@ class _InvoiceSequenceFormState extends State<InvoiceSequenceForm>
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: EmpiranTextField(
-                    controller: _nonGstPrefix,
-                    label: 'Prefix Tag',
-                    hint: 'e.g. ORD-',
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: EmpiranTextField(
-                    controller: _nonGstCounter,
-                    label: 'Starting Counter',
-                    hint: '1001',
-                    isNumber: true,
-                  ),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 480;
+                final prefixField = EmpiranTextField(
+                  controller: _nonGstPrefix,
+                  label: 'Prefix Tag',
+                  hint: 'e.g. ORD-',
+                );
+                final nonGstCounterField = EmpiranTextField(
+                  controller: _nonGstCounter,
+                  label: 'Starting Counter',
+                  hint: '1001',
+                  isNumber: true,
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    children: [
+                      prefixField,
+                      const SizedBox(height: 12),
+                      nonGstCounterField,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: prefixField),
+                    const SizedBox(width: 14),
+                    Expanded(child: nonGstCounterField),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             ListenableBuilder(

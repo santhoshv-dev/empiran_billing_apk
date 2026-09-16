@@ -100,23 +100,28 @@ class _ReportsPageState extends State<ReportsPage> {
       child: Column(
         children: [
           // Filter Tabs & Actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  for (int i = 0; i < 3; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(['All Transactions', 'Sales Only', 'Payments Only'][i]),
-                        selected: _tab == i,
-                        onSelected: (_) => setState(() => _tab = i),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 680;
+              final tabs = SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (int i = 0; i < 3; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(['All Transactions', 'Sales Only', 'Payments Only'][i]),
+                          selected: _tab == i,
+                          onSelected: (_) => setState(() => _tab = i),
+                        ),
                       ),
-                    ),
-                ],
-              ),
-              Row(
+                  ],
+                ),
+              );
+
+              final actions = Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   EmpiranButton(
                     label: 'Export CSV',
@@ -131,26 +136,62 @@ class _ReportsPageState extends State<ReportsPage> {
                     onPressed: rows.isEmpty ? null : () => _printReport(company, rows),
                   ),
                 ],
-              ),
-            ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    tabs,
+                    const SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: actions,
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: tabs),
+                  const SizedBox(width: 12),
+                  actions,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
 
           // Summary Metrics Cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildMetricCard('Total Invoiced', Formatters.money(total), AppColors.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildMetricCard('Total Collected', Formatters.money(paid), AppColors.success),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildMetricCard('Outstanding Balance', Formatters.money(balance), balance > 0 ? AppColors.error : Colors.grey),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 620;
+              final cards = [
+                _buildMetricCard('Total Invoiced', Formatters.money(total), AppColors.primary),
+                _buildMetricCard('Total Collected', Formatters.money(paid), AppColors.success),
+                _buildMetricCard('Outstanding Balance', Formatters.money(balance), balance > 0 ? AppColors.error : Colors.grey),
+              ];
+
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(child: cards[0]),
+                    const SizedBox(width: 12),
+                    Expanded(child: cards[1]),
+                    const SizedBox(width: 12),
+                    Expanded(child: cards[2]),
+                  ],
+                );
+              } else {
+                final cardWidth = constraints.maxWidth < 360 ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+                return Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: cards.map((c) => SizedBox(width: cardWidth, child: c)).toList(),
+                );
+              }
+            },
           ),
           const SizedBox(height: 16),
 
@@ -171,17 +212,25 @@ class _ReportsPageState extends State<ReportsPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
-                            Text(
-                              t.number,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)}',
-                                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    t.number,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)}',
+                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
+                            const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [

@@ -65,31 +65,52 @@ class _PartiesPageState extends State<PartiesPage> {
           return Column(
             children: [
               // Filter controls
-              Row(
-                children: [
-                  Expanded(
-                    child: EmpiranTextField(
-                      controller: _searchController,
-                      label: '',
-                      hint: 'Search contacts by name, phone, GSTIN...',
-                      prefixIcon: Icons.search_rounded,
-                      onChanged: (_) => _onFilterChanged(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 640;
+                  final searchField = EmpiranTextField(
+                    controller: _searchController,
+                    label: '',
+                    hint: 'Search contacts by name, phone, GSTIN...',
+                    prefixIcon: Icons.search_rounded,
+                    onChanged: (_) => _onFilterChanged(),
+                  );
+
+                  final segmentedFilter = SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'All', label: Text('All')),
+                        ButtonSegment(value: 'Customers', label: Text('Customers')),
+                        ButtonSegment(value: 'Suppliers', label: Text('Suppliers')),
+                      ],
+                      selected: {_filter},
+                      onSelectionChanged: (s) {
+                        setState(() => _filter = s.first);
+                        _onFilterChanged();
+                      },
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'All', label: Text('All')),
-                      ButtonSegment(value: 'Customers', label: Text('Customers')),
-                      ButtonSegment(value: 'Suppliers', label: Text('Suppliers')),
+                  );
+
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        searchField,
+                        const SizedBox(height: 10),
+                        segmentedFilter,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: searchField),
+                      const SizedBox(width: 14),
+                      segmentedFilter,
                     ],
-                    selected: {_filter},
-                    onSelectionChanged: (s) {
-                      setState(() => _filter = s.first);
-                      _onFilterChanged();
-                    },
-                  ),
-                ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
 
@@ -111,96 +132,143 @@ class _PartiesPageState extends State<PartiesPage> {
                           final isReceivable = p.balance > 0;
                           final isPayable = p.balance < 0;
 
-                          return EmpiranCard(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                                  child: Text(
-                                    p.name.isNotEmpty ? p.name[0].toUpperCase() : 'C',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                          return LayoutBuilder(
+                            builder: (context, cardConstraints) {
+                              final isCompact = cardConstraints.maxWidth < 540;
+
+                              final contactNameRow = Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      p.name,
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: (p.type == 'Customer'
+                                              ? AppColors.primary
+                                              : p.type == 'Supplier'
+                                                  ? AppColors.secondary
+                                                  : Colors.purple)
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      p.type,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: p.type == 'Customer'
+                                            ? AppColors.primary
+                                            : p.type == 'Supplier'
+                                                ? AppColors.secondary
+                                                : Colors.purple,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+
+                              final detailsColumn = Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  contactNameRow,
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '📞 ${p.phone} • ${p.gstin.isNotEmpty ? 'GSTIN: ${p.gstin}' : (p.email.isNotEmpty ? p.email : 'No GSTIN')}',
+                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              );
+
+                              final balanceColumn = Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    Formatters.money(p.balance.abs()),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: isReceivable
+                                          ? AppColors.success
+                                          : isPayable
+                                              ? AppColors.error
+                                              : Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    isReceivable
+                                        ? 'Receivable'
+                                        : isPayable
+                                            ? 'Payable'
+                                            : 'Settled',
+                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                  ),
+                                ],
+                              );
+
+                              final avatar = CircleAvatar(
+                                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                child: Text(
+                                  p.name.isNotEmpty ? p.name[0].toUpperCase() : 'C',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                                 ),
-                                const SizedBox(width: 14),
-                                Expanded(
+                              );
+
+                              if (isCompact) {
+                                return EmpiranCard(
+                                  padding: const EdgeInsets.all(12),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          Text(
-                                            p.name,
-                                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: (p.type == 'Customer'
-                                                      ? AppColors.primary
-                                                      : p.type == 'Supplier'
-                                                          ? AppColors.secondary
-                                                          : Colors.purple)
-                                                  .withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              p.type,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: p.type == 'Customer'
-                                                    ? AppColors.primary
-                                                    : p.type == 'Supplier'
-                                                        ? AppColors.secondary
-                                                        : Colors.purple,
-                                              ),
-                                            ),
+                                          avatar,
+                                          const SizedBox(width: 12),
+                                          Expanded(child: detailsColumn),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Divider(height: 1),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          balanceColumn,
+                                          IconButton(
+                                            tooltip: 'Edit Contact',
+                                            icon: const Icon(Icons.edit_outlined, size: 18),
+                                            onPressed: () => showPartyDialog(context, party: p),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '📞 ${p.phone} • ${p.gstin.isNotEmpty ? 'GSTIN: ${p.gstin}' : (p.email.isNotEmpty ? p.email : 'No GSTIN')}',
-                                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                      ),
                                     ],
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                );
+                              }
+
+                              return EmpiranCard(
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      Formatters.money(p.balance.abs()),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 15,
-                                        color: isReceivable
-                                            ? AppColors.success
-                                            : isPayable
-                                                ? AppColors.error
-                                                : Colors.grey,
-                                      ),
-                                    ),
-                                    Text(
-                                      isReceivable
-                                          ? 'Receivable'
-                                          : isPayable
-                                              ? 'Payable'
-                                              : 'Settled',
-                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    avatar,
+                                    const SizedBox(width: 14),
+                                    Expanded(child: detailsColumn),
+                                    balanceColumn,
+                                    const SizedBox(width: 12),
+                                    IconButton(
+                                      tooltip: 'Edit Contact',
+                                      icon: const Icon(Icons.edit_outlined, size: 20),
+                                      onPressed: () => showPartyDialog(context, party: p),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(width: 12),
-                                IconButton(
-                                  tooltip: 'Edit Contact',
-                                  icon: const Icon(Icons.edit_outlined, size: 20),
-                                  onPressed: () => showPartyDialog(context, party: p),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           );
                         },
                       ),

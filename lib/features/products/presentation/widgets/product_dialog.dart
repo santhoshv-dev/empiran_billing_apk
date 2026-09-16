@@ -131,54 +131,51 @@ class _ProductDialogState extends State<_ProductDialog> {
 
     return AlertDialog(
       title: Text(isEdit ? 'Edit Product' : 'Create New Product'),
-      content: SizedBox(
-        width: 520,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 520,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+        ),
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                value: categories.contains(_selectedCat) ? _selectedCat : categories.first,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (v) {
-                  if (v != null) setState(() => _selectedCat = v);
-                },
-              ),
-              const SizedBox(height: 12),
-              EmpiranTextField(
-                controller: _name,
-                label: 'Product Name',
-                hint: 'e.g. LED Downlight 15W',
-                isRequired: true,
-              ),
-              const SizedBox(height: 12),
-              Row(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 460;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: EmpiranTextField(
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: categories.contains(_selectedCat) ? _selectedCat : categories.first,
+                    decoration: const InputDecoration(labelText: 'Category'),
+                    items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                    onChanged: (v) {
+                      if (v != null) setState(() => _selectedCat = v);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  EmpiranTextField(
+                    controller: _name,
+                    label: 'Product Name',
+                    hint: 'e.g. LED Downlight 15W',
+                    isRequired: true,
+                  ),
+                  const SizedBox(height: 12),
+                  if (isNarrow) ...[
+                    EmpiranTextField(
                       controller: _code,
                       label: 'SKU / Barcode',
                       hint: 'Item code',
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _hsn,
                       label: 'HSN Code',
                       hint: 'e.g. 8539',
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _sales,
                       label: 'Selling Price (₹)',
                       hint: '0.00',
@@ -186,93 +183,157 @@ class _ProductDialogState extends State<_ProductDialog> {
                       isDecimal: true,
                       isRequired: true,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _purchase,
                       label: 'Purchase Cost (₹)',
                       hint: '0.00',
                       isNumber: true,
                       isDecimal: true,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _stock,
                       label: 'Current Stock',
                       hint: '0',
                       isNumber: true,
                       isDecimal: true,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _unit,
                       label: 'Unit of Measure',
                       hint: 'Pcs, Mtr, Box, Kg',
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: EmpiranTextField(
+                    const SizedBox(height: 12),
+                    EmpiranTextField(
                       controller: _low,
                       label: 'Low Stock Alert',
                       hint: '5',
                       isNumber: true,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'This is a service (no inventory tracking)',
-                  style: TextStyle(fontSize: 13),
-                ),
-                value: _isService,
-                onChanged: (v) => setState(() => _isService = v),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  if (_image != null) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadii.medium),
-                      child: Image.memory(
-                        base64Decode(_image!.contains(',') ? _image!.split(',').last : _image!),
-                        width: 54,
-                        height: 54,
-                        fit: BoxFit.cover,
-                      ),
+                  ] else ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _code,
+                            label: 'SKU / Barcode',
+                            hint: 'Item code',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _hsn,
+                            label: 'HSN Code',
+                            hint: 'e.g. 8539',
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _sales,
+                            label: 'Selling Price (₹)',
+                            hint: '0.00',
+                            isNumber: true,
+                            isDecimal: true,
+                            isRequired: true,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _purchase,
+                            label: 'Purchase Cost (₹)',
+                            hint: '0.00',
+                            isNumber: true,
+                            isDecimal: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _stock,
+                            label: 'Current Stock',
+                            hint: '0',
+                            isNumber: true,
+                            isDecimal: true,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _unit,
+                            label: 'Unit of Measure',
+                            hint: 'Pcs, Mtr, Box, Kg',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: EmpiranTextField(
+                            controller: _low,
+                            label: 'Low Stock Alert',
+                            hint: '5',
+                            isNumber: true,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
-                  EmpiranButton(
-                    label: _image == null ? 'Add Image' : 'Change Image',
-                    icon: Icons.photo_library_outlined,
-                    variant: EmpiranButtonVariant.outlined,
-                    height: 40,
-                    onPressed: _pickImage,
+                  const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'This is a service (no inventory tracking)',
+                    style: TextStyle(fontSize: 13),
                   ),
-                ],
-              ),
-              if (_error != null) ...[
+                  value: _isService,
+                  onChanged: (v) => setState(() => _isService = v),
+                ),
                 const SizedBox(height: 10),
-                Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                Row(
+                  children: [
+                    if (_image != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadii.medium),
+                        child: Image.memory(
+                          base64Decode(_image!.contains(',') ? _image!.split(',').last : _image!),
+                          width: 54,
+                          height: 54,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    EmpiranButton(
+                      label: _image == null ? 'Add Image' : 'Change Image',
+                      icon: Icons.photo_library_outlined,
+                      variant: EmpiranButtonVariant.outlined,
+                      height: 40,
+                      onPressed: _pickImage,
+                    ),
+                  ],
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 10),
+                  Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                ],
               ],
-            ],
-          ),
+            );
+          },
         ),
       ),
-      actions: [
+    ),
+    actions: [
         if (isEdit)
           TextButton(
             onPressed: () {

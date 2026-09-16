@@ -107,32 +107,42 @@ class _CompanyProfileFormState extends State<CompanyProfileForm>
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 20),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                for (final x in [
-                  ('name', 'Company Name', true),
-                  ('gstin', 'GSTIN / UIN', true),
-                  ('phone', 'Primary Contact / Mobile', true),
-                  ('email', 'Official Email', false),
-                  ('address', 'Business Address', true),
-                  ('state', 'State Name', false),
-                  ('stateCode', 'State Code (e.g. 33)', false),
-                  ('bankName', 'Bank Name', false),
-                  ('accountNo', 'Bank Account Number', false),
-                  ('branch', 'Bank Branch', false),
-                  ('ifsc', 'Bank IFSC Code', false),
-                ])
-                  SizedBox(
-                    width: 320,
-                    child: EmpiranTextField(
-                      controller: _controllers[x.$1],
-                      label: x.$2,
-                      isRequired: x.$3,
-                    ),
-                  ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final inputWidth = constraints.maxWidth < 680
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 16) / 2 > 320
+                        ? 320.0
+                        : (constraints.maxWidth - 16) / 2;
+
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    for (final x in [
+                      ('name', 'Company Name', true),
+                      ('gstin', 'GSTIN / UIN', true),
+                      ('phone', 'Primary Contact / Mobile', true),
+                      ('email', 'Official Email', false),
+                      ('address', 'Business Address', true),
+                      ('state', 'State Name', false),
+                      ('stateCode', 'State Code (e.g. 33)', false),
+                      ('bankName', 'Bank Name', false),
+                      ('accountNo', 'Bank Account Number', false),
+                      ('branch', 'Bank Branch', false),
+                      ('ifsc', 'Bank IFSC Code', false),
+                    ])
+                      SizedBox(
+                        width: inputWidth,
+                        child: EmpiranTextField(
+                          controller: _controllers[x.$1],
+                          label: x.$2,
+                          isRequired: x.$3,
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 24),
             const Text(

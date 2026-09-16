@@ -348,24 +348,38 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                             },
                           ),
                           const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: EmpiranTextField(
-                                  controller: _nameController,
-                                  label: 'Customer Name',
-                                  hint: 'Walk-in Customer',
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: EmpiranTextField(
-                                  controller: _phoneController,
-                                  label: 'Mobile Phone',
-                                  hint: 'Optional mobile',
-                                ),
-                              ),
-                            ],
+                          LayoutBuilder(
+                            builder: (context, cConstraints) {
+                              final isNarrow = cConstraints.maxWidth < 460;
+                              final nameField = EmpiranTextField(
+                                controller: _nameController,
+                                label: 'Customer Name',
+                                hint: 'Walk-in Customer',
+                              );
+                              final phoneField = EmpiranTextField(
+                                controller: _phoneController,
+                                label: 'Mobile Phone',
+                                hint: 'Optional mobile',
+                              );
+
+                              if (isNarrow) {
+                                return Column(
+                                  children: [
+                                    nameField,
+                                    const SizedBox(height: 10),
+                                    phoneField,
+                                  ],
+                                );
+                              }
+
+                              return Row(
+                                children: [
+                                  Expanded(child: nameField),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: phoneField),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -394,22 +408,30 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                               ),
                             )
                           else
-                            ..._lines.map((line) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(line.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                          Text('${Formatters.money(line.price)} / ${line.unit}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                        ],
-                                      ),
-                                    ),
-                                    Row(
+                            LayoutBuilder(
+                              builder: (context, itemConstraints) {
+                                final isNarrow = itemConstraints.maxWidth < 440;
+
+                                return Column(
+                                  children: _lines.map((line) {
+                                    final nameCol = Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          line.name,
+                                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          '${Formatters.money(line.price)} / ${line.unit}',
+                                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    );
+
+                                    final qtyRow = Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
                                           icon: const Icon(Icons.remove_circle_outline, size: 20),
@@ -429,20 +451,59 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                           onPressed: () => setState(() => line.quantity++),
                                         ),
                                       ],
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      Formatters.money(line.total),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                                      onPressed: () => setState(() => _lines.remove(line)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
+                                    );
+
+                                    final priceAndDel = Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          Formatters.money(line.total),
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                          onPressed: () => setState(() => _lines.remove(line)),
+                                        ),
+                                      ],
+                                    );
+
+                                    if (isNarrow) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            nameCol,
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                qtyRow,
+                                                priceAndDel,
+                                              ],
+                                            ),
+                                            const Divider(height: 8),
+                                          ],
+                                        ),
+                                      );
+                                    }
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Row(
+                                        children: [
+                                          Expanded(child: nameCol),
+                                          const SizedBox(width: 8),
+                                          qtyRow,
+                                          const SizedBox(width: 8),
+                                          priceAndDel,
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),
