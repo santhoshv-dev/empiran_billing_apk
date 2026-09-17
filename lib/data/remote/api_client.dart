@@ -371,7 +371,7 @@ class ApiClient {
     required String currentPassword,
     required String newPassword,
   }) =>
-      dio.post('/auth/change-password', data: {
+      dio.post('/users/update-password', data: {
         'currentPassword': currentPassword,
         'newPassword': newPassword,
       });

@@ -59,7 +59,15 @@ class InvoicesRepository {
               txn.toApiJson(),
             );
           } else {
-            await apiClient.createTransaction(companyId, txn.toApiJson());
+            final saved =
+                await apiClient.createTransaction(companyId, txn.toApiJson());
+            final remoteTxn = BusinessTransaction.fromJson(saved);
+            await DbHelper.instance.delete('transactions', txn.id);
+            await DbHelper.instance.insertOrUpdate(
+              'transactions',
+              remoteTxn.toJson(),
+              remoteTxn.id,
+            );
           }
         }
       } catch (_) {}
@@ -72,7 +80,7 @@ class InvoicesRepository {
     if (apiClient.token != null && apiClient.token!.isNotEmpty) {
       try {
         final companyId = await apiClient.getActiveBusinessId();
-        if (companyId != null) {
+        if (companyId != null && _isGuid(txn.id)) {
           await apiClient.deleteTransaction(companyId, txn.id);
         }
       } catch (_) {}

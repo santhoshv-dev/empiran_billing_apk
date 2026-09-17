@@ -92,6 +92,7 @@ class StaffManagementTab extends StatelessWidget {
                 if (isEdit) {
                   context.read<SettingsBloc>().add(
                         UpdateStaffUserRequested(
+                          id: user['id'],
                           username: user['username']!,
                           name: name.text.trim(),
                           email: email.text.trim(),
@@ -254,7 +255,10 @@ class StaffManagementTab extends StatelessWidget {
                               onPressed: () {
                                 context
                                     .read<SettingsBloc>()
-                                    .add(DeleteStaffUserRequested(u['username']!));
+                                    .add(DeleteStaffUserRequested(
+                                      u['username']!,
+                                      id: u['id'],
+                                    ));
                               },
                             ),
                           ],

@@ -73,7 +73,7 @@ class ProductsRepository {
     if (apiClient.token != null && apiClient.token!.isNotEmpty) {
       try {
         final companyId = await apiClient.getActiveBusinessId();
-        if (companyId != null) {
+        if (companyId != null && _isGuid(item.id)) {
           await apiClient.deleteItem(companyId, item.id);
         }
       } catch (_) {}
@@ -92,7 +92,7 @@ class ProductsRepository {
     if (apiClient.token != null && apiClient.token!.isNotEmpty) {
       try {
         final companyId = await apiClient.getActiveBusinessId();
-        if (companyId != null) {
+        if (companyId != null && _isGuid(item.id)) {
           await apiClient.adjustStock(companyId, item.id, {
             'newStock': next,
             'adjustmentType': change < 0 ? 'reduce' : 'add',

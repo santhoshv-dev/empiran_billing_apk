@@ -97,7 +97,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     if (state is! SettingsLoaded) return;
     final current = state as SettingsLoaded;
     final updated = List<String>.from(current.categories)..remove(event.category.trim());
-    await settingsRepository.saveCategories(updated);
+    await settingsRepository.deleteCategory(event.category);
     emit(current.copyWith(categories: updated));
   }
 
@@ -130,6 +130,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final current = state as SettingsLoaded;
     try {
       await settingsRepository.updateUser(
+        id: event.id,
         username: event.username,
         name: event.name,
         email: event.email,
@@ -150,7 +151,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     if (state is! SettingsLoaded) return;
     final current = state as SettingsLoaded;
     try {
-      await settingsRepository.deleteUser(event.username);
+      await settingsRepository.deleteUser(event.username, id: event.id);
       final users = await settingsRepository.loadUsers();
       emit(current.copyWith(users: users, message: 'Staff user removed.'));
     } catch (e) {

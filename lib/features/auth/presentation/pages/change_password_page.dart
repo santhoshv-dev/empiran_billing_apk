@@ -138,7 +138,7 @@ class _ChangePasswordFormState extends State<ChangePasswordForm> {
                     prefixIcon: Icon(Icons.vpn_key_outlined),
                   ),
                   validator: (value) =>
-                      value != null && value.length >= 6 ? null : 'Minimum 6 characters.',
+                      value != null && value.length >= 8 ? null : 'Minimum 8 characters.',
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

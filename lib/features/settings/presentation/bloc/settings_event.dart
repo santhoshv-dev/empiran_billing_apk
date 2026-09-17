@@ -69,6 +69,7 @@ class CreateStaffUserRequested extends SettingsEvent {
 }
 
 class UpdateStaffUserRequested extends SettingsEvent {
+  final String? id;
   final String username;
   final String name;
   final String email;
@@ -76,6 +77,7 @@ class UpdateStaffUserRequested extends SettingsEvent {
   final String role;
 
   const UpdateStaffUserRequested({
+    this.id,
     required this.username,
     required this.name,
     required this.email,
@@ -84,14 +86,15 @@ class UpdateStaffUserRequested extends SettingsEvent {
   });
 
   @override
-  List<Object?> get props => [username, name, email, password, role];
+  List<Object?> get props => [id, username, name, email, password, role];
 }
 
 class DeleteStaffUserRequested extends SettingsEvent {
   final String username;
+  final String? id;
 
-  const DeleteStaffUserRequested(this.username);
+  const DeleteStaffUserRequested(this.username, {this.id});
 
   @override
-  List<Object?> get props => [username];
+  List<Object?> get props => [username, id];
 }

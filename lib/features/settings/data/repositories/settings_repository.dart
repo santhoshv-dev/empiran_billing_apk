@@ -91,12 +91,29 @@ class SettingsRepository {
   Future<List<String>> loadCategories() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(AppConstants.categoriesKey);
+    var categories = List<String>.from(AppConstants.defaultCategories);
     if (jsonString != null && jsonString.isNotEmpty) {
       try {
-        return List<String>.from(jsonDecode(jsonString));
+        categories = List<String>.from(jsonDecode(jsonString));
       } catch (_) {}
     }
-    return List<String>.from(AppConstants.defaultCategories);
+
+    final companyId = await apiClient.getActiveBusinessId();
+    if (apiClient.token != null && apiClient.token!.isNotEmpty && companyId != null) {
+      try {
+        final remote = await apiClient.getCategories(companyId);
+        final remoteNames = remote
+            .map((c) => c['name']?.toString().trim() ?? '')
+            .where((name) => name.isNotEmpty)
+            .toList();
+        if (remoteNames.isNotEmpty) {
+          categories = [...{...categories, ...remoteNames}];
+          await prefs.setString(AppConstants.categoriesKey, jsonEncode(categories));
+        }
+      } catch (_) {}
+    }
+
+    return categories;
   }
 
   Future<void> saveCategories(List<String> categories) async {
@@ -119,7 +136,14 @@ class SettingsRepository {
     }
 
     try {
-      final created = await apiClient.createCategory(companyId, {'name': trimmed});
+      final remote = await apiClient.getCategories(companyId);
+      final existingRemote = remote.where(
+        (c) => (c['name']?.toString().trim().toLowerCase() ?? '') ==
+            trimmed.toLowerCase(),
+      );
+      final created = existingRemote.isNotEmpty
+          ? existingRemote.first
+          : await apiClient.createCategory(companyId, {'name': trimmed});
       final categoryId = created['id']?.toString();
       if (categoryId != null &&
           categoryId.isNotEmpty &&
@@ -130,6 +154,31 @@ class SettingsRepository {
           categoryId,
           imageBase64,
         );
+      }
+    } catch (_) {}
+  }
+
+  Future<void> deleteCategory(String category) async {
+    final trimmed = category.trim();
+    final existing = await loadCategories();
+    await saveCategories(existing.where((c) => c != trimmed).toList());
+
+    final companyId = await apiClient.getActiveBusinessId();
+    if (apiClient.token == null || apiClient.token!.isEmpty || companyId == null) {
+      return;
+    }
+
+    try {
+      final remote = await apiClient.getCategories(companyId);
+      for (final item in remote) {
+        final id = item['id']?.toString();
+        final name = item['name']?.toString().trim();
+        if (id != null &&
+            id.isNotEmpty &&
+            name != null &&
+            name.toLowerCase() == trimmed.toLowerCase()) {
+          await apiClient.deleteCategory(companyId, id);
+        }
       }
     } catch (_) {}
   }
@@ -182,6 +231,8 @@ class SettingsRepository {
           'password': password,
           'role': role,
         });
+        await loadUsers();
+        return;
       } catch (_) {}
     }
     final existing = await loadUsers();

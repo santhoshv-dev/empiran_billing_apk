@@ -74,7 +74,7 @@ class PartiesRepository {
     if (apiClient.token != null && apiClient.token!.isNotEmpty) {
       try {
         final companyId = await apiClient.getActiveBusinessId();
-        if (companyId != null) {
+        if (companyId != null && _isGuid(party.id)) {
           await apiClient.deleteParty(companyId, party.id);
         }
       } catch (_) {}
