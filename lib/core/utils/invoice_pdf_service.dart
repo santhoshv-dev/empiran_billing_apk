@@ -51,7 +51,7 @@ Future<Uint8List> buildReportPdf(
       pageFormat: PdfPageFormat.a4.landscape,
       build: (_) => [
         pw.Text(
-          company.name,
+          company.displayName,
           style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
         ),
         pw.Text(title),
@@ -186,41 +186,80 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
     }
   }
   final fmt = NumberFormat.currency(locale: 'en_IN', symbol: 'INR ');
+  const pageMargin = 10.0;
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(22),
+      margin: const pw.EdgeInsets.all(pageMargin),
       build: (_) => [
-        if (logo != null)
-          pw.Image(logo, width: 64, height: 48, fit: pw.BoxFit.contain),
-        if (t.discount != 0) pw.Text('Discount: ${fmt.format(t.discount)}'),
-        if (t.shipping != 0) pw.Text('Shipping: ${fmt.format(t.shipping)}'),
-        if (t.notes.isNotEmpty) pw.Text('Notes: ${t.notes}'),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.end,
-          children: [
-            pw.Text(
-              '(ORIGINAL FOR RECIPIENT)',
-              style: const pw.TextStyle(fontSize: 7),
-            ),
-          ],
-        ),
-        pw.Center(
-          child: pw.Text(
-            t.type == 'quotation' || t.type == 'estimate'
-                ? 'QUOTATION'
-                : t.type.startsWith('payment_')
-                    ? 'PAYMENT RECEIPT'
-                    : t.type == 'report'
-                        ? 'TRANSACTION REPORT'
-                        : t.isGst
-                            ? 'TAX INVOICE'
-                            : t.type.replaceAll('_', ' ').toUpperCase(),
-            style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+        pw.Container(
+          constraints: pw.BoxConstraints(
+            minHeight: PdfPageFormat.a4.height - (pageMargin * 2),
+          ),
+          decoration: pw.BoxDecoration(border: pw.Border.all(width: .8)),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(6),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    if (logo != null) ...[
+                      pw.Image(
+                        logo,
+                        width: 70,
+                        height: 54,
+                        fit: pw.BoxFit.contain,
+                      ),
+                      pw.SizedBox(width: 8),
+                    ],
+                    pw.Expanded(
+                      child: pw.Center(
+                        child: pw.Text(
+                          t.type == 'quotation' || t.type == 'estimate'
+                              ? 'QUOTATION'
+                              : t.type.startsWith('payment_')
+                                  ? 'PAYMENT RECEIPT'
+                                  : t.type == 'report'
+                                      ? 'TRANSACTION REPORT'
+                                      : t.isGst
+                                          ? 'TAX INVOICE'
+                                          : t.type.replaceAll('_', ' ').toUpperCase(),
+                          style: pw.TextStyle(
+                            fontSize: 15,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    pw.Text(
+                      '(ORIGINAL FOR RECIPIENT)',
+                      style: const pw.TextStyle(fontSize: 7),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              _buildA4InvoiceBody(c, t, fmt),
+            ],
           ),
         ),
-        pw.SizedBox(height: 4),
-        pw.Table(
+      ],
+    ),
+  );
+  return doc.save();
+}
+
+pw.Widget _buildA4InvoiceBody(
+  Company c,
+  BusinessTransaction t,
+  NumberFormat fmt,
+) {
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: [
+      pw.Table(
           border: pw.TableBorder.all(width: .6),
           columnWidths: {
             0: const pw.FlexColumnWidth(1),
@@ -235,7 +274,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        c.name,
+                        c.displayName,
                         style: pw.TextStyle(
                           fontSize: 13,
                           fontWeight: pw.FontWeight.bold,
@@ -314,7 +353,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
             ),
           ],
         ),
-        pw.Container(
+      pw.Container(
           width: double.infinity,
           padding: const pw.EdgeInsets.all(7),
           decoration: pw.BoxDecoration(border: pw.Border.all(width: .6)),
@@ -345,7 +384,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
             ],
           ),
         ),
-        pw.Table(
+      pw.Table(
           border: pw.TableBorder.all(width: .5),
           columnWidths: {
             0: const pw.FixedColumnWidth(28),
@@ -442,7 +481,21 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
             ),
           ],
         ),
+      if (t.discount != 0 || t.shipping != 0 || t.notes.isNotEmpty)
         pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.all(7),
+          decoration: pw.BoxDecoration(border: pw.Border.all(width: .6)),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              if (t.discount != 0) pw.Text('Discount: ${fmt.format(t.discount)}'),
+              if (t.shipping != 0) pw.Text('Shipping: ${fmt.format(t.shipping)}'),
+              if (t.notes.isNotEmpty) pw.Text('Notes: ${t.notes}'),
+            ],
+          ),
+        ),
+      pw.Container(
           width: double.infinity,
           padding: const pw.EdgeInsets.all(7),
           decoration: pw.BoxDecoration(border: pw.Border.all(width: .6)),
@@ -463,7 +516,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
             ],
           ),
         ),
-        pw.Table(
+      pw.Table(
           border: pw.TableBorder.all(width: .6),
           columnWidths: {
             0: const pw.FlexColumnWidth(),
@@ -511,7 +564,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                       pw.Align(
                         alignment: pw.Alignment.centerRight,
                         child: pw.Text(
-                          'for ${c.name}\n\nAuthorized Signatory',
+                          'for ${c.displayName}\n\nAuthorized Signatory',
                           textAlign: pw.TextAlign.right,
                           style: pw.TextStyle(
                             fontSize: 8,
@@ -526,17 +579,16 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
             ),
           ],
         ),
-        pw.SizedBox(height: 4),
-        pw.Center(
+      pw.SizedBox(height: 12),
+      pw.Center(
           child: pw.Text(
             'This is a Computer Generated Invoice',
             style: const pw.TextStyle(fontSize: 7),
           ),
         ),
-      ],
-    ),
+      pw.SizedBox(height: 4),
+    ],
   );
-  return doc.save();
 }
 
 Future<Uint8List> buildThermalReceiptPdf(
@@ -546,10 +598,25 @@ Future<Uint8List> buildThermalReceiptPdf(
   final doc = pw.Document();
   final money = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs.');
   final dateFormat = DateFormat('dd-MM-yyyy hh:mm a');
+  pw.MemoryImage? logo;
+  if (c.logo != null && c.logo!.isNotEmpty) {
+    try {
+      logo = pw.MemoryImage(base64Decode(c.logo!.split(',').last));
+    } catch (_) {}
+  }
 
-  final contentHeight = 220.0 + (t.lines.length * 22.0) + 180.0;
+  final wrappedLineHeight = t.lines.fold<double>(0, (height, line) {
+    final nameRows = (line.name.length / 18).ceil().clamp(1, 4);
+    return height + 16 + (nameRows * 8);
+  });
+  final headerHeight = 72.0 +
+      (logo == null ? 0 : 42) +
+      (c.address.isEmpty ? 0 : 18) +
+      (c.phone.isEmpty ? 0 : 10) +
+      (c.gstin.isEmpty ? 0 : 10);
+  final contentHeight = headerHeight + wrappedLineHeight + 150.0;
   final format = PdfPageFormat.roll80.copyWith(
-    height: contentHeight < 250 ? 250 : contentHeight,
+    height: contentHeight < 280 ? 280 : contentHeight,
     marginTop: 6,
     marginBottom: 6,
     marginLeft: 8,
@@ -560,9 +627,19 @@ Future<Uint8List> buildThermalReceiptPdf(
     pw.MultiPage(
       pageFormat: format,
       build: (ctx) => [
+        if (logo != null)
+          pw.Center(
+            child: pw.Image(
+              logo,
+              width: 42,
+              height: 36,
+              fit: pw.BoxFit.contain,
+            ),
+          ),
+        if (logo != null) pw.SizedBox(height: 3),
         pw.Center(
           child: pw.Text(
-            c.name.toUpperCase(),
+            c.displayName.toUpperCase(),
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
             textAlign: pw.TextAlign.center,
           ),
@@ -644,27 +721,28 @@ Future<Uint8List> buildThermalReceiptPdf(
         for (final li in t.lines)
           pw.Padding(
             padding: const pw.EdgeInsets.symmetric(vertical: 2),
-            child: pw.Row(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
               children: [
-                pw.Expanded(
-                    flex: 5,
-                    child: pw.Text(li.name,
-                        style: const pw.TextStyle(fontSize: 8))),
-                pw.Expanded(
-                    flex: 2,
-                    child: pw.Text('${li.quantity}',
-                        textAlign: pw.TextAlign.center,
-                        style: const pw.TextStyle(fontSize: 8))),
-                pw.Expanded(
-                    flex: 3,
-                    child: pw.Text(li.price.toStringAsFixed(2),
-                        textAlign: pw.TextAlign.right,
-                        style: const pw.TextStyle(fontSize: 8))),
-                pw.Expanded(
-                    flex: 3,
-                    child: pw.Text(li.total.toStringAsFixed(2),
-                        textAlign: pw.TextAlign.right,
-                        style: const pw.TextStyle(fontSize: 8))),
+                pw.Text(li.name, style: const pw.TextStyle(fontSize: 8)),
+                pw.Row(
+                  children: [
+                    pw.Expanded(
+                        flex: 4,
+                        child: pw.Text('${li.quantity} ${li.unit}',
+                            style: const pw.TextStyle(fontSize: 8))),
+                    pw.Expanded(
+                        flex: 4,
+                        child: pw.Text('@ ${li.price.toStringAsFixed(2)}',
+                            textAlign: pw.TextAlign.right,
+                            style: const pw.TextStyle(fontSize: 8))),
+                    pw.Expanded(
+                        flex: 5,
+                        child: pw.Text(li.total.toStringAsFixed(2),
+                            textAlign: pw.TextAlign.right,
+                            style: const pw.TextStyle(fontSize: 8))),
+                  ],
+                ),
               ],
             ),
           ),

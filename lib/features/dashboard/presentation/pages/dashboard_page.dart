@@ -14,6 +14,8 @@ import 'package:empiran/features/parties/presentation/widgets/party_dialog.dart'
 import 'package:empiran/features/products/presentation/bloc/products_bloc.dart';
 import 'package:empiran/features/products/presentation/bloc/products_state.dart';
 import 'package:empiran/features/products/presentation/widgets/product_dialog.dart';
+import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
+import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
 
 class DashboardPage extends StatelessWidget {
   final ValueChanged<ShellRoute> onNavigate;
@@ -32,10 +34,14 @@ class DashboardPage extends StatelessWidget {
     final invoiceState = context.watch<InvoicesBloc>().state;
     final productState = context.watch<ProductsBloc>().state;
     final partyState = context.watch<PartiesBloc>().state;
+    final settingsState = context.watch<SettingsBloc>().state;
 
     final txns = invoiceState is InvoicesLoaded ? invoiceState.transactions : [];
     final items = productState is ProductsLoaded ? productState.items : [];
     final parties = partyState is PartiesLoaded ? partyState.parties : [];
+    final companyName = settingsState is SettingsLoaded
+        ? settingsState.company.displayName
+        : 'Empiran Traders';
 
     // Calculate metrics
     final salesOrders = txns.where((t) => t.type == 'order' || t.type == 'sale_invoice').toList();
@@ -69,7 +75,7 @@ class DashboardPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${_greeting()} 👋',
+                        '${_greeting()}, $companyName',
                         style: TextStyle(
                           fontSize: isNarrow ? 20 : 24,
                           fontWeight: FontWeight.w800,

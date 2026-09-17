@@ -99,6 +99,12 @@ class Company {
       ifsc,
       role;
   String? logo;
+  String get displayName {
+    final value = name.trim();
+    if (value.isEmpty || value == '1') return 'Empiran Traders';
+    return value;
+  }
+
   factory Company.fromJson(Map<String, dynamic> j) => Company(
         id: '${j['id'] ?? 'local'}',
         name: j['name'] ?? 'Empiran Traders',

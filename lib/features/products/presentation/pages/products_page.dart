@@ -434,16 +434,16 @@ class _ProductsPageState extends State<ProductsPage> {
                                 builder: (context, cardConstraints) {
                                   final isCardCompact = cardConstraints.maxWidth < 620;
 
-                                  final titleRow = Row(
+                                  final titleRow = Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
-                                      Flexible(
-                                        child: Text(
-                                          item.name,
-                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                      Text(
+                                        item.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      const SizedBox(width: 8),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
@@ -455,8 +455,7 @@ class _ProductsPageState extends State<ProductsPage> {
                                           style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
                                         ),
                                       ),
-                                      if (item.isService) ...[
-                                        const SizedBox(width: 6),
+                                      if (item.isService)
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
@@ -465,7 +464,6 @@ class _ProductsPageState extends State<ProductsPage> {
                                           ),
                                           child: const Text('SERVICE', style: TextStyle(fontSize: 10, color: Colors.purple, fontWeight: FontWeight.bold)),
                                         ),
-                                      ],
                                     ],
                                   );
 

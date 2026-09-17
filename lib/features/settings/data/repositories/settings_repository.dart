@@ -16,6 +16,9 @@ class SettingsRepository {
     if (jsonString != null && jsonString.isNotEmpty) {
       try {
         company = Company.fromJson(jsonDecode(jsonString));
+        if (company.name.trim() == '1') {
+          company.name = 'Empiran Traders';
+        }
       } catch (_) {}
     }
 
@@ -25,9 +28,12 @@ class SettingsRepository {
         if (businesses.isNotEmpty) {
           final b = businesses.first;
           final realId = b['id']?.toString() ?? company.id;
+          final remoteName = b['name']?.toString().trim();
           company = Company(
             id: realId,
-            name: b['name']?.toString() ?? company.name,
+            name: remoteName == null || remoteName.isEmpty || remoteName == '1'
+                ? company.displayName
+                : remoteName,
             gstin: b['gstin']?.toString() ?? company.gstin,
             address: '${b['addressLine1'] ?? ''} ${b['addressLine2'] ?? ''}'.trim().isNotEmpty
                 ? '${b['addressLine1'] ?? ''} ${b['addressLine2'] ?? ''}'.trim()

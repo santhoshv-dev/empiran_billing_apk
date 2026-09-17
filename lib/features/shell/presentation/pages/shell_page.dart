@@ -268,7 +268,7 @@ class _ShellPageState extends State<ShellPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                company?.name ?? 'Empiran Traders',
+                                company?.displayName ?? 'Empiran Traders',
                                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -487,7 +487,7 @@ class _ShellPageState extends State<ShellPage> {
                   const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 36),
                   const SizedBox(height: 10),
                   Text(
-                    company?.name ?? 'Empiran Traders',
+                    company?.displayName ?? 'Empiran Traders',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   Text(
