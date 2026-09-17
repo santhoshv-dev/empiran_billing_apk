@@ -7,6 +7,7 @@ import '../bloc/parties_bloc.dart';
 import '../bloc/parties_event.dart';
 import '../bloc/parties_state.dart';
 import '../widgets/party_dialog.dart';
+import '../../../../models.dart';
 
 class PartiesPage extends StatefulWidget {
   const PartiesPage({super.key});
@@ -38,6 +39,37 @@ class _PartiesPageState extends State<PartiesPage> {
             partyFilter: _filter,
           ),
         );
+  }
+
+  Future<void> _deleteParty(Party p) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Delete Contact'),
+          ],
+        ),
+        content: Text('Are you sure you want to delete ${p.name}? This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<PartiesBloc>().add(DeletePartyRequested(p));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${p.name} deleted successfully.')),
+      );
+    }
   }
 
   @override
@@ -239,10 +271,20 @@ class _PartiesPageState extends State<PartiesPage> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           balanceColumn,
-                                          IconButton(
-                                            tooltip: 'Edit Contact',
-                                            icon: const Icon(Icons.edit_outlined, size: 18),
-                                            onPressed: () => showPartyDialog(context, party: p),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                tooltip: 'Edit Contact',
+                                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                                onPressed: () => showPartyDialog(context, party: p),
+                                              ),
+                                              IconButton(
+                                                tooltip: 'Delete Contact',
+                                                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                                onPressed: () => _deleteParty(p),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
@@ -264,6 +306,11 @@ class _PartiesPageState extends State<PartiesPage> {
                                       tooltip: 'Edit Contact',
                                       icon: const Icon(Icons.edit_outlined, size: 20),
                                       onPressed: () => showPartyDialog(context, party: p),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Delete Contact',
+                                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                                      onPressed: () => _deleteParty(p),
                                     ),
                                   ],
                                 ),

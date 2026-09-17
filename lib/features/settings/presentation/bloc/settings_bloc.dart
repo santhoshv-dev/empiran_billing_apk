@@ -11,6 +11,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SaveCompanyRequested>(_onSaveCompanyRequested);
     on<SaveInvoiceSettingsRequested>(_onSaveInvoiceSettingsRequested);
     on<AddCategoryRequested>(_onAddCategoryRequested);
+    on<UpdateCategoryRequested>(_onUpdateCategoryRequested);
     on<DeleteCategoryRequested>(_onDeleteCategoryRequested);
     on<CreateStaffUserRequested>(_onCreateStaffUserRequested);
     on<UpdateStaffUserRequested>(_onUpdateStaffUserRequested);
@@ -87,6 +88,28 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       imageBase64: event.imageBase64,
     );
     final updated = List<String>.from(current.categories)..add(trimmed);
+    emit(current.copyWith(categories: updated));
+  }
+
+  Future<void> _onUpdateCategoryRequested(
+    UpdateCategoryRequested event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (state is! SettingsLoaded) return;
+    final current = state as SettingsLoaded;
+    final oldTrimmed = event.oldName.trim();
+    final newTrimmed = event.newName.trim();
+    if (newTrimmed.isEmpty) return;
+
+    await settingsRepository.updateCategory(
+      oldTrimmed,
+      newTrimmed,
+      imageBase64: event.imageBase64,
+    );
+    final updated = current.categories.map((c) => c == oldTrimmed ? newTrimmed : c).toList();
+    if (!updated.contains(newTrimmed)) {
+      updated.add(newTrimmed);
+    }
     emit(current.copyWith(categories: updated));
   }
 

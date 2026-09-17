@@ -85,9 +85,24 @@ class ProductsRepository {
     double change, {
     String reason = 'Manual adjustment',
   }) async {
+    final prevStock = item.currentStock;
     final next = item.currentStock + change;
     item.currentStock = next;
     await DbHelper.instance.insertOrUpdate('items', item.toJson(), item.id);
+
+    // Save stock history audit record
+    final record = StockRecord(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      itemId: item.id,
+      itemName: item.name,
+      adjustmentType: change < 0 ? 'reduce' : 'add',
+      quantity: change.abs(),
+      previousStock: prevStock,
+      updatedStock: next,
+      reason: reason,
+      date: DateTime.now(),
+    );
+    await DbHelper.instance.insert('stock_history', record.toJson());
 
     if (apiClient.token != null && apiClient.token!.isNotEmpty) {
       try {
@@ -102,6 +117,28 @@ class ProductsRepository {
         }
       } catch (_) {}
     }
+  }
+
+  Future<void> adjustStockById(
+    String itemId,
+    double change, {
+    String reason = 'Manual adjustment',
+  }) async {
+    final items = await loadProducts();
+    final item = items.where((i) => i.id == itemId).firstOrNull;
+    if (item != null) {
+      await adjustStock(item, change, reason: reason);
+    }
+  }
+
+  Future<List<StockRecord>> getStockHistory(String itemId) async {
+    final rows = await DbHelper.instance.queryAll('stock_history');
+    final records = rows
+        .map((r) => StockRecord.fromJson(r))
+        .where((r) => r.itemId == itemId)
+        .toList();
+    records.sort((a, b) => b.date.compareTo(a.date));
+    return records;
   }
 
   static bool _isGuid(String value) => RegExp(

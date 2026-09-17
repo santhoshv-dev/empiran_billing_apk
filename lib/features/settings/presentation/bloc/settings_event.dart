@@ -40,6 +40,21 @@ class AddCategoryRequested extends SettingsEvent {
   List<Object?> get props => [category, imageBase64];
 }
 
+class UpdateCategoryRequested extends SettingsEvent {
+  final String oldName;
+  final String newName;
+  final String? imageBase64;
+
+  const UpdateCategoryRequested({
+    required this.oldName,
+    required this.newName,
+    this.imageBase64,
+  });
+
+  @override
+  List<Object?> get props => [oldName, newName, imageBase64];
+}
+
 class DeleteCategoryRequested extends SettingsEvent {
   final String category;
 

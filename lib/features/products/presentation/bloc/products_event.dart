@@ -33,11 +33,16 @@ class DeleteProductRequested extends ProductsEvent {
 class AdjustStockRequested extends ProductsEvent {
   final Item item;
   final double change;
+  final String reason;
 
-  const AdjustStockRequested({required this.item, required this.change});
+  const AdjustStockRequested({
+    required this.item,
+    required this.change,
+    this.reason = 'Stock Adjustment',
+  });
 
   @override
-  List<Object?> get props => [item, change];
+  List<Object?> get props => [item, change, reason];
 }
 
 class FilterProductsRequested extends ProductsEvent {

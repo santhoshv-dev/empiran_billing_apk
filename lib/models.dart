@@ -214,25 +214,71 @@ class Item {
         'currentStock': currentStock,
         'lowStockLimit': lowStockLimit,
         'image': image,
-      };
+};
 }
 
 class Category {
   Category({
     required this.id,
     required this.name,
+    this.imageUrl,
   });
 
   String id, name;
+  String? imageUrl;
 
   factory Category.fromJson(Map<String, dynamic> j) => Category(
         id: j['id'] ?? j['Id'] ?? '',
         name: j['name'] ?? j['Name'] ?? '',
+        imageUrl: j['imageUrl'] ?? j['image'] ?? j['ImageUrl'],
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'imageUrl': imageUrl,
+      };
+}
+
+class StockRecord {
+  StockRecord({
+    required this.id,
+    required this.itemId,
+    required this.itemName,
+    required this.adjustmentType,
+    required this.quantity,
+    required this.previousStock,
+    required this.updatedStock,
+    required this.reason,
+    required this.date,
+  });
+
+  String id, itemId, itemName, adjustmentType, reason;
+  double quantity, previousStock, updatedStock;
+  DateTime date;
+
+  factory StockRecord.fromJson(Map<String, dynamic> j) => StockRecord(
+        id: '${j['id'] ?? ''}',
+        itemId: '${j['itemId'] ?? ''}',
+        itemName: j['itemName'] ?? '',
+        adjustmentType: j['adjustmentType'] ?? 'add',
+        quantity: _d(j['quantity']),
+        previousStock: _d(j['previousStock']),
+        updatedStock: _d(j['updatedStock'] ?? j['newStock']),
+        reason: j['reason'] ?? '',
+        date: DateTime.tryParse('${j['date']}') ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'itemId': itemId,
+        'itemName': itemName,
+        'adjustmentType': adjustmentType,
+        'quantity': quantity,
+        'previousStock': previousStock,
+        'updatedStock': updatedStock,
+        'reason': reason,
+        'date': date.toIso8601String(),
       };
 }
 

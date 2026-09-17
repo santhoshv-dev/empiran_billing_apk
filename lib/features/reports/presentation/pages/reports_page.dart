@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:empiran/core/theme/app_theme.dart';
@@ -14,8 +15,6 @@ import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
 import 'package:empiran/models.dart';
 
-enum ReportRange { today, month, last30, all }
-
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
 
@@ -24,9 +23,18 @@ class ReportsPage extends StatefulWidget {
 }
 
 class _ReportsPageState extends State<ReportsPage> {
-  int _tab = 0;
-  final ReportRange _range = ReportRange.all;
-  DateTime? _from, _to;
+  int _tab = 0; // 0: All Transactions, 1: Sales Only, 2: Payments Only
+  DateTime? _fromDate;
+  DateTime? _toDate;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to current month range (e.g. 01-09-2026 to 17-09-2026)
+    final now = DateTime.now();
+    _fromDate = DateTime(now.year, now.month, 1);
+    _toDate = now;
+  }
 
   List<BusinessTransaction> _filterRows(List<BusinessTransaction> all) {
     var data = all.where((t) {
@@ -35,29 +43,20 @@ class _ReportsPageState extends State<ReportsPage> {
       return t.paid > 0 || t.type.startsWith('payment_');
     }).toList();
 
-    final now = DateTime.now();
-    DateTime? start, end;
-    if (_range == ReportRange.today) {
-      start = DateTime(now.year, now.month, now.day);
-      end = start.add(const Duration(days: 1));
-    } else if (_range == ReportRange.month) {
-      start = DateTime(now.year, now.month);
-      end = DateTime(now.year, now.month + 1);
-    } else if (_range == ReportRange.last30) {
-      start = now.subtract(const Duration(days: 30));
-      end = now.add(const Duration(days: 1));
-    } else {
-      start = _from;
-      end = _to?.add(const Duration(days: 1));
-    }
+    final start = _fromDate != null ? DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day) : null;
+    final end = _toDate != null ? DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59) : null;
 
     return data.where((t) {
-      return (start == null || !t.date.isBefore(start)) && (end == null || t.date.isBefore(end));
+      return (start == null || !t.date.isBefore(start)) && (end == null || !t.date.isAfter(end));
     }).toList();
   }
 
   Future<void> _exportCsv(List<BusinessTransaction> rows) async {
     final content = reportCsv(rows);
+    final fromStr = _fromDate != null ? DateFormat('dd-MM-yyyy').format(_fromDate!) : 'start';
+    final toStr = _toDate != null ? DateFormat('dd-MM-yyyy').format(_toDate!) : 'end';
+    final filename = 'sales_transactions_${fromStr}_to_$toStr.csv';
+
     await SharePlus.instance.share(
       ShareParams(
         files: [
@@ -66,19 +65,71 @@ class _ReportsPageState extends State<ReportsPage> {
             mimeType: 'text/csv',
           ),
         ],
-        fileNameOverrides: ['empiran-report.csv'],
+        fileNameOverrides: [filename],
       ),
     );
   }
 
   Future<void> _printReport(Company company, List<BusinessTransaction> rows) async {
+    final reportTitle = ['Transaction Details', 'Sales Details', 'Payment Details'][_tab];
+    final fromStr = _fromDate != null ? DateFormat('dd-MM-yyyy').format(_fromDate!) : 'Beginning';
+    final toStr = _toDate != null ? DateFormat('dd-MM-yyyy').format(_toDate!) : 'Present';
+
     await Printing.layoutPdf(
       onLayout: (_) => buildReportPdf(
         company,
         rows,
-        ['Transaction Details', 'Sales Details', 'Payment Details'][_tab],
+        '$reportTitle ($fromStr to $toStr)',
       ),
     );
+  }
+
+  Future<void> _pickFromDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _fromDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (picked != null) {
+      setState(() {
+        _fromDate = picked;
+        if (_toDate != null && _toDate!.isBefore(_fromDate!)) {
+          _toDate = _fromDate;
+        }
+      });
+    }
+  }
+
+  Future<void> _pickToDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _toDate ?? DateTime.now(),
+      firstDate: _fromDate ?? DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (picked != null) {
+      setState(() => _toDate = picked);
+    }
+  }
+
+  void _setQuickRange(String type) {
+    final now = DateTime.now();
+    setState(() {
+      if (type == 'today') {
+        _fromDate = DateTime(now.year, now.month, now.day);
+        _toDate = now;
+      } else if (type == 'month') {
+        _fromDate = DateTime(now.year, now.month, 1);
+        _toDate = now;
+      } else if (type == 'last30') {
+        _fromDate = now.subtract(const Duration(days: 30));
+        _toDate = now;
+      } else {
+        _fromDate = null;
+        _toDate = null;
+      }
+    });
   }
 
   @override
@@ -94,12 +145,152 @@ class _ReportsPageState extends State<ReportsPage> {
     final paid = rows.fold<double>(0, (a, b) => a + b.paid);
     final balance = total - paid;
 
+    final dateFmt = DateFormat('dd-MM-yyyy');
+
     return PageFrame(
-      title: 'Reports & Analytics',
-      subtitle: 'Transaction breakdown, tax liabilities, and payment reconciliation.',
+      title: 'Reports & Export',
+      subtitle: 'Export transactions and sales data based on custom date range.',
       child: Column(
         children: [
-          // Filter Tabs & Actions
+          // Date Range Selection & Quick Filters Card (Requirement 9)
+          EmpiranCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.date_range_rounded, size: 20, color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text(
+                      'Select Date-to-Date Export Range',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 640;
+
+                    final fromBtn = InkWell(
+                      onTap: _pickFromDate,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                          borderRadius: BorderRadius.circular(8),
+                          color: Theme.of(context).cardColor,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('From Date', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                Text(
+                                  _fromDate != null ? dateFmt.format(_fromDate!) : 'Select Date',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+
+                    final toBtn = InkWell(
+                      onTap: _pickToDate,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                          borderRadius: BorderRadius.circular(8),
+                          color: Theme.of(context).cardColor,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.event_outlined, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('To Date', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                Text(
+                                  _toDate != null ? dateFmt.format(_toDate!) : 'Select Date',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+
+                    final quickChips = SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ActionChip(
+                            label: const Text('Today', style: TextStyle(fontSize: 11)),
+                            onPressed: () => _setQuickRange('today'),
+                          ),
+                          const SizedBox(width: 6),
+                          ActionChip(
+                            label: const Text('This Month', style: TextStyle(fontSize: 11)),
+                            onPressed: () => _setQuickRange('month'),
+                          ),
+                          const SizedBox(width: 6),
+                          ActionChip(
+                            label: const Text('Last 30 Days', style: TextStyle(fontSize: 11)),
+                            onPressed: () => _setQuickRange('last30'),
+                          ),
+                          const SizedBox(width: 6),
+                          ActionChip(
+                            label: const Text('All Time', style: TextStyle(fontSize: 11)),
+                            onPressed: () => _setQuickRange('all'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (isNarrow) {
+                      return Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: fromBtn),
+                              const SizedBox(width: 8),
+                              Expanded(child: toBtn),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          quickChips,
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(child: fromBtn),
+                        const SizedBox(width: 10),
+                        Expanded(child: toBtn),
+                        const SizedBox(width: 14),
+                        quickChips,
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Filter Tabs & Export Actions
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 680;
@@ -131,7 +322,7 @@ class _ReportsPageState extends State<ReportsPage> {
                   ),
                   const SizedBox(width: 8),
                   EmpiranButton(
-                    label: 'Print PDF',
+                    label: 'Export PDF',
                     icon: Icons.print_outlined,
                     onPressed: rows.isEmpty ? null : () => _printReport(company, rows),
                   ),
@@ -161,14 +352,18 @@ class _ReportsPageState extends State<ReportsPage> {
               );
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Summary Metrics Cards
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 620;
               final cards = [
-                _buildMetricCard('Total Invoiced', Formatters.money(total), AppColors.primary),
+                _buildMetricCard(
+                  'Total Invoiced (${rows.length} records)',
+                  Formatters.money(total),
+                  AppColors.primary,
+                ),
                 _buildMetricCard('Total Collected', Formatters.money(paid), AppColors.success),
                 _buildMetricCard('Outstanding Balance', Formatters.money(balance), balance > 0 ? AppColors.error : Colors.grey),
               ];
@@ -193,14 +388,14 @@ class _ReportsPageState extends State<ReportsPage> {
               }
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Records Table
           Expanded(
             child: rows.isEmpty
                 ? const EmpiranEmptyState(
-                    title: 'No report data available',
-                    description: 'No records found for the selected range or type.',
+                    title: 'No transactions found in this date range',
+                    description: 'Adjust your from/to dates or clear filters to view data.',
                     icon: Icons.analytics_outlined,
                   )
                 : ListView.separated(
@@ -216,14 +411,30 @@ class _ReportsPageState extends State<ReportsPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    t.number,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                    overflow: TextOverflow.ellipsis,
+                                  Row(
+                                    children: [
+                                      Text(
+                                        t.number,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          t.type.toUpperCase(),
+                                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)}',
+                                    '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)}${t.referredBy != null && t.referredBy!.isNotEmpty ? ' • Staff: ${t.referredBy}' : ''}',
                                     style: const TextStyle(color: Colors.grey, fontSize: 12),
                                     overflow: TextOverflow.ellipsis,
                                   ),

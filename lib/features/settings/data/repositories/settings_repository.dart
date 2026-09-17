@@ -121,6 +121,24 @@ class SettingsRepository {
     await prefs.setString(AppConstants.categoriesKey, jsonEncode(categories));
   }
 
+  Future<Map<String, String>> loadCategoryImages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('category_images_map');
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        return Map<String, String>.from(jsonDecode(raw));
+      } catch (_) {}
+    }
+    return {};
+  }
+
+  Future<void> saveCategoryImage(String category, String image) async {
+    final map = await loadCategoryImages();
+    map[category.trim()] = image;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('category_images_map', jsonEncode(map));
+  }
+
   Future<void> addCategory(String category, {String? imageBase64}) async {
     final trimmed = category.trim();
     if (trimmed.isEmpty) return;
@@ -128,6 +146,10 @@ class SettingsRepository {
     final existing = await loadCategories();
     if (!existing.contains(trimmed)) {
       await saveCategories([...existing, trimmed]);
+    }
+
+    if (imageBase64 != null && imageBase64.trim().isNotEmpty) {
+      await saveCategoryImage(trimmed, imageBase64.trim());
     }
 
     final companyId = await apiClient.getActiveBusinessId();
@@ -158,10 +180,68 @@ class SettingsRepository {
     } catch (_) {}
   }
 
+  Future<void> updateCategory(
+    String oldName,
+    String newName, {
+    String? imageBase64,
+  }) async {
+    final oldTrimmed = oldName.trim();
+    final newTrimmed = newName.trim();
+    if (newTrimmed.isEmpty) return;
+
+    final existing = await loadCategories();
+    final updated = existing.map((c) => c == oldTrimmed ? newTrimmed : c).toList();
+    if (!updated.contains(newTrimmed)) {
+      updated.add(newTrimmed);
+    }
+    await saveCategories(updated);
+
+    final images = await loadCategoryImages();
+    final currentImage = images[oldTrimmed];
+    if (oldTrimmed != newTrimmed) {
+      images.remove(oldTrimmed);
+    }
+    if (imageBase64 != null) {
+      images[newTrimmed] = imageBase64.trim();
+    } else if (currentImage != null) {
+      images[newTrimmed] = currentImage;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('category_images_map', jsonEncode(images));
+
+    final companyId = await apiClient.getActiveBusinessId();
+    if (apiClient.token == null || apiClient.token!.isEmpty || companyId == null) {
+      return;
+    }
+
+    try {
+      final remote = await apiClient.getCategories(companyId);
+      final match = remote.where(
+        (c) => (c['name']?.toString().trim().toLowerCase() ?? '') == oldTrimmed.toLowerCase(),
+      ).firstOrNull;
+      if (match != null) {
+        final categoryId = match['id']?.toString();
+        if (categoryId != null && categoryId.isNotEmpty) {
+          await apiClient.updateCategory(companyId, categoryId, {'name': newTrimmed});
+          if (imageBase64 != null && imageBase64.trim().isNotEmpty) {
+            await apiClient.uploadCategoryImageBase64(companyId, categoryId, imageBase64.trim());
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> deleteCategory(String category) async {
     final trimmed = category.trim();
     final existing = await loadCategories();
     await saveCategories(existing.where((c) => c != trimmed).toList());
+
+    final images = await loadCategoryImages();
+    if (images.containsKey(trimmed)) {
+      images.remove(trimmed);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('category_images_map', jsonEncode(images));
+    }
 
     final companyId = await apiClient.getActiveBusinessId();
     if (apiClient.token == null || apiClient.token!.isEmpty || companyId == null) {

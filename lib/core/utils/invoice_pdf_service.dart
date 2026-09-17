@@ -765,15 +765,24 @@ Future<Uint8List> buildThermalReceiptPdf(
                   style: const pw.TextStyle(fontSize: 8)),
             ],
           ),
-        if (t.cgst + t.sgst > 0)
+        if (t.isGst || t.cgst + t.sgst > 0) ...[
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Tax / GST:', style: const pw.TextStyle(fontSize: 8)),
-              pw.Text(money.format(t.cgst + t.sgst),
+              pw.Text('CGST @ 9%:', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text(money.format(t.cgst),
                   style: const pw.TextStyle(fontSize: 8)),
             ],
           ),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('SGST @ 9%:', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text(money.format(t.sgst),
+                  style: const pw.TextStyle(fontSize: 8)),
+            ],
+          ),
+        ],
         pw.SizedBox(height: 2),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

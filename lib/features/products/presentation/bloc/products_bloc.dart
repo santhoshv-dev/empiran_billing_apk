@@ -89,7 +89,11 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     Emitter<ProductsState> emit,
   ) async {
     try {
-      await productsRepository.adjustStock(event.item, event.change);
+      await productsRepository.adjustStock(
+        event.item,
+        event.change,
+        reason: event.reason,
+      );
       final items = await productsRepository.loadProducts();
       final currentCategory = state is ProductsLoaded ? (state as ProductsLoaded).selectedCategory : 'All';
       final currentQuery = state is ProductsLoaded ? (state as ProductsLoaded).query : '';
