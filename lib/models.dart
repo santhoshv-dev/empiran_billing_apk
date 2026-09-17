@@ -131,6 +131,21 @@ class Company {
         'logo': logo,
         'role': role,
       };
+  Map<String, dynamic> toApiJson() => {
+        'name': name,
+        'legalName': name,
+        'gstin': gstin,
+        'pan': null,
+        'phone': phone,
+        'email': email,
+        'addressLine1': address,
+        'addressLine2': null,
+        'city': state,
+        'stateCode': stateCode,
+        'pincode': null,
+        'invoicePrefix': 'INV',
+        'defaultTerms': null,
+      };
 }
 
 class Item {
@@ -176,6 +191,20 @@ class Item {
         'salesPrice': salesPrice,
         'purchasePrice': purchasePrice,
         'isService': isService,
+        'currentStock': currentStock,
+        'lowStockLimit': lowStockLimit,
+        'image': image,
+      };
+  Map<String, dynamic> toApiJson() => {
+        'name': name,
+        'category': category,
+        'itemCode': itemCode,
+        'hsn': hsn,
+        'unit': unit,
+        'salesPrice': salesPrice,
+        'purchasePrice': purchasePrice,
+        'isService': isService,
+        'openingStock': currentStock,
         'currentStock': currentStock,
         'lowStockLimit': lowStockLimit,
         'image': image,
@@ -233,6 +262,15 @@ class Party {
         'gstin': gstin,
         'address': address,
         'balance': balance,
+      };
+  Map<String, dynamic> toApiJson() => {
+        'name': name,
+        'phone': phone,
+        'email': email,
+        'type': type,
+        'gstin': gstin,
+        'address': address,
+        'openingBalance': balance,
       };
 }
 

@@ -229,6 +229,17 @@ class ApiClient {
     Map<String, dynamic> data,
   ) async =>
       _map(await dio.post('/businesses/$id/transactions', data: data));
+  Future<Map<String, dynamic>> updateTransaction(
+    String id,
+    String transactionId,
+    Map<String, dynamic> data,
+  ) async =>
+      _map(
+        await dio.put(
+          '/businesses/$id/transactions/$transactionId',
+          data: data,
+        ),
+      );
   Future<void> deleteTransaction(String id, String transactionId) async =>
       dio.delete('/businesses/$id/transactions/$transactionId');
   Future<List<Map<String, dynamic>>> getExpenses(String id) async =>

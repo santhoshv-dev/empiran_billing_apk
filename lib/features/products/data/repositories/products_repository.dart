@@ -22,7 +22,11 @@ class ProductsRepository {
 
           // Sync local DB cache
           for (final item in remoteItems) {
-            await DbHelper.instance.insertOrUpdate('items', item.toJson(), item.id);
+            await DbHelper.instance.insertOrUpdate(
+              'items',
+              item.toJson(),
+              item.id,
+            );
           }
           return remoteItems;
         }
@@ -39,7 +43,25 @@ class ProductsRepository {
       try {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
-          await apiClient.createItem(companyId, item.toJson());
+          if (_isGuid(item.id)) {
+            final saved =
+                await apiClient.updateItem(companyId, item.id, item.toApiJson());
+            final remoteItem = Item.fromJson(saved);
+            await DbHelper.instance.insertOrUpdate(
+              'items',
+              remoteItem.toJson(),
+              remoteItem.id,
+            );
+          } else {
+            final saved = await apiClient.createItem(companyId, item.toApiJson());
+            final remoteItem = Item.fromJson(saved);
+            await DbHelper.instance.delete('items', item.id);
+            await DbHelper.instance.insertOrUpdate(
+              'items',
+              remoteItem.toJson(),
+              remoteItem.id,
+            );
+          }
         }
       } catch (_) {}
     }
@@ -58,7 +80,11 @@ class ProductsRepository {
     }
   }
 
-  Future<void> adjustStock(Item item, double change, {String reason = 'Manual adjustment'}) async {
+  Future<void> adjustStock(
+    Item item,
+    double change, {
+    String reason = 'Manual adjustment',
+  }) async {
     final next = item.currentStock + change;
     item.currentStock = next;
     await DbHelper.instance.insertOrUpdate('items', item.toJson(), item.id);
@@ -77,4 +103,8 @@ class ProductsRepository {
       } catch (_) {}
     }
   }
+
+  static bool _isGuid(String value) => RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+      ).hasMatch(value.trim());
 }

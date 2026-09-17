@@ -16,10 +16,15 @@ class PartiesRepository {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
           final remoteRows = await apiClient.getParties(companyId);
-          final remoteParties = remoteRows.map((r) => Party.fromJson(r)).toList();
+          final remoteParties =
+              remoteRows.map((r) => Party.fromJson(r)).toList();
 
           for (final party in remoteParties) {
-            await DbHelper.instance.insertOrUpdate('parties', party.toJson(), party.id);
+            await DbHelper.instance.insertOrUpdate(
+              'parties',
+              party.toJson(),
+              party.id,
+            );
           }
           return remoteParties;
         }
@@ -36,7 +41,28 @@ class PartiesRepository {
       try {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
-          await apiClient.createParty(companyId, party.toJson());
+          if (_isGuid(party.id)) {
+            final saved =
+                await apiClient.updateParty(companyId, party.id, party.toApiJson());
+            final remoteParty = Party.fromJson(saved);
+            await DbHelper.instance.insertOrUpdate(
+              'parties',
+              remoteParty.toJson(),
+              remoteParty.id,
+            );
+          } else {
+            final saved = await apiClient.createParty(
+              companyId,
+              party.toApiJson(),
+            );
+            final remoteParty = Party.fromJson(saved);
+            await DbHelper.instance.delete('parties', party.id);
+            await DbHelper.instance.insertOrUpdate(
+              'parties',
+              remoteParty.toJson(),
+              remoteParty.id,
+            );
+          }
         }
       } catch (_) {}
     }
@@ -54,4 +80,8 @@ class PartiesRepository {
       } catch (_) {}
     }
   }
+
+  static bool _isGuid(String value) => RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+      ).hasMatch(value.trim());
 }

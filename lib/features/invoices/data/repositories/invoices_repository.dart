@@ -17,7 +17,8 @@ class InvoicesRepository {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
           final remoteRows = await apiClient.getTransactions(companyId);
-          final remoteTxns = remoteRows.map((r) => BusinessTransaction.fromJson(r)).toList();
+          final remoteTxns =
+              remoteRows.map((r) => BusinessTransaction.fromJson(r)).toList();
 
           for (final t in remoteTxns) {
             await DbHelper.instance.insertOrUpdate('transactions', t.toJson(), t.id);
@@ -51,7 +52,15 @@ class InvoicesRepository {
       try {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
-          await apiClient.createTransaction(companyId, txn.toApiJson());
+          if (_isGuid(txn.id)) {
+            await apiClient.updateTransaction(
+              companyId,
+              txn.id,
+              txn.toApiJson(),
+            );
+          } else {
+            await apiClient.createTransaction(companyId, txn.toApiJson());
+          }
         }
       } catch (_) {}
     }
@@ -69,4 +78,8 @@ class InvoicesRepository {
       } catch (_) {}
     }
   }
+
+  static bool _isGuid(String value) => RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+      ).hasMatch(value.trim());
 }

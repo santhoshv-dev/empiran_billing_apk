@@ -60,7 +60,7 @@ class SettingsRepository {
       try {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
-          await apiClient.updateBusiness(companyId, company.toJson());
+          await apiClient.updateBusiness(companyId, company.toApiJson());
         }
       } catch (_) {}
     }

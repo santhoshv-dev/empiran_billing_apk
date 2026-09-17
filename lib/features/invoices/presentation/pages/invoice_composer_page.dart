@@ -120,11 +120,15 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
       final settings = settingsState is SettingsLoaded ? settingsState.invoiceSettings : InvoiceSettings();
 
       final invoicesRepo = context.read<InvoicesBloc>().invoicesRepository;
-      final number = invoicesRepo.generateNumber(widget.type, _isGst, settings);
-      context.read<SettingsBloc>().add(SaveInvoiceSettingsRequested(settings));
+      final source = widget.source;
+      final number =
+          source?.number ?? invoicesRepo.generateNumber(widget.type, _isGst, settings);
+      if (source == null) {
+        context.read<SettingsBloc>().add(SaveInvoiceSettingsRequested(settings));
+      }
 
       final txn = BusinessTransaction(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        id: source?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         type: widget.type,
         number: number,
         date: _date,
@@ -132,7 +136,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
             ? [
                 InvoiceLine(
                   itemId: '',
-                  name: widget.type == 'payment_in' ? 'Payment In' : 'Payment Out',
+                  name:
+                      widget.type == 'payment_in' ? 'Payment In' : 'Payment Out',
                   quantity: 1,
                   unit: '',
                   price: _amount,
@@ -152,7 +157,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
         discount: _effectiveDiscount,
         shipping: _shipping,
         notes: _notesController.text,
-        convertedFrom: widget.source?.type == 'quotation' ? widget.source?.id : null,
+        convertedFrom: source?.type == 'quotation' && widget.type != 'quotation'
+            ? source!.id
+            : source?.convertedFrom,
       );
 
       context.read<InvoicesBloc>().add(SaveTransactionRequested(txn));
