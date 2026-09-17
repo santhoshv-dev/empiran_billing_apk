@@ -122,10 +122,17 @@ class ProductsRepository {
   Future<void> adjustStockById(
     String itemId,
     double change, {
+    String itemName = '',
     String reason = 'Manual adjustment',
   }) async {
     final items = await loadProducts();
-    final item = items.where((i) => i.id == itemId).firstOrNull;
+    Item? item;
+    if (itemId.isNotEmpty && itemId != 'null') {
+      item = items.where((i) => i.id == itemId).firstOrNull;
+    }
+    if (item == null && itemName.trim().isNotEmpty) {
+      item = items.where((i) => i.name.trim().toLowerCase() == itemName.trim().toLowerCase()).firstOrNull;
+    }
     if (item != null) {
       await adjustStock(item, change, reason: reason);
     }

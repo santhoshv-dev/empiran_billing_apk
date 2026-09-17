@@ -369,6 +369,17 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                           child: const Text('GST 18%', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
                                         ),
                                       ],
+                                      if (t.discount > 0) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.success.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text('Disc: -${Formatters.money(t.discount)}', style: const TextStyle(fontSize: 10, color: AppColors.success, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
                                       if (isOrder) ...[
                                         const SizedBox(width: 6),
                                         Container(

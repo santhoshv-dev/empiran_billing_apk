@@ -92,31 +92,25 @@ class _StockHistoryDialogState extends State<_StockHistoryDialog> {
           ),
         ],
       ),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 580, maxHeight: 480),
+      content: SizedBox(
+        width: 540,
+        height: 420,
         child: _loading
-            ? const SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator()),
-              )
+            ? const Center(child: CircularProgressIndicator())
             : (_history == null || _history!.isEmpty)
-                ? SizedBox(
-                    height: 180,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.inventory_2_outlined, size: 40, color: Colors.grey.shade400),
-                          const SizedBox(height: 8),
-                          const Text('No stock adjustment history yet.', style: TextStyle(color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          const Text('Stock adjustments will appear here.', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                        ],
-                      ),
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inventory_2_outlined, size: 40, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        const Text('No stock adjustment history yet.', style: TextStyle(color: Colors.grey)),
+                        const SizedBox(height: 4),
+                        const Text('Stock adjustments will appear here.', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      ],
                     ),
                   )
                 : ListView.separated(
-                    shrinkWrap: true,
                     itemCount: _history!.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, i) {

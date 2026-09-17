@@ -16,6 +16,8 @@ String _apiTransactionType(String value) => switch (value) {
       'order' => 'sale_invoice',
       'quotation' => 'estimate',
       'purchase' => 'purchase_bill',
+      'return' => 'sale_return',
+      'sale_return' => 'sale_return',
       final value => value,
     };
 Map<String, dynamic> _transactionMeta(dynamic value) {
