@@ -224,10 +224,13 @@ class DashboardPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.badge_outlined, size: 20, color: AppColors.primary),
                             SizedBox(width: 8),
@@ -397,14 +400,15 @@ class DashboardPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.calendar_month_outlined, size: 20, color: AppColors.primary),
-                                SizedBox(width: 8),
-                                Text('Sales & Orders by Date', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                              ],
+                            const Icon(Icons.calendar_month_outlined, size: 20, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Sales & Orders by Date',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
                             ),
                             TextButton(
                               onPressed: () => onNavigate(ShellRoute.reports),
@@ -464,14 +468,15 @@ class DashboardPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.receipt_long_outlined, size: 20, color: AppColors.primary),
-                                SizedBox(width: 8),
-                                Text('Recent Orders & Invoices', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                              ],
+                            const Icon(Icons.receipt_long_outlined, size: 20, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Recent Orders & Invoices',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
                             ),
                             TextButton(
                               onPressed: () => onNavigate(ShellRoute.invoices),

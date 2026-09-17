@@ -333,16 +333,15 @@ class _InvoicesPageState extends State<InvoicesPage> {
                               final detailsColumn = Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
                                     children: [
-                                      Flexible(
-                                        child: Text(
-                                          t.number,
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                      Text(
+                                        t.number,
+                                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                                       ),
-                                      const SizedBox(width: 8),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
@@ -358,8 +357,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                           ),
                                         ),
                                       ),
-                                      if (t.isGst) ...[
-                                        const SizedBox(width: 6),
+                                      if (t.isGst)
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
@@ -368,9 +366,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                           ),
                                           child: const Text('GST 18%', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
                                         ),
-                                      ],
-                                      if (t.discount > 0) ...[
-                                        const SizedBox(width: 6),
+                                      if (t.discount > 0)
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
@@ -379,9 +375,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                           ),
                                           child: Text('Disc: -${Formatters.money(t.discount)}', style: const TextStyle(fontSize: 10, color: AppColors.success, fontWeight: FontWeight.bold)),
                                         ),
-                                      ],
-                                      if (isOrder) ...[
-                                        const SizedBox(width: 6),
+                                      if (isOrder)
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
@@ -390,7 +384,6 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                           ),
                                           child: const Text('ORDER', style: TextStyle(fontSize: 10, color: Colors.deepPurple, fontWeight: FontWeight.bold)),
                                         ),
-                                      ],
                                     ],
                                   ),
                                   const SizedBox(height: 3),
@@ -481,8 +474,8 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                       ),
                                       const SizedBox(height: 8),
                                       const Divider(height: 1),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
+                                      Wrap(
+                                        alignment: WrapAlignment.end,
                                         children: actions,
                                       ),
                                     ],

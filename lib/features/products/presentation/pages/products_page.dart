@@ -517,8 +517,9 @@ class _ProductsPageState extends State<ProductsPage> {
     Future<void> pickCategoryImage(StateSetter setDialogState) async {
       final file = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        imageQuality: 75,
-        maxWidth: 1000,
+        imageQuality: 50,
+        maxWidth: 200,
+        maxHeight: 200,
       );
       if (file == null) return;
 
@@ -624,8 +625,9 @@ class _ProductsPageState extends State<ProductsPage> {
     Future<void> pickCategoryImage(StateSetter setDialogState) async {
       final file = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        imageQuality: 75,
-        maxWidth: 1000,
+        imageQuality: 50,
+        maxWidth: 200,
+        maxHeight: 200,
       );
       if (file == null) return;
 
@@ -821,8 +823,14 @@ class _ProductsPageState extends State<ProductsPage> {
         ? ['All', ...settingsState.categories]
         : ['All', 'General'];
 
-    return BlocBuilder<ProductsBloc, ProductsState>(
-      builder: (context, state) {
+    return BlocListener<SettingsBloc, SettingsState>(
+      listener: (context, state) {
+        if (state is SettingsLoaded) {
+          _loadCategoryImages();
+        }
+      },
+      child: BlocBuilder<ProductsBloc, ProductsState>(
+        builder: (context, state) {
         if (state is ProductsLoading || state is ProductsInitial) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -1267,6 +1275,6 @@ class _ProductsPageState extends State<ProductsPage> {
           },
         );
       },
-    );
+    ));
   }
 }

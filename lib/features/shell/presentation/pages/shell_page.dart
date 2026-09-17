@@ -455,6 +455,7 @@ class _ShellPageState extends State<ShellPage> {
         ),
       )
         : Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.lightBackground,
       appBar: AppBar(
         title: Text(currentLabel),

@@ -883,54 +883,76 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                               children: _lines.map((line) {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
                                               line.name,
                                               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                            Text(
-                                              '${Formatters.money(line.price)} / ${line.unit}',
-                                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.remove_circle_outline, size: 20),
-                                            onPressed: () {
-                                              setState(() {
-                                                if (line.quantity > 1) {
-                                                  line.quantity--;
-                                                } else {
-                                                  _lines.remove(line);
-                                                }
-                                              });
-                                            },
                                           ),
-                                          Text('${line.quantity.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold)),
                                           IconButton(
-                                            icon: const Icon(Icons.add_circle_outline, size: 20),
-                                            onPressed: () => setState(() => line.quantity++),
+                                            icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: () => setState(() => _lines.remove(line)),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        Formatters.money(line.total),
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                                        onPressed: () => setState(() => _lines.remove(line)),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              '${Formatters.money(line.price)} / ${line.unit}',
+                                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.remove_circle_outline, size: 22),
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    if (line.quantity > 1) {
+                                                      line.quantity--;
+                                                    } else {
+                                                      _lines.remove(line);
+                                                    }
+                                                  });
+                                                },
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text('${line.quantity.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                              const SizedBox(width: 10),
+                                              IconButton(
+                                                icon: const Icon(Icons.add_circle_outline, size: 22),
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                onPressed: () => setState(() => line.quantity++),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              SizedBox(
+                                                width: 60,
+                                                child: Text(
+                                                  Formatters.money(line.total),
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                                  textAlign: TextAlign.right,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
