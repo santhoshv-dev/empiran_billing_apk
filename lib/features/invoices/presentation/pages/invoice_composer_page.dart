@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/core/utils/formatters.dart';
+import 'package:empiran/core/utils/image_helper.dart';
 import 'package:empiran/core/widgets/empiran_components.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_state.dart';
@@ -156,16 +157,6 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
     _collectedController.dispose();
     _referredByController.dispose();
     super.dispose();
-  }
-
-  Uint8List? _decodeImage(String? img) {
-    if (img == null || img.trim().isEmpty) return null;
-    try {
-      final payload = img.contains(',') ? img.split(',').last : img;
-      return base64Decode(payload);
-    } catch (_) {
-      return null;
-    }
   }
 
   bool _matchesPartySearch(Party party, String query) {
@@ -519,8 +510,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
 
   // Instamart-Style Category Card
   Widget _buildCategoryCard(String cat, int count, bool isSelected) {
-    final imageBase64 = _categoryImages[cat];
-    final imageBytes = _decodeImage(imageBase64);
+    final imageBase64 = widget.isOrder ? _categoryImages[cat] : null;
+    final imageBytes = ImageHelper.decodeBase64(imageBase64);
 
     return InkWell(
       onTap: () => setState(() => _category = cat),
@@ -570,6 +561,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         imageBytes,
                         fit: BoxFit.cover,
                         gaplessPlayback: true,
+                        cacheWidth:
+                            (40 * MediaQuery.devicePixelRatioOf(context))
+                                .toInt(),
                         errorBuilder: (_, __, ___) => Icon(
                           cat == 'All'
                               ? Icons.apps_rounded
@@ -956,7 +950,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                           ? qtyInCart.toInt().toString()
                                           : qtyInCart.toString();
                                       final itemImageBytes =
-                                          _decodeImage(item.image);
+                                          ImageHelper.decodeBase64(item.image);
 
                                       return EmpiranCard(
                                         padding: const EdgeInsets.symmetric(
@@ -983,6 +977,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                                         itemImageBytes,
                                                         fit: BoxFit.cover,
                                                         gaplessPlayback: true,
+                                                        cacheWidth: (52 * MediaQuery.devicePixelRatioOf(context)).toInt(),
                                                         errorBuilder:
                                                             (_, __, ___) =>
                                                                 const Icon(

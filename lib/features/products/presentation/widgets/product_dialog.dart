@@ -8,6 +8,7 @@ import 'package:empiran/core/widgets/empiran_components.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
 import 'package:empiran/models.dart';
+import 'package:empiran/core/utils/image_helper.dart';
 import '../bloc/products_bloc.dart';
 import '../bloc/products_event.dart';
 
@@ -70,7 +71,7 @@ class _ProductDialogState extends State<_ProductDialog> {
     
     _isService  = p?.isService ?? false;
     _image      = p?.image;
-    _imageBytes = _decodeImage(_image);
+    _imageBytes = ImageHelper.decodeBase64(_image);
 
     final settingsState = context.read<SettingsBloc>().state;
     final categories = settingsState is SettingsLoaded
@@ -114,18 +115,6 @@ class _ProductDialogState extends State<_ProductDialog> {
       }
     } finally {
       if (mounted) setState(() => _isImageLoading = false);
-    }
-  }
-
-  Uint8List? _decodeImage(String? image) {
-    final raw = image?.trim();
-    if (raw == null || raw.isEmpty) return null;
-
-    try {
-      final payload = raw.contains(',') ? raw.split(',').last : raw;
-      return base64Decode(payload);
-    } catch (_) {
-      return null;
     }
   }
 
@@ -394,6 +383,7 @@ class _ProductDialogState extends State<_ProductDialog> {
                               width: 54,
                               height: 54,
                               fit: BoxFit.cover,
+                              cacheWidth: (120 * MediaQuery.devicePixelRatioOf(context)).toInt(),
                             ),
                           ),
                           const SizedBox(width: 12),

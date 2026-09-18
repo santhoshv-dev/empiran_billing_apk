@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:empiran/core/services/permission_service.dart';
 import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/core/utils/formatters.dart';
+import 'package:empiran/core/utils/image_helper.dart';
 import 'package:empiran/core/widgets/empiran_components.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_state.dart';
@@ -65,20 +66,8 @@ class _ProductsPageState extends State<ProductsPage> {
         );
   }
 
-  Uint8List? _decodeProductImage(String? image) {
-    final raw = image?.trim();
-    if (raw == null || raw.isEmpty) return null;
-
-    try {
-      final payload = raw.contains(',') ? raw.split(',').last : raw;
-      return base64Decode(payload);
-    } catch (_) {
-      return null;
-    }
-  }
-
   Widget _buildProductThumbnail(Item item, {double size = 56}) {
-    final imageBytes = _decodeProductImage(item.image);
+    final imageBytes = ImageHelper.decodeBase64(item.image);
     final radius = BorderRadius.circular(AppRadii.medium);
 
     Widget fallbackIcon() => Container(
@@ -96,6 +85,8 @@ class _ProductsPageState extends State<ProductsPage> {
 
     if (imageBytes == null) return fallbackIcon();
 
+    final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).toInt();
+
     return ClipRRect(
       borderRadius: radius,
       child: Image.memory(
@@ -104,6 +95,7 @@ class _ProductsPageState extends State<ProductsPage> {
         height: size,
         fit: BoxFit.cover,
         gaplessPlayback: true,
+        cacheWidth: cacheSize,
         errorBuilder: (_, __, ___) => fallbackIcon(),
       ),
     );
@@ -116,7 +108,7 @@ class _ProductsPageState extends State<ProductsPage> {
     bool canManage,
   ) {
     final imageBase64 = _categoryImages[cat];
-    final imageBytes = _decodeProductImage(imageBase64);
+    final imageBytes = ImageHelper.decodeBase64(imageBase64);
 
     return InkWell(
       onTap: () {
@@ -169,8 +161,22 @@ class _ProductsPageState extends State<ProductsPage> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: imageBytes != null
-                      ? Image.memory(imageBytes,
-                          fit: BoxFit.cover, gaplessPlayback: true)
+                      ? Image.memory(
+                          imageBytes,
+                          width: 30,
+                          height: 30,
+                          fit: BoxFit.cover,
+                          cacheWidth: (30 * MediaQuery.devicePixelRatioOf(context)).toInt(),
+                          errorBuilder: (_, __, ___) => Icon(
+                            cat == 'All'
+                                ? Icons.apps_rounded
+                                : Icons.category_rounded,
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade600,
+                            size: 22,
+                          ),
+                        )
                       : Icon(
                           cat == 'All'
                               ? Icons.apps_rounded
@@ -260,7 +266,7 @@ class _ProductsPageState extends State<ProductsPage> {
     bool canManage,
     bool canViewCost,
   ) {
-    final imageBytes = _decodeProductImage(item.image);
+    final imageBytes = ImageHelper.decodeBase64(item.image);
     final isLowStock =
         !item.isService && item.currentStock <= item.lowStockLimit;
     final isOut = !item.isService && item.currentStock <= 0;
@@ -294,8 +300,18 @@ class _ProductsPageState extends State<ProductsPage> {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: imageBytes != null
-                        ? Image.memory(imageBytes,
-                            fit: BoxFit.cover, gaplessPlayback: true)
+                        ? Image.memory(
+                            imageBytes,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            cacheWidth: (80 * MediaQuery.devicePixelRatioOf(context)).toInt(),
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.inventory_2_outlined,
+                              size: 32,
+                              color: AppColors.primary,
+                            ),
+                          )
                         : const Icon(Icons.inventory_2_outlined,
                             size: 36, color: AppColors.primary),
                   ),
@@ -703,7 +719,7 @@ class _ProductsPageState extends State<ProductsPage> {
     final productsBloc = context.read<ProductsBloc>();
     final messenger = ScaffoldMessenger.of(context);
     String? imageBase64 = _categoryImages[category];
-    Uint8List? imageBytes = _decodeProductImage(imageBase64);
+    Uint8List? imageBytes = ImageHelper.decodeBase64(imageBase64);
     bool imageModified = false;
     bool isImageLoading = false;
 

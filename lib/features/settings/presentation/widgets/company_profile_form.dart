@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/empiran_components.dart';
+import '../../../../core/utils/image_helper.dart';
 import '../../../../models.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
@@ -33,9 +34,7 @@ class _CompanyProfileFormState extends State<CompanyProfileForm>
     super.initState();
     _logo = widget.company.logo;
     if (_logo != null && _logo!.isNotEmpty) {
-      try {
-        _logoBytes = base64Decode(_logo!.contains(',') ? _logo!.split(',').last : _logo!);
-      } catch (_) {}
+      _logoBytes = ImageHelper.decodeBase64(_logo);
     }
     _controllers = {
       'name': TextEditingController(text: widget.company.name),
@@ -175,6 +174,7 @@ class _CompanyProfileFormState extends State<CompanyProfileForm>
                       width: 54,
                       height: 54,
                       fit: BoxFit.cover,
+                      cacheWidth: (54 * MediaQuery.devicePixelRatioOf(context)).toInt(),
                     ),
                   ),
                   const SizedBox(width: 14),
