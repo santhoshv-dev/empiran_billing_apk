@@ -44,6 +44,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   final _discountController = TextEditingController();
+  final _referredByController = TextEditingController();
 
   String? _partyId;
   String _productQuery = '';
@@ -88,6 +89,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
         _discountController.text = _discount.toStringAsFixed(0);
       }
       _notesController.text = s.notes;
+      _referredByController.text = s.referredBy ?? '';
       _isGst = s.isGst;
       _quotationStep = 1; // If editing or converting existing source, jump straight to products
     }
@@ -110,6 +112,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
     _phoneController.dispose();
     _notesController.dispose();
     _discountController.dispose();
+    _referredByController.dispose();
     super.dispose();
   }
 
@@ -246,7 +249,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
         discount: _effectiveDiscount,
         shipping: _shipping,
         notes: _notesController.text,
-        referredBy: source?.referredBy ?? staffName,
+        referredBy: _referredByController.text.trim().isNotEmpty ? _referredByController.text.trim() : (source?.referredBy ?? staffName),
         convertedFrom: source?.type == 'quotation' && widget.type != 'quotation'
             ? source!.id
             : source?.convertedFrom,
@@ -433,25 +436,62 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                 ),
                 const SizedBox(height: 20),
                 if (parties.isNotEmpty) ...[
-                  DropdownButtonFormField<String>(
-                    initialValue: _partyId,
-                    decoration: const InputDecoration(
-                      labelText: 'Select Registered Customer (Optional)',
-                      prefixIcon: Icon(Icons.people_outline, size: 20),
-                    ),
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('Manual / Walk-in Customer')),
-                      ...parties.map((p) => DropdownMenuItem(value: p.id, child: Text('${p.name} (${p.phone})'))),
-                    ],
-                    onChanged: (v) {
-                      setState(() {
-                        _partyId = v;
-                        if (v != null) {
-                          final p = parties.firstWhere((el) => el.id == v);
-                          _nameController.text = p.name;
-                          _phoneController.text = p.phone;
-                        }
+                  Autocomplete<Party>(
+                    displayStringForOption: (option) => '${option.name} (${option.phone})',
+                    optionsBuilder: (textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return parties;
+                      }
+                      return parties.where((option) {
+                        return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase()) ||
+                            option.phone.contains(textEditingValue.text);
                       });
+                    },
+                    onSelected: (selection) {
+                      setState(() {
+                        _partyId = selection.id;
+                        _nameController.text = selection.name;
+                        _phoneController.text = selection.phone;
+                      });
+                    },
+                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                      return EmpiranTextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        label: 'Search Registered Customer (Optional)',
+                        hint: 'Type name or phone...',
+                        prefixIcon: Icons.search,
+                        onChanged: (val) {
+                          if (_partyId != null) {
+                            setState(() => _partyId = null);
+                          }
+                        },
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(8),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 250, maxWidth: 400),
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              itemBuilder: (context, index) {
+                                final option = options.elementAt(index);
+                                return ListTile(
+                                  title: Text(option.name),
+                                  subtitle: Text(option.phone),
+                                  onTap: () => onSelected(option),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 14),
@@ -469,6 +509,13 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                   hint: 'e.g. 9876543210',
                   prefixIcon: Icons.phone_outlined,
                   isNumber: true,
+                ),
+                const SizedBox(height: 14),
+                EmpiranTextField(
+                  controller: _referredByController,
+                  label: 'Who referred (Optional)',
+                  hint: 'e.g. Employee name or external referrer',
+                  prefixIcon: Icons.person_add_alt_1_outlined,
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -797,22 +844,62 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                           const Text('Customer Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           const SizedBox(height: 10),
                           if (parties.isNotEmpty) ...[
-                            DropdownButtonFormField<String>(
-                              initialValue: _partyId,
-                              decoration: const InputDecoration(labelText: 'Select Registered Customer (Optional)'),
-                              items: [
-                                const DropdownMenuItem(value: null, child: Text('Manual / Walk-in Customer')),
-                                ...parties.map((p) => DropdownMenuItem(value: p.id, child: Text('${p.name} (${p.phone})'))),
-                              ],
-                              onChanged: (v) {
-                                setState(() {
-                                  _partyId = v;
-                                  if (v != null) {
-                                    final p = parties.firstWhere((element) => element.id == v);
-                                    _nameController.text = p.name;
-                                    _phoneController.text = p.phone;
-                                  }
+                            Autocomplete<Party>(
+                              displayStringForOption: (option) => '${option.name} (${option.phone})',
+                              optionsBuilder: (textEditingValue) {
+                                if (textEditingValue.text.isEmpty) {
+                                  return parties;
+                                }
+                                return parties.where((option) {
+                                  return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase()) ||
+                                      option.phone.contains(textEditingValue.text);
                                 });
+                              },
+                              onSelected: (selection) {
+                                setState(() {
+                                  _partyId = selection.id;
+                                  _nameController.text = selection.name;
+                                  _phoneController.text = selection.phone;
+                                });
+                              },
+                              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                return EmpiranTextField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  label: 'Search Registered Customer (Optional)',
+                                  hint: 'Type name or phone...',
+                                  prefixIcon: Icons.search,
+                                  onChanged: (val) {
+                                    if (_partyId != null) {
+                                      setState(() => _partyId = null);
+                                    }
+                                  },
+                                );
+                              },
+                              optionsViewBuilder: (context, onSelected, options) {
+                                return Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Material(
+                                    elevation: 4,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(maxHeight: 250, maxWidth: 400),
+                                      child: ListView.builder(
+                                        padding: EdgeInsets.zero,
+                                        shrinkWrap: true,
+                                        itemCount: options.length,
+                                        itemBuilder: (context, index) {
+                                          final option = options.elementAt(index);
+                                          return ListTile(
+                                            title: Text(option.name),
+                                            subtitle: Text(option.phone),
+                                            onTap: () => onSelected(option),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
                               },
                             ),
                             const SizedBox(height: 10),
@@ -831,6 +918,11 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                 hint: 'Optional mobile',
                                 isNumber: true,
                               );
+                              final referredField = EmpiranTextField(
+                                controller: _referredByController,
+                                label: 'Who referred (Optional)',
+                                hint: 'Referrer name',
+                              );
 
                               if (isNarrow) {
                                 return Column(
@@ -838,15 +930,23 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                     nameField,
                                     const SizedBox(height: 10),
                                     phoneField,
+                                    const SizedBox(height: 10),
+                                    referredField,
                                   ],
                                 );
                               }
 
-                              return Row(
+                              return Column(
                                 children: [
-                                  Expanded(child: nameField),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: phoneField),
+                                  Row(
+                                    children: [
+                                      Expanded(child: nameField),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: phoneField),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  referredField,
                                 ],
                               );
                             },

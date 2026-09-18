@@ -313,6 +313,7 @@ class EmpiranTextField extends StatelessWidget {
     this.enabled = true,
     this.initialValue,
     this.helperText,
+    this.focusNode,
   });
 
   final TextEditingController? controller;
@@ -331,6 +332,7 @@ class EmpiranTextField extends StatelessWidget {
   final bool enabled;
   final String? initialValue;
   final String? helperText;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -374,6 +376,7 @@ class EmpiranTextField extends StatelessWidget {
           ),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           initialValue: initialValue,
           obscureText: obscureText,
           enabled: enabled,
