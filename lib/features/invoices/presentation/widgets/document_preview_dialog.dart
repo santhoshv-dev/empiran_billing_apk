@@ -5,22 +5,30 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/invoice_pdf_service.dart';
 import '../../../../models.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
+import 'package:empiran/features/settings/presentation/bloc/settings_event.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
+import 'invoice_customization_panel.dart';
 
 void showDocumentPreviewDialog(
   BuildContext context,
   BusinessTransaction transaction, {
   bool isThermal = false,
+  bool initiallyCustomize = false,
 }) {
   final settingsState = context.read<SettingsBloc>().state;
   final company =
       settingsState is SettingsLoaded ? settingsState.company : Company();
+  final savedSettings = settingsState is SettingsLoaded
+      ? settingsState.invoiceSettings
+      : InvoiceSettings();
 
   showDialog(
     context: context,
     builder: (ctx) {
-      bool thermal = isThermal;
+      bool thermal = initiallyCustomize ? false : isThermal;
       bool isFullscreen = false;
+      bool customize = initiallyCustomize;
+      InvoiceSettings design = savedSettings.copyWith();
       return StatefulBuilder(
         builder: (context, setState) {
           final screenSize = MediaQuery.sizeOf(context);
@@ -81,6 +89,22 @@ void showDocumentPreviewDialog(
                                   ),
                                   IconButton(
                                     icon: Icon(
+                                      customize
+                                          ? Icons.palette
+                                          : Icons.palette_outlined,
+                                      color:
+                                          customize ? AppColors.primary : null,
+                                      size: 20,
+                                    ),
+                                    tooltip: 'Customize Invoice',
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => setState(() {
+                                      customize = !customize;
+                                      if (customize) thermal = false;
+                                    }),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
                                       isFullscreen
                                           ? Icons.fullscreen_exit_rounded
                                           : Icons.fullscreen_rounded,
@@ -121,8 +145,11 @@ void showDocumentPreviewDialog(
                                     ),
                                   ],
                                   selected: {thermal},
-                                  onSelectionChanged: (set) =>
-                                      setState(() => thermal = set.first),
+                                  onSelectionChanged: (selection) =>
+                                      setState(() {
+                                    thermal = selection.first;
+                                    if (thermal) customize = false;
+                                  }),
                                 ),
                               ),
                             ],
@@ -175,10 +202,26 @@ void showDocumentPreviewDialog(
                                     ),
                                   ],
                                   selected: {thermal},
-                                  onSelectionChanged: (set) =>
-                                      setState(() => thermal = set.first),
+                                  onSelectionChanged: (selection) =>
+                                      setState(() {
+                                    thermal = selection.first;
+                                    if (thermal) customize = false;
+                                  }),
                                 ),
                                 const SizedBox(width: 6),
+                                IconButton(
+                                  icon: Icon(
+                                    customize
+                                        ? Icons.palette
+                                        : Icons.palette_outlined,
+                                    color: customize ? AppColors.primary : null,
+                                  ),
+                                  tooltip: 'Customize Invoice',
+                                  onPressed: () => setState(() {
+                                    customize = !customize;
+                                    if (customize) thermal = false;
+                                  }),
+                                ),
                                 IconButton(
                                   icon: Icon(
                                     isFullscreen
@@ -205,16 +248,82 @@ void showDocumentPreviewDialog(
                     ),
                   ),
                   Expanded(
-                    child: PdfPreview(
-                      key: ValueKey('$thermal-$isFullscreen'),
-                      build: (_) => thermal
-                          ? buildThermalReceiptPdf(company, transaction)
-                          : buildInvoicePdf(company, transaction),
-                      canChangePageFormat: false,
-                      allowPrinting: true,
-                      allowSharing: true,
-                      canChangeOrientation: false,
-                      canDebug: false,
+                    child: LayoutBuilder(
+                      builder: (context, previewConstraints) {
+                        final preview = PdfPreview(
+                          key: ValueKey(
+                            '$thermal-$isFullscreen-${design.toJson()}',
+                          ),
+                          build: (_) => thermal
+                              ? buildThermalReceiptPdf(company, transaction)
+                              : buildInvoicePdf(
+                                  company,
+                                  transaction,
+                                  settings: design,
+                                ),
+                          canChangePageFormat: false,
+                          allowPrinting: true,
+                          allowSharing: true,
+                          canChangeOrientation: false,
+                          canDebug: false,
+                        );
+
+                        if (!customize) return preview;
+
+                        final panel = InvoiceCustomizationPanel(
+                          settings: design,
+                          onChanged: (value) => setState(() => design = value),
+                          onReset: () => setState(() {
+                            design = design.copyWith(
+                              template: 'classic',
+                              accentColor: 0xFF1E50D8,
+                              showLogo: true,
+                              showSellerDetails: true,
+                              showAmountInWords: true,
+                              showTaxSummary: true,
+                              showDeclaration: true,
+                              showBankDetails: true,
+                              showSignature: true,
+                              customTitle: '',
+                              termsAndConditions: '',
+                              footerText: '',
+                            );
+                          }),
+                          onSave: () {
+                            context.read<SettingsBloc>().add(
+                                  SaveInvoiceSettingsRequested(design),
+                                );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Invoice design saved as default.',
+                                ),
+                              ),
+                            );
+                          },
+                        );
+
+                        if (previewConstraints.maxWidth >= 820) {
+                          return Row(
+                            children: [
+                              SizedBox(width: 330, child: panel),
+                              const VerticalDivider(width: 1),
+                              Expanded(child: preview),
+                            ],
+                          );
+                        }
+
+                        final panelHeight = previewConstraints.maxHeight > 700
+                            ? 340.0
+                            : previewConstraints.maxHeight * 0.48;
+                        return Column(
+                          children: [
+                            SizedBox(height: panelHeight, child: panel),
+                            const Divider(height: 1),
+                            Expanded(child: preview),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],

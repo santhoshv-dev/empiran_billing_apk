@@ -79,7 +79,14 @@ class _InvoicesPageState extends State<InvoicesPage> {
       final settingsState = context.read<SettingsBloc>().state;
       final company =
           settingsState is SettingsLoaded ? settingsState.company : Company();
-      final pdf = await buildInvoicePdf(company, t);
+      final invoiceSettings = settingsState is SettingsLoaded
+          ? settingsState.invoiceSettings
+          : InvoiceSettings();
+      final pdf = await buildInvoicePdf(
+        company,
+        t,
+        settings: invoiceSettings,
+      );
       if (!mounted) return;
 
       final box = context.findRenderObject() as RenderBox?;
@@ -91,9 +98,8 @@ class _InvoicesPageState extends State<InvoicesPage> {
           subject: '$documentLabel ${t.number}',
           text:
               'Please find attached $documentLabel ${t.number}${t.partyName.isEmpty ? '.' : ' for ${t.partyName}.'}',
-          sharePositionOrigin: box == null
-              ? null
-              : box.localToGlobal(Offset.zero) & box.size,
+          sharePositionOrigin:
+              box == null ? null : box.localToGlobal(Offset.zero) & box.size,
         ),
       );
     } catch (_) {
@@ -424,7 +430,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                             return LayoutBuilder(
                               builder: (context, cardConstraints) {
                                 final isCompact =
-                                    cardConstraints.maxWidth < 640;
+                                    cardConstraints.maxWidth < 900;
 
                                 final detailsColumn = Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,6 +550,20 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                     icon: const Icon(Icons.edit_outlined,
                                         color: AppColors.secondary),
                                     onPressed: () => _editTransaction(t),
+                                  ),
+                                  IconButton(
+                                    tooltip: isQuote
+                                        ? 'Customize Quotation'
+                                        : (isOrder
+                                            ? 'Customize Order'
+                                            : 'Customize Invoice'),
+                                    icon: const Icon(Icons.palette_outlined,
+                                        color: AppColors.primary),
+                                    onPressed: () => showDocumentPreviewDialog(
+                                      context,
+                                      t,
+                                      initiallyCustomize: true,
+                                    ),
                                   ),
                                   // Convert Invoice to Order (Requirement 3)
                                   if (!isOrder && !isQuote)

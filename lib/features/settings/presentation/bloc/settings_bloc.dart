@@ -68,7 +68,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       await settingsRepository.saveInvoiceSettings(event.settings);
       emit(current.copyWith(
         invoiceSettings: event.settings,
-        message: 'Numbering sequence controls saved.',
+        message: 'Invoice settings saved.',
       ));
     } catch (e) {
       emit(SettingsFailure(e.toString()));

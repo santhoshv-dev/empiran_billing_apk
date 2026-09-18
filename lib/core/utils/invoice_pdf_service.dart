@@ -158,17 +158,35 @@ String amountInWords(double value) {
   return 'INR ${say(rupees)}${paise > 0 ? ' and ${say(paise)} Paise' : ''} Only';
 }
 
-Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
+Future<Uint8List> buildInvoicePdf(
+  Company c,
+  BusinessTransaction t, {
+  InvoiceSettings? settings,
+}) async {
+  final design = settings ?? InvoiceSettings();
+  final accent = PdfColor.fromInt(design.accentColor);
+  final isModern = design.template == 'modern';
+  final isCompact = design.template == 'compact';
+  final defaultTitle = t.type == 'quotation' || t.type == 'estimate'
+      ? 'Quotation'
+      : t.type == 'delivery_note'
+          ? 'Delivery Note'
+          : t.type == 'order'
+              ? 'Order / Tax Invoice'
+              : 'Tax Invoice';
+  final documentTitle = design.customTitle.trim().isEmpty
+      ? defaultTitle
+      : design.customTitle.trim();
   final doc = pw.Document();
   pw.MemoryImage? logo;
-  if (c.logo != null && c.logo!.isNotEmpty) {
+  if (design.showLogo && c.logo != null && c.logo!.isNotEmpty) {
     try {
       logo = pw.MemoryImage(base64Decode(c.logo!.split(',').last));
     } catch (_) {
       /* Older backups may contain an image URL. */
     }
   }
-  const pageMargin = 12.0;
+  final pageMargin = isCompact ? 8.0 : (isModern ? 18.0 : 12.0);
 
   pw.Widget infoCell(String label, String value, {bool boldValue = false}) =>
       pw.Padding(
@@ -196,6 +214,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
     bool bold = false,
     pw.Alignment align = pw.Alignment.centerLeft,
     double pad = 3.5,
+    PdfColor? color,
   }) =>
       pw.Container(
         alignment: align,
@@ -203,7 +222,10 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
         child: pw.Text(
           text,
           style: pw.TextStyle(
-              fontSize: 7.5, fontWeight: bold ? pw.FontWeight.bold : null),
+            fontSize: isCompact ? 7.0 : 7.5,
+            fontWeight: bold ? pw.FontWeight.bold : null,
+            color: color,
+          ),
         ),
       );
 
@@ -212,7 +234,7 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
       ? totalQty.toStringAsFixed(0)
       : totalQty.toStringAsFixed(2);
   final taxableVal = (t.subtotal - t.discount).clamp(0, double.infinity);
-  final double fillerHeight = ((t.isGst ? 220.0 : 260.0) -
+  final double fillerHeight = ((isCompact ? 150.0 : (t.isGst ? 220.0 : 260.0)) -
           (t.lines.length * 20.0) -
           (t.discount > 0 ? 14.0 : 0.0))
       .clamp(10.0, 220.0);
@@ -234,12 +256,18 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(pageMargin),
+      margin: pw.EdgeInsets.all(pageMargin),
       theme: theme,
       build: (_) => [
         // 1. Top Header Area (Logo on left, ORIGINAL FOR RECIPIENT on right, Title centered)
-        pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        pw.Container(
+          padding: const pw.EdgeInsets.fromLTRB(2, 2, 2, 5),
+          decoration: isModern
+              ? pw.BoxDecoration(
+                  border:
+                      pw.Border(bottom: pw.BorderSide(color: accent, width: 2)),
+                )
+              : null,
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -252,12 +280,15 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                   style: pw.TextStyle(
                       fontSize: 15,
                       fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.red900),
+                      color: accent),
                 ),
               pw.Text(
                 'ORIGINAL FOR RECIPIENT',
-                style:
-                    pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                  fontSize: 8.5,
+                  fontWeight: pw.FontWeight.bold,
+                  color: isModern ? accent : null,
+                ),
               ),
             ],
           ),
@@ -265,19 +296,24 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
         pw.SizedBox(height: 2),
         pw.Center(
           child: pw.Text(
-            t.type == 'quotation' || t.type == 'estimate'
-                ? 'Quotation'
-                : t.type == 'delivery_note'
-                    ? 'Delivery Note'
-                    : 'Tax Invoice',
-            style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+            documentTitle,
+            style: pw.TextStyle(
+              fontSize: isModern ? 15 : 13,
+              fontWeight: pw.FontWeight.bold,
+              color: isModern ? accent : null,
+            ),
           ),
         ),
         pw.SizedBox(height: 5),
 
         // 2. Main Box Container
         pw.Container(
-          decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.8)),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(
+              width: isModern ? 1.1 : 0.8,
+              color: isModern ? accent : PdfColors.black,
+            ),
+          ),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
@@ -295,34 +331,40 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                         children: [
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.all(5),
-                            child: pw.Column(
-                              crossAxisAlignment: pw.CrossAxisAlignment.start,
-                              children: [
-                                pw.Text(c.displayName.toUpperCase(),
-                                    style: pw.TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: pw.FontWeight.bold)),
-                                if (c.address.isNotEmpty)
-                                  pw.Text(c.address,
-                                      style: const pw.TextStyle(fontSize: 7.5)),
-                                if (c.state.isNotEmpty)
-                                  pw.Text(
-                                      '${c.state}${c.stateCode.isNotEmpty ? ' - ${c.stateCode}' : ''}',
-                                      style: const pw.TextStyle(fontSize: 7.5)),
-                                if (c.gstin.isNotEmpty)
-                                  pw.Text('GSTIN/UIN #: ${c.gstin}',
+                          if (design.showSellerDetails) ...[
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(5),
+                              child: pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text(c.displayName.toUpperCase(),
                                       style: pw.TextStyle(
-                                          fontSize: 7.5,
+                                          fontSize: 9.5,
+                                          color: isModern ? accent : null,
                                           fontWeight: pw.FontWeight.bold)),
-                                if (c.phone.isNotEmpty)
-                                  pw.Text('Phone #: ${c.phone}',
-                                      style: const pw.TextStyle(fontSize: 7.5)),
-                              ],
+                                  if (c.address.isNotEmpty)
+                                    pw.Text(c.address,
+                                        style:
+                                            const pw.TextStyle(fontSize: 7.5)),
+                                  if (c.state.isNotEmpty)
+                                    pw.Text(
+                                        '${c.state}${c.stateCode.isNotEmpty ? ' - ${c.stateCode}' : ''}',
+                                        style:
+                                            const pw.TextStyle(fontSize: 7.5)),
+                                  if (c.gstin.isNotEmpty)
+                                    pw.Text('GSTIN/UIN #: ${c.gstin}',
+                                        style: pw.TextStyle(
+                                            fontSize: 7.5,
+                                            fontWeight: pw.FontWeight.bold)),
+                                  if (c.phone.isNotEmpty)
+                                    pw.Text('Phone #: ${c.phone}',
+                                        style:
+                                            const pw.TextStyle(fontSize: 7.5)),
+                                ],
+                              ),
                             ),
-                          ),
-                          pw.Container(height: 0.6, color: PdfColors.black),
+                            pw.Container(height: 0.6, color: PdfColors.black),
+                          ],
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(5),
                             child: pw.Column(
@@ -459,19 +501,38 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                 },
                 children: [
                   pw.TableRow(
-                    decoration:
-                        const pw.BoxDecoration(color: PdfColors.grey100),
+                    decoration: pw.BoxDecoration(
+                      color: isModern ? accent : PdfColors.grey100,
+                    ),
                     children: [
-                      tblCell('S.No', bold: true, align: pw.Alignment.center),
+                      tblCell('S.No',
+                          bold: true,
+                          align: pw.Alignment.center,
+                          color: isModern ? PdfColors.white : null),
                       tblCell('Description of Goods/Services',
-                          bold: true, align: pw.Alignment.center),
+                          bold: true,
+                          align: pw.Alignment.center,
+                          color: isModern ? PdfColors.white : null),
                       tblCell('HSN/SAC',
-                          bold: true, align: pw.Alignment.center),
+                          bold: true,
+                          align: pw.Alignment.center,
+                          color: isModern ? PdfColors.white : null),
                       tblCell('Quantity',
-                          bold: true, align: pw.Alignment.center),
-                      tblCell('Rate', bold: true, align: pw.Alignment.center),
-                      tblCell('UOM', bold: true, align: pw.Alignment.center),
-                      tblCell('Amount', bold: true, align: pw.Alignment.center),
+                          bold: true,
+                          align: pw.Alignment.center,
+                          color: isModern ? PdfColors.white : null),
+                      tblCell('Rate',
+                          bold: true,
+                          align: pw.Alignment.center,
+                          color: isModern ? PdfColors.white : null),
+                      tblCell('UOM',
+                          bold: true,
+                          align: pw.Alignment.center,
+                          color: isModern ? PdfColors.white : null),
+                      tblCell('Amount',
+                          bold: true,
+                          align: pw.Alignment.center,
+                          color: isModern ? PdfColors.white : null),
                     ],
                   ),
                   for (int i = 0; i < t.lines.length; i++)
@@ -631,28 +692,29 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
               ),
 
               // Amount in Words
-              pw.Container(
-                decoration: const pw.BoxDecoration(
-                    border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
-                padding:
-                    const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('Amount in Words',
-                        style: const pw.TextStyle(
-                            fontSize: 6.5, color: PdfColors.grey700)),
-                    pw.Text(
-                      amountInWords(t.total).replaceFirst('INR', 'Rupees'),
-                      style: pw.TextStyle(
-                          fontSize: 7.5, fontWeight: pw.FontWeight.bold),
-                    ),
-                  ],
+              if (design.showAmountInWords)
+                pw.Container(
+                  decoration: const pw.BoxDecoration(
+                      border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
+                  padding:
+                      const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Amount in Words',
+                          style: const pw.TextStyle(
+                              fontSize: 6.5, color: PdfColors.grey700)),
+                      pw.Text(
+                        amountInWords(t.total).replaceFirst('INR', 'Rupees'),
+                        style: pw.TextStyle(
+                            fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
               // HSN / SAC Tax Summary Table (as shown in reference image)
-              if (t.isGst)
+              if (t.isGst && design.showTaxSummary)
                 pw.Table(
                   border: const pw.TableBorder(
                     bottom: pw.BorderSide(width: 0.6),
@@ -670,23 +732,38 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                   },
                   children: [
                     pw.TableRow(
-                      decoration:
-                          const pw.BoxDecoration(color: PdfColors.grey100),
+                      decoration: pw.BoxDecoration(
+                        color: isModern ? accent : PdfColors.grey100,
+                      ),
                       children: [
                         tblCell('HSN/SAC',
-                            bold: true, align: pw.Alignment.center),
+                            bold: true,
+                            align: pw.Alignment.center,
+                            color: isModern ? PdfColors.white : null),
                         tblCell('Taxable Value',
-                            bold: true, align: pw.Alignment.center),
+                            bold: true,
+                            align: pw.Alignment.center,
+                            color: isModern ? PdfColors.white : null),
                         tblCell('CGST %',
-                            bold: true, align: pw.Alignment.center),
+                            bold: true,
+                            align: pw.Alignment.center,
+                            color: isModern ? PdfColors.white : null),
                         tblCell('CGST Amount',
-                            bold: true, align: pw.Alignment.center),
+                            bold: true,
+                            align: pw.Alignment.center,
+                            color: isModern ? PdfColors.white : null),
                         tblCell('SGST %',
-                            bold: true, align: pw.Alignment.center),
+                            bold: true,
+                            align: pw.Alignment.center,
+                            color: isModern ? PdfColors.white : null),
                         tblCell('SGST Amount',
-                            bold: true, align: pw.Alignment.center),
+                            bold: true,
+                            align: pw.Alignment.center,
+                            color: isModern ? PdfColors.white : null),
                         tblCell('Total Tax',
-                            bold: true, align: pw.Alignment.center),
+                            bold: true,
+                            align: pw.Alignment.center,
+                            color: isModern ? PdfColors.white : null),
                       ],
                     ),
                     pw.TableRow(
@@ -712,87 +789,105 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                 ),
 
               // Declaration Box
-              pw.Container(
-                decoration: const pw.BoxDecoration(
-                    border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
-                padding: const pw.EdgeInsets.all(5),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('Declaration',
-                        style: pw.TextStyle(
-                            fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      'We declare that this invoice shows the actual price of the goods described and that all particulars are as true and correct.',
-                      style: const pw.TextStyle(fontSize: 6.5),
-                    ),
-                    pw.Text(
-                      '*This is computer generated invoice no signature required*',
-                      style: pw.TextStyle(
-                          fontSize: 6.5, fontStyle: pw.FontStyle.italic),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Bank Details & Signatory Section
-              pw.Table(
-                columnWidths: {
-                  0: const pw.FlexColumnWidth(1.2),
-                  1: const pw.FlexColumnWidth(0.8),
-                },
-                children: [
-                  pw.TableRow(
+              if (design.showDeclaration ||
+                  design.termsAndConditions.trim().isNotEmpty)
+                pw.Container(
+                  decoration: const pw.BoxDecoration(
+                      border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
+                  padding: const pw.EdgeInsets.all(5),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Container(
-                        padding: const pw.EdgeInsets.all(5),
-                        decoration: const pw.BoxDecoration(
-                            border:
-                                pw.Border(right: pw.BorderSide(width: 0.6))),
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text('COMPANY BANK DETAILS',
-                                style: pw.TextStyle(
-                                    fontSize: 7.5,
-                                    fontWeight: pw.FontWeight.bold)),
-                            pw.SizedBox(height: 2),
-                            pw.Text(
-                                'Bank Name : ${c.bankName.isNotEmpty ? c.bankName : 'ICICI BANK LIMITED'}',
-                                style: const pw.TextStyle(fontSize: 7)),
-                            pw.Text(
-                                'A/C No. : ${c.accountNo.isNotEmpty ? c.accountNo : '606605027347'}',
-                                style: pw.TextStyle(
-                                    fontSize: 7,
-                                    fontWeight: pw.FontWeight.bold)),
-                            pw.Text(
-                                'Branch & IFSC : ${c.branch.isNotEmpty ? c.branch : 'Kancheepuram'} / ${c.ifsc.isNotEmpty ? c.ifsc : 'ICIC0006066'}',
-                                style: const pw.TextStyle(fontSize: 7)),
-                          ],
+                      if (design.showDeclaration) ...[
+                        pw.Text('Declaration',
+                            style: pw.TextStyle(
+                                fontSize: 7.5,
+                                color: isModern ? accent : null,
+                                fontWeight: pw.FontWeight.bold)),
+                        pw.SizedBox(height: 2),
+                        pw.Text(
+                          'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
+                          style: const pw.TextStyle(fontSize: 6.5),
                         ),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(5),
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.end,
-                          children: [
-                            pw.Text('For ${c.displayName.toUpperCase()}',
-                                style: pw.TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: pw.FontWeight.bold)),
-                            pw.SizedBox(height: 25),
-                            pw.Text('Authorised Signatory',
-                                style: pw.TextStyle(
-                                    fontSize: 7.5,
-                                    fontWeight: pw.FontWeight.bold)),
-                          ],
-                        ),
-                      ),
+                      ],
+                      if (design.showDeclaration &&
+                          design.termsAndConditions.trim().isNotEmpty)
+                        pw.SizedBox(height: 4),
+                      if (design.termsAndConditions.trim().isNotEmpty) ...[
+                        pw.Text('Terms & Conditions',
+                            style: pw.TextStyle(
+                                fontSize: 7.5,
+                                color: isModern ? accent : null,
+                                fontWeight: pw.FontWeight.bold)),
+                        pw.SizedBox(height: 2),
+                        pw.Text(design.termsAndConditions.trim(),
+                            style: const pw.TextStyle(fontSize: 6.5)),
+                      ],
                     ],
                   ),
-                ],
-              ),
+                ),
+
+              // Bank Details & Signatory Section
+              if (design.showBankDetails || design.showSignature)
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    if (design.showBankDetails)
+                      pw.Expanded(
+                        flex: 3,
+                        child: pw.Container(
+                          padding: const pw.EdgeInsets.all(5),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text('COMPANY BANK DETAILS',
+                                  style: pw.TextStyle(
+                                      fontSize: 7.5,
+                                      color: isModern ? accent : null,
+                                      fontWeight: pw.FontWeight.bold)),
+                              pw.SizedBox(height: 2),
+                              pw.Text(
+                                  'Bank Name : ${c.bankName.isNotEmpty ? c.bankName : 'ICICI BANK LIMITED'}',
+                                  style: const pw.TextStyle(fontSize: 7)),
+                              pw.Text(
+                                  'A/C No. : ${c.accountNo.isNotEmpty ? c.accountNo : '606605027347'}',
+                                  style: pw.TextStyle(
+                                      fontSize: 7,
+                                      fontWeight: pw.FontWeight.bold)),
+                              pw.Text(
+                                  'Branch & IFSC : ${c.branch.isNotEmpty ? c.branch : 'Kancheepuram'} / ${c.ifsc.isNotEmpty ? c.ifsc : 'ICIC0006066'}',
+                                  style: const pw.TextStyle(fontSize: 7)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (design.showBankDetails && design.showSignature)
+                      pw.Container(
+                          width: 0.6, height: 54, color: PdfColors.black),
+                    if (design.showSignature)
+                      pw.Expanded(
+                        flex: 2,
+                        child: pw.Padding(
+                          padding: const pw.EdgeInsets.all(5),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.end,
+                            children: [
+                              pw.Text('For ${c.displayName.toUpperCase()}',
+                                  style: pw.TextStyle(
+                                      fontSize: 8,
+                                      color: isModern ? accent : null,
+                                      fontWeight: pw.FontWeight.bold)),
+                              pw.SizedBox(height: 25),
+                              pw.Text('Authorised Signatory',
+                                  style: pw.TextStyle(
+                                      fontSize: 7.5,
+                                      fontWeight: pw.FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -801,16 +896,22 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
 
         // 3. Bottom Grey Footer Bar
         pw.Container(
-          color: PdfColors.grey200,
+          color: isModern ? accent : PdfColors.grey200,
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('${c.displayName} - Copyright 2026',
-                  style: const pw.TextStyle(fontSize: 6.5)),
-              pw.Text('Computer generated Invoice. No signature required.',
                   style: pw.TextStyle(
-                      fontSize: 6.5, fontStyle: pw.FontStyle.italic)),
+                      fontSize: 6.5, color: isModern ? PdfColors.white : null)),
+              pw.Text(
+                  design.footerText.trim().isEmpty
+                      ? 'Computer generated document.'
+                      : design.footerText.trim(),
+                  style: pw.TextStyle(
+                      fontSize: 6.5,
+                      color: isModern ? PdfColors.white : null,
+                      fontStyle: pw.FontStyle.italic)),
             ],
           ),
         ),
