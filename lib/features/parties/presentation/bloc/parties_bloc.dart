@@ -21,10 +21,12 @@ class PartiesBloc extends Bloc<PartiesEvent, PartiesState> {
           .toLowerCase()
           .contains(query.toLowerCase());
       if (!matchesQuery) return false;
-      if (filter == 'Customers')
+      if (filter == 'Customers') {
         return p.type == 'Customer' || p.type == 'Both';
-      if (filter == 'Suppliers')
+      }
+      if (filter == 'Suppliers') {
         return p.type == 'Supplier' || p.type == 'Both';
+      }
       return true;
     }).toList();
   }

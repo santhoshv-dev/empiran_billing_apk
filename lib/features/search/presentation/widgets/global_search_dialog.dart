@@ -128,8 +128,9 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
 
       try {
         final invState = context.read<InvoicesBloc>().state;
-        if (invState is InvoicesLoaded)
+        if (invState is InvoicesLoaded) {
           activeTransactions = invState.transactions;
+        }
       } catch (_) {}
 
       final searchResponse = await LocalSearchService.search(

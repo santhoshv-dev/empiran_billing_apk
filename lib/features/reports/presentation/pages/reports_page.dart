@@ -40,9 +40,10 @@ class _ReportsPageState extends State<ReportsPage> {
   List<BusinessTransaction> _filterRows(List<BusinessTransaction> all) {
     var data = all.where((t) {
       if (_tab == 0) return true;
-      if (_tab == 1)
+      if (_tab == 1) {
         return ['order', 'sale_invoice', 'quotation', 'estimate']
             .contains(t.type);
+      }
       return t.paid > 0 || t.type.startsWith('payment_');
     }).toList();
 

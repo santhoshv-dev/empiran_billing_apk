@@ -256,7 +256,7 @@ class _ProductDialogState extends State<_ProductDialog> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         isExpanded: true,
-                        value: _selectedUnit,
+                        initialValue: _selectedUnit,
                         decoration: const InputDecoration(labelText: 'Unit of Measure'),
                         items: _validUnits
                             .map((u) => DropdownMenuItem(value: u, child: Text(u)))
@@ -333,7 +333,7 @@ class _ProductDialogState extends State<_ProductDialog> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               isExpanded: true,
-                              value: _selectedUnit,
+                              initialValue: _selectedUnit,
                               decoration: const InputDecoration(labelText: 'Unit of Measure'),
                               items: _validUnits
                                   .map((u) => DropdownMenuItem(value: u, child: Text(u)))

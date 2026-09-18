@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:empiran/core/theme/app_theme.dart';
@@ -87,7 +85,6 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
   double get _sgst => _isGst ? _taxableAmount * 0.09 : 0;
   double get _total => _taxableAmount + _cgst + _sgst + _shipping;
   bool get _isOrder => widget.type == 'order';
-  bool get _collectCashAmount => _isOrder && _paymentMode == 'Cash';
   double get _effectivePaid {
     if (_isPayment) return 0;
     if (!_isOrder) return _paid;
@@ -510,7 +507,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
 
   // Instamart-Style Category Card
   Widget _buildCategoryCard(String cat, int count, bool isSelected) {
-    final imageBase64 = widget.isOrder ? _categoryImages[cat] : null;
+    final imageBase64 = widget.type == 'order' ? _categoryImages[cat] : null;
     final imageBytes = ImageHelper.decodeBase64(imageBase64);
 
     return InkWell(
