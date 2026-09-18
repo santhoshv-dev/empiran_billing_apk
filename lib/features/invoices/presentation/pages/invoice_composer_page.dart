@@ -405,10 +405,6 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
 
       if (mounted) {
         context.read<InvoicesBloc>().add(SaveTransactionRequested(txn));
-        // Delete original quotation after successful conversion
-        if (!isEditing && source?.type == 'quotation' && widget.type != 'quotation') {
-          context.read<InvoicesBloc>().add(DeleteTransactionRequested(source!));
-        }
       }
 
       if (mounted) {
