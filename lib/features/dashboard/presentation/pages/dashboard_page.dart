@@ -6,12 +6,15 @@ import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/core/utils/formatters.dart';
 import 'package:empiran/core/widgets/empiran_components.dart';
 import 'package:empiran/features/invoices/presentation/bloc/invoices_bloc.dart';
+import 'package:empiran/features/invoices/presentation/bloc/invoices_event.dart';
 import 'package:empiran/features/invoices/presentation/bloc/invoices_state.dart';
 import 'package:empiran/features/invoices/presentation/pages/invoice_composer_page.dart';
 import 'package:empiran/features/invoices/presentation/widgets/document_preview_dialog.dart';
 import 'package:empiran/features/parties/presentation/bloc/parties_bloc.dart';
+import 'package:empiran/features/parties/presentation/bloc/parties_event.dart';
 import 'package:empiran/features/parties/presentation/bloc/parties_state.dart';
 import 'package:empiran/features/products/presentation/bloc/products_bloc.dart';
+import 'package:empiran/features/products/presentation/bloc/products_event.dart';
 import 'package:empiran/features/products/presentation/bloc/products_state.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
@@ -696,7 +699,7 @@ class DashboardPage extends StatelessWidget {
               ),
             ],
           ),
-        );
+          ),
         );
       },
     );

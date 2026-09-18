@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/invoice_pdf_service.dart';
 import '../../../../core/widgets/empiran_components.dart';
 import '../../../../models.dart';
 import 'package:empiran/features/parties/presentation/bloc/parties_bloc.dart';
@@ -11,6 +13,8 @@ import 'package:empiran/features/parties/presentation/bloc/parties_event.dart';
 import 'package:empiran/features/parties/presentation/bloc/parties_state.dart';
 import 'package:empiran/features/products/presentation/bloc/products_bloc.dart';
 import 'package:empiran/features/products/presentation/bloc/products_event.dart';
+import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
+import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
 import '../bloc/invoices_bloc.dart';
 import '../bloc/invoices_event.dart';
 import '../bloc/invoices_state.dart';
@@ -54,6 +58,48 @@ class _InvoicesPageState extends State<InvoicesPage> {
         mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to open WhatsApp.')),
+      );
+    }
+  }
+
+  Future<void> _shareDocument(BusinessTransaction t) async {
+    final documentLabel = switch (t.type) {
+      'quotation' || 'estimate' => 'Quotation',
+      'order' => 'Order',
+      _ => 'Invoice',
+    };
+    final safeNumber = t.number
+        .trim()
+        .replaceAll(RegExp(r'[^a-zA-Z0-9_-]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    final fileName =
+        '${documentLabel.toLowerCase()}_${safeNumber.isEmpty ? t.id : safeNumber}.pdf';
+
+    try {
+      final settingsState = context.read<SettingsBloc>().state;
+      final company =
+          settingsState is SettingsLoaded ? settingsState.company : Company();
+      final pdf = await buildInvoicePdf(company, t);
+      if (!mounted) return;
+
+      final box = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile.fromData(pdf, mimeType: 'application/pdf')],
+          fileNameOverrides: [fileName],
+          title: '$documentLabel ${t.number}',
+          subject: '$documentLabel ${t.number}',
+          text:
+              'Please find attached $documentLabel ${t.number}${t.partyName.isEmpty ? '.' : ' for ${t.partyName}.'}',
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to share the $documentLabel PDF.')),
       );
     }
   }
@@ -536,6 +582,16 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                     icon: const Icon(Icons.chat_outlined,
                                         color: Color(0xFF25D366)),
                                     onPressed: () => _shareWhatsApp(t),
+                                  ),
+                                  IconButton(
+                                    tooltip: isQuote
+                                        ? 'Share Quotation'
+                                        : (isOrder
+                                            ? 'Share Order'
+                                            : 'Share Invoice'),
+                                    icon: const Icon(Icons.share_outlined,
+                                        color: AppColors.primary),
+                                    onPressed: () => _shareDocument(t),
                                   ),
                                   IconButton(
                                     tooltip: 'View & Print PDF',
