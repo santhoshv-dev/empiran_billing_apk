@@ -17,11 +17,17 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   }
 
   List<Item> _filter(List<Item> items, String query, String category) {
+    final q = query.trim().toLowerCase();
     return items.where((i) {
-      final matchesQuery = query.isEmpty ||
-          i.name.toLowerCase().contains(query.toLowerCase()) ||
-          i.itemCode.toLowerCase().contains(query.toLowerCase()) ||
-          i.hsn.toLowerCase().contains(query.toLowerCase());
+      final matchesQuery = q.isEmpty ||
+          i.name.toLowerCase().contains(q) ||
+          i.itemCode.toLowerCase().contains(q) ||
+          i.hsn.toLowerCase().contains(q) ||
+          i.category.toLowerCase().contains(q) ||
+          i.unit.toLowerCase().contains(q) ||
+          i.salesPrice.toString().contains(q) ||
+          i.purchasePrice.toString().contains(q);
+          
       final matchesCategory = category == 'All' || i.category == category;
       return matchesQuery && matchesCategory;
     }).toList();

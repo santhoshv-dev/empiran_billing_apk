@@ -525,19 +525,9 @@ class _ShellPageState extends State<ShellPage> {
                                   ),
                                 ),
                               ),
-                            Row(
-                              children: [
-                                if (isBiller) ...[
-                                  const Icon(Icons.notifications_none_rounded,
-                                      color: Color(0xFF334155)),
-                                  const SizedBox(width: 18),
-                                  const SizedBox(
-                                    height: 28,
-                                    child: VerticalDivider(color: Color(0xFFCBD5E1)),
-                                  ),
-                                  const SizedBox(width: 18),
-                                ],
-                                CircleAvatar(
+                              Row(
+                                children: [
+                                  CircleAvatar(
                                   radius: 16,
                                   backgroundColor:
                                       AppColors.primary.withValues(alpha: 0.1),

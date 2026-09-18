@@ -109,7 +109,12 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  Widget _buildCategoryCard(String cat, int count, bool isSelected) {
+  Widget _buildCategoryCard(
+    String cat,
+    int count,
+    bool isSelected,
+    bool canManage,
+  ) {
     final imageBase64 = _categoryImages[cat];
     final imageBytes = _decodeProductImage(imageBase64);
 
@@ -118,8 +123,9 @@ class _ProductsPageState extends State<ProductsPage> {
         setState(() => _selectedCategory = cat);
         _onFilterChanged();
       },
-      onLongPress:
-          cat == 'All' ? null : () => _editCategoryDialog(context, cat),
+      onLongPress: cat == 'All' || !canManage
+          ? null
+          : () => _editCategoryDialog(context, cat),
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -194,7 +200,7 @@ class _ProductsPageState extends State<ProductsPage> {
                 ),
               ],
             ),
-            if (cat != 'All')
+            if (cat != 'All' && canManage)
               Positioned(
                 top: -4,
                 right: -4,
@@ -519,17 +525,19 @@ class _ProductsPageState extends State<ProductsPage> {
                                 },
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: EmpiranButton(
-                                label: 'Add Stock',
-                                icon: Icons.add_circle_outline_rounded,
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  showStockAdjustDialog(context, item);
-                                },
+                            if (canManage) ...[
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: EmpiranButton(
+                                  label: 'Add Stock',
+                                  icon: Icons.add_circle_outline_rounded,
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    showStockAdjustDialog(context, item);
+                                  },
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ],
                       ),
@@ -1100,7 +1108,11 @@ class _ProductsPageState extends State<ProductsPage> {
                                     cat.toLowerCase())
                                 .length;
                         return _buildCategoryCard(
-                            cat, count, _selectedCategory == cat);
+                          cat,
+                          count,
+                          _selectedCategory == cat,
+                          canManage,
+                        );
                       },
                     ),
                   ),
@@ -1305,15 +1317,16 @@ class _ProductsPageState extends State<ProductsPage> {
                                               showStockHistoryDialog(
                                                   context, item),
                                         ),
-                                        IconButton(
-                                          tooltip: 'Add Stock',
-                                          icon: const Icon(
-                                              Icons.sync_alt_rounded,
-                                              size: 19),
-                                          onPressed: () =>
-                                              showStockAdjustDialog(
-                                                  context, item),
-                                        ),
+                                        if (canManage)
+                                          IconButton(
+                                            tooltip: 'Add Stock',
+                                            icon: const Icon(
+                                                Icons.sync_alt_rounded,
+                                                size: 19),
+                                            onPressed: () =>
+                                                showStockAdjustDialog(
+                                                    context, item),
+                                          ),
                                       ],
                                       if (canManage) ...[
                                         IconButton(

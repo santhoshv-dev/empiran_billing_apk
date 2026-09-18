@@ -817,32 +817,53 @@ class _BillerDashboard extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(isCompact ? 22 : 30),
+                padding: EdgeInsets.all(isCompact ? 24 : 32),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     Positioned(
-                      right: -26,
-                      bottom: -42,
-                      child: Icon(
-                        Icons.room_service_outlined,
-                        size: isCompact ? 120 : 170,
-                        color: const Color(0xFFE2E8F0),
+                      right: -30,
+                      bottom: -40,
+                      child: Opacity(
+                        opacity: 0.15,
+                        child: Icon(
+                          Icons.room_service_rounded,
+                          size: isCompact ? 140 : 200,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     Row(
                       children: [
-                        CircleAvatar(
-                          radius: isCompact ? 34 : 42,
-                          backgroundColor: const Color(0xFFE2E8F0),
-                          child: const Icon(
-                            Icons.person_outline_rounded,
-                            size: 44,
-                            color: Color(0xFF64748B),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircleAvatar(
+                            radius: isCompact ? 36 : 46,
+                            backgroundColor: Colors.white,
+                            child: const Icon(
+                              Icons.person_rounded,
+                              size: 50,
+                              color: Color(0xFF7C3AED),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 24),
@@ -852,9 +873,9 @@ class _BillerDashboard extends StatelessWidget {
                             children: [
                               Text(
                                 '$greeting,',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Color(0xFF334155),
+                                style: TextStyle(
+                                  fontSize: isCompact ? 16 : 20,
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -862,18 +883,37 @@ class _BillerDashboard extends StatelessWidget {
                               Text(
                                 userName.trim().isEmpty ? 'Biller' : userName,
                                 style: TextStyle(
-                                  fontSize: isCompact ? 30 : 38,
-                                  color: const Color(0xFF1E293B),
+                                  fontSize: isCompact ? 32 : 44,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.5,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 10),
-                              const Text(
-                                'Manage quotations, sales, products, and your password.',
-                                style: TextStyle(
-                                  color: Color(0xFF475569),
-                                  fontSize: 15,
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.workspace_premium_rounded, size: 16, color: Colors.white),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        companyName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -898,34 +938,6 @@ class _BillerDashboard extends StatelessWidget {
                       ),
                     ),
                 ],
-              ),
-              const SizedBox(height: 36),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: Color(0xFFCBD5E1))),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.workspace_premium_outlined, color: Color(0xFF64748B)),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        companyName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1E293B),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Text(
-                      'Biller workspace',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -1001,56 +1013,109 @@ class _ManagerDashboard extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(isCompact ? 22 : 30),
+                padding: EdgeInsets.all(isCompact ? 24 : 32),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.lightBorder),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0EA5E9).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-                child: Row(
+                child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    CircleAvatar(
-                      radius: isCompact ? 34 : 42,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.10),
-                      child: const Icon(
-                        Icons.manage_accounts_outlined,
-                        size: 42,
-                        color: AppColors.primary,
+                    Positioned(
+                      right: -30,
+                      bottom: -40,
+                      child: Opacity(
+                        opacity: 0.15,
+                        child: Icon(
+                          Icons.insights_rounded,
+                          size: isCompact ? 140 : 200,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$greeting,',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: AppColors.lightTextSecondary,
-                              fontWeight: FontWeight.w500,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircleAvatar(
+                            radius: isCompact ? 36 : 46,
+                            backgroundColor: Colors.white,
+                            child: const Icon(
+                              Icons.manage_accounts_rounded,
+                              size: 50,
+                              color: Color(0xFF2563EB),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            userName.trim().isEmpty ? 'Manager' : userName,
-                            style: TextStyle(
-                              fontSize: isCompact ? 30 : 38,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w900,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$greeting,',
+                                style: TextStyle(
+                                  fontSize: isCompact ? 16 : 20,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                userName.trim().isEmpty ? 'Manager' : userName,
+                                style: TextStyle(
+                                  fontSize: isCompact ? 32 : 44,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.business_rounded, size: 16, color: Colors.white),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        companyName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Manage quotations, sales, products, and your account security.',
-                            style: TextStyle(
-                              color: AppColors.lightTextSecondary,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1069,15 +1134,6 @@ class _ManagerDashboard extends StatelessWidget {
                       ),
                     ),
                 ],
-              ),
-              const SizedBox(height: 36),
-              Text(
-                companyName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.lightTextPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -1101,7 +1157,7 @@ class _BillerAction {
   final ShellRoute route;
 }
 
-class _BillerOptionCard extends StatelessWidget {
+class _BillerOptionCard extends StatefulWidget {
   const _BillerOptionCard({
     required this.action,
     required this.onPressed,
@@ -1111,67 +1167,122 @@ class _BillerOptionCard extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
+  State<_BillerOptionCard> createState() => _BillerOptionCardState();
+}
+
+class _BillerOptionCardState extends State<_BillerOptionCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onPressed,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 230),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFCBD5E1)),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -34,
-              bottom: -48,
-              child: Icon(
-                action.icon,
-                size: 150,
-                color: const Color(0xFFF1F5F9),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        transform: Matrix4.translationValues(0, _isHovered ? -5 : 0, 0),
+        child: GestureDetector(
+          onTap: widget.onPressed,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 220),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _isHovered ? AppColors.primary.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.15),
+                width: _isHovered ? 2 : 1,
               ),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      )
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                CircleAvatar(
-                  radius: 34,
-                  backgroundColor: const Color(0xFFE2E8F0),
-                  child: Icon(action.icon, size: 34, color: const Color(0xFF334155)),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  action.title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF1E293B),
+                Positioned(
+                  right: -20,
+                  bottom: -20,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _isHovered ? 0.15 : 0.05,
+                    child: Icon(
+                      widget.action.icon,
+                      size: 120,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  action.subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.35,
-                    color: Color(0xFF475569),
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilledButton.tonalIcon(
-                    onPressed: onPressed,
-                    icon: const Icon(Icons.arrow_forward_rounded),
-                    label: const Text('Open'),
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(widget.action.icon, size: 28, color: AppColors.primary),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      widget.action.title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.action.subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Text(
+                          'Open ${widget.action.title}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: _isHovered ? AppColors.primary : Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        AnimatedPadding(
+                          duration: const Duration(milliseconds: 200),
+                          padding: EdgeInsets.only(left: _isHovered ? 6 : 0),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 16,
+                            color: _isHovered ? AppColors.primary : Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

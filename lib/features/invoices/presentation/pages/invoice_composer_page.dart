@@ -46,21 +46,31 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   final _discountController = TextEditingController();
+  final _collectedController = TextEditingController();
   final _referredByController = TextEditingController();
 
   String? _partyId;
   String _productQuery = '';
   String _category = 'All';
-  final String _paymentMode = 'Cash';
+  String _paymentMode = 'Cash';
   double _discount = 0;
   final double _shipping = 0;
-  final double _paid = 0;
+  double _paid = 0;
   final double _amount = 0;
   bool _isGst = false;
   bool _busy = false;
   final Map<String, String> _dispatch = {};
   String? _error;
   late DateTime _date;
+  static const List<String> _paymentMethods = [
+    'Cash',
+    'UPI',
+    'Card',
+    'Cheque',
+    'Borrow',
+    'Bank Transfer',
+    'Other',
+  ];
 
   // Step state for Quotation Maker flow: Step 0 = Customer details (Optional), Step 1 = Products & Ordering
   late int _quotationStep;
@@ -75,6 +85,18 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
   double get _cgst => _isGst ? _taxableAmount * 0.09 : 0;
   double get _sgst => _isGst ? _taxableAmount * 0.09 : 0;
   double get _total => _taxableAmount + _cgst + _sgst + _shipping;
+  bool get _isOrder => widget.type == 'order';
+  bool get _collectCashAmount => _isOrder && _paymentMode == 'Cash';
+  double get _effectivePaid {
+    if (_isPayment) return 0;
+    if (!_isOrder) return _paid;
+    if (_paymentMode == 'Borrow') return 0;
+    if (_paymentMode == 'Cash') return _paid.clamp(0, _total).toDouble();
+    return _total;
+  }
+
+  double get _balanceDue =>
+      (_total - _effectivePaid).clamp(0, double.infinity).toDouble();
 
   @override
   void initState() {
@@ -92,6 +114,11 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
       _phoneController.text = s.partyPhone;
       _partyId = s.partyId;
       _discount = s.discount;
+      _paymentMode = s.paymentMode.trim().isNotEmpty ? s.paymentMode : 'Cash';
+      _paid = s.paid;
+      if (_paid > 0) {
+        _collectedController.text = _paid.toStringAsFixed(0);
+      }
       if (_discount > 0) {
         _discountController.text = _discount.toStringAsFixed(0);
       }
@@ -104,6 +131,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
     }
 
     _loadCategoryImages();
+    context.read<PartiesBloc>().add(const LoadPartiesRequested());
+    context.read<ProductsBloc>().add(const LoadProductsRequested());
   }
 
   Future<void> _loadCategoryImages() async {
@@ -124,6 +153,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
     _phoneController.dispose();
     _notesController.dispose();
     _discountController.dispose();
+    _collectedController.dispose();
     _referredByController.dispose();
     super.dispose();
   }
@@ -136,6 +166,40 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
     } catch (_) {
       return null;
     }
+  }
+
+  bool _matchesPartySearch(Party party, String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    final compactQuery = q.replaceAll(RegExp(r'\s+'), '');
+    final phone = party.phone.toLowerCase().replaceAll(RegExp(r'\s+'), '');
+    return party.name.toLowerCase().contains(q) ||
+        phone.contains(compactQuery) ||
+        party.email.toLowerCase().contains(q) ||
+        party.gstin.toLowerCase().contains(q) ||
+        party.address.toLowerCase().contains(q);
+  }
+
+  String _partySearchSubtitle(Party party) {
+    final parts = [
+      if (party.phone.trim().isNotEmpty) party.phone.trim(),
+      if (party.email.trim().isNotEmpty) party.email.trim(),
+      if (party.gstin.trim().isNotEmpty) 'GSTIN: ${party.gstin.trim()}',
+      if (party.address.trim().isNotEmpty) party.address.trim(),
+    ];
+    return parts.isEmpty ? 'No contact details saved' : parts.join(' • ');
+  }
+
+  bool _matchesProductSearch(Item item, String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return item.name.toLowerCase().contains(q) ||
+        item.itemCode.toLowerCase().contains(q) ||
+        item.hsn.toLowerCase().contains(q) ||
+        item.category.toLowerCase().contains(q) ||
+        item.unit.toLowerCase().contains(q) ||
+        item.salesPrice.toString().contains(q) ||
+        item.purchasePrice.toString().contains(q);
   }
 
   int _getItemQtyInCart(String itemId) {
@@ -273,11 +337,13 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
         partyAddress: source?.partyAddress ?? '',
         partyGstin: source?.partyGstin ?? '',
         isGst: _isGst,
-        paid: _isPayment ? 0 : _paid,
+        paid: _effectivePaid,
         paymentMode: _paymentMode,
         status: _isPayment
             ? 'Completed'
-            : (_paid >= _total ? 'Paid' : (_paid > 0 ? 'Partial' : 'Unpaid')),
+            : (_effectivePaid >= _total
+                ? 'Paid'
+                : (_effectivePaid > 0 ? 'Partial' : 'Unpaid')),
         dispatch: _dispatch,
         discount: _effectiveDiscount,
         shipping: _shipping,
@@ -349,7 +415,10 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
             _nameController.clear();
             _phoneController.clear();
             _discountController.clear();
+            _collectedController.clear();
             _discount = 0;
+            _paid = 0;
+            _paymentMode = 'Cash';
             _partyId = null;
             if (widget.type == 'quotation') _quotationStep = 0;
           });
@@ -518,11 +587,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                       if (textEditingValue.text.isEmpty) {
                         return parties;
                       }
-                      return parties.where((option) {
-                        return option.name.toLowerCase().contains(
-                                textEditingValue.text.toLowerCase()) ||
-                            option.phone.contains(textEditingValue.text);
-                      });
+                      return parties.where((option) =>
+                          _matchesPartySearch(option, textEditingValue.text));
                     },
                     onSelected: (selection) {
                       setState(() {
@@ -537,7 +603,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         controller: controller,
                         focusNode: focusNode,
                         label: 'Search Registered Customer (Optional)',
-                        hint: 'Type name or phone...',
+                        hint: 'Type name, phone, email, GSTIN, or address...',
                         prefixIcon: Icons.search,
                         onChanged: (val) {
                           if (_partyId != null) {
@@ -563,7 +629,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                 final option = options.elementAt(index);
                                 return ListTile(
                                   title: Text(option.name),
-                                  subtitle: Text(option.phone),
+                                  subtitle: Text(_partySearchSubtitle(option)),
                                   onTap: () => onSelected(option),
                                 );
                               },
@@ -683,17 +749,12 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                       .toList();
                   final categories = ['All', ...rawCategories];
 
+                  final hasProductQuery = _productQuery.trim().isNotEmpty;
                   final filtered = items.where((i) {
                     final matchCat = _category == 'All' ||
                         i.category.trim() == _category.trim();
-                    final matchQuery = _productQuery.isEmpty ||
-                        i.name
-                            .toLowerCase()
-                            .contains(_productQuery.toLowerCase()) ||
-                        i.itemCode
-                            .toLowerCase()
-                            .contains(_productQuery.toLowerCase());
-                    return matchCat && matchQuery;
+                    final matchQuery = _matchesProductSearch(i, _productQuery);
+                    return hasProductQuery ? matchQuery : matchCat;
                   }).toList();
 
                   return Column(
@@ -745,7 +806,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                       ],
                       EmpiranTextField(
                         label: '',
-                        hint: 'Search products by name or SKU...',
+                        hint:
+                            'Search all products by name, SKU, HSN, category, unit, or price...',
                         prefixIcon: Icons.search_rounded,
                         onChanged: (v) => setState(() => _productQuery = v),
                       ),
@@ -1031,13 +1093,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                 if (textEditingValue.text.isEmpty) {
                                   return parties;
                                 }
-                                return parties.where((option) {
-                                  return option.name.toLowerCase().contains(
-                                          textEditingValue.text
-                                              .toLowerCase()) ||
-                                      option.phone
-                                          .contains(textEditingValue.text);
-                                });
+                                return parties.where((option) =>
+                                    _matchesPartySearch(
+                                        option, textEditingValue.text));
                               },
                               onSelected: (selection) {
                                 setState(() {
@@ -1053,7 +1111,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                   focusNode: focusNode,
                                   label:
                                       'Search Registered Customer (Optional)',
-                                  hint: 'Type name or phone...',
+                                  hint:
+                                      'Type name, phone, email, GSTIN, or address...',
                                   prefixIcon: Icons.search,
                                   onChanged: (val) {
                                     if (_partyId != null) {
@@ -1081,7 +1140,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                               options.elementAt(index);
                                           return ListTile(
                                             title: Text(option.name),
-                                            subtitle: Text(option.phone),
+                                            subtitle: Text(
+                                                _partySearchSubtitle(option)),
                                             onTap: () => onSelected(option),
                                           );
                                         },
