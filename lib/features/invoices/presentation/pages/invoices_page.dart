@@ -610,7 +610,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                     ),
                                   if (isQuote)
                                     IconButton(
-                                      tooltip: 'Convert to Invoice',
+                                      tooltip: 'Convert to order',
                                       icon: const Icon(Icons.transform_rounded,
                                           color: AppColors.secondary),
                                       onPressed: () =>

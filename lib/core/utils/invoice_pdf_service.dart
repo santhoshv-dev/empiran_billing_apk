@@ -691,27 +691,48 @@ Future<Uint8List> buildInvoicePdf(
                 ],
               ),
 
-              // Amount in Words
-              if (design.showAmountInWords)
-                pw.Container(
-                  decoration: const pw.BoxDecoration(
-                      border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
-                  padding:
-                      const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text('Amount in Words',
-                          style: const pw.TextStyle(
-                              fontSize: 6.5, color: PdfColors.grey700)),
-                      pw.Text(
-                        amountInWords(t.total).replaceFirst('INR', 'Rupees'),
-                        style: pw.TextStyle(
-                            fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+              // Amount in Words and Payment Info
+              pw.Container(
+                decoration: const pw.BoxDecoration(
+                    border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
+                padding:
+                    const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (design.showAmountInWords)
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text('Amount in Words',
+                              style: const pw.TextStyle(
+                                  fontSize: 6.5, color: PdfColors.grey700)),
+                          pw.Text(
+                            amountInWords(t.total).replaceFirst('INR', 'Rupees'),
+                            style: pw.TextStyle(
+                                fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                          ),
+                        ],
+                      )
+                    else
+                      pw.SizedBox(),
+                    if (t.type != 'quotation')
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [
+                          pw.Text('Payment Method: ${t.paymentMode}',
+                              style: pw.TextStyle(
+                                  fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                          if (t.paid >= 0 && t.paid < t.total)
+                            pw.Text('Balance Due: Rs. ${(t.total - t.paid).toStringAsFixed(2)}',
+                                style: pw.TextStyle(
+                                    fontSize: 7.5,
+                                    fontWeight: pw.FontWeight.bold)),
+                        ],
                       ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
 
               // HSN / SAC Tax Summary Table (as shown in reference image)
               if (t.isGst && design.showTaxSummary)

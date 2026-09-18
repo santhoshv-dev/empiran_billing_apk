@@ -1521,6 +1521,108 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                       color: AppColors.primary)),
                             ],
                           ),
+                          
+                          // Payment Method Section
+                          if (widget.type != 'quotation') ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                const Expanded(
+                                  flex: 3,
+                                  child: Text('Payment Method:',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                ),
+                                Expanded(
+                                  flex: 4,
+                                  child: Container(
+                                    height: 38,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey.shade300),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _paymentMode,
+                                        isExpanded: true,
+                                        icon: const Icon(Icons.arrow_drop_down),
+                                        items: _paymentMethods
+                                            .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                                            .toList(),
+                                        onChanged: (v) {
+                                          if (v != null) {
+                                            setState(() {
+                                              _paymentMode = v;
+                                              if (v != 'Cash') {
+                                                _paid = _total;
+                                                _collectedController.text = _total.toStringAsFixed(0);
+                                              } else {
+                                                _paid = double.tryParse(_collectedController.text.trim()) ?? 0;
+                                              }
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_paymentMode == 'Cash') ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    flex: 3,
+                                    child: Text('Collected Amount:',
+                                        style: TextStyle(fontSize: 13)),
+                                  ),
+                                  Expanded(
+                                    flex: 4,
+                                    child: SizedBox(
+                                      height: 38,
+                                      child: TextField(
+                                        controller: _collectedController,
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.end,
+                                        decoration: InputDecoration(
+                                          hintText: '₹0',
+                                          prefixText: '₹ ',
+                                          isDense: true,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        onChanged: (v) {
+                                          setState(() {
+                                            _paid = double.tryParse(v.trim()) ?? 0;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (_paymentMode == 'Cash' || _paymentMode == 'Borrow') ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Balance Due:',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.error)),
+                                  Text(Formatters.money(_balanceDue),
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.error)),
+                                ],
+                              ),
+                            ],
+                          ],
                           const SizedBox(height: 16),
                           if (_error != null) ...[
                             Text(_error!,
