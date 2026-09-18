@@ -324,7 +324,7 @@ class _ShellPageState extends State<ShellPage> {
                                   ),
                                   Text(
                                     isBiller
-                                        ? 'Billing & Catering'
+                                        ? 'Billing '
                                         : isManager
                                             ? 'Manager Workspace'
                                             : 'Billing Suite',

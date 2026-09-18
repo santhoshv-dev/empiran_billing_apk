@@ -172,6 +172,9 @@ class ApiClient {
     return data;
   }
 
+  Future<Map<String, dynamic>> getCurrentUser() async =>
+      _map(await dio.get('/auth/me'));
+
   Future<List<Map<String, dynamic>>> getBusinesses() async =>
       _list(await dio.get('/businesses'));
   Future<Map<String, dynamic>> createBusiness(

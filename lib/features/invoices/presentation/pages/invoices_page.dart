@@ -254,6 +254,40 @@ class _InvoicesPageState extends State<InvoicesPage> {
     }
   }
 
+  Future<void> _deleteQuotation(BusinessTransaction t) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Delete Quotation'),
+          ],
+        ),
+        content: Text(
+            'Are you sure you want to delete Quotation #${t.number}? This action cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete Quotation'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<InvoicesBloc>().add(DeleteTransactionRequested(t));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Quotation #${t.number} deleted.')),
+      );
+    }
+  }
+
   Future<void> _editTransaction(BusinessTransaction t) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -627,6 +661,13 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                         context, t,
                                         isThermal: true),
                                   ),
+                                  if (isQuote)
+                                    IconButton(
+                                      tooltip: 'Delete Quotation',
+                                      icon: const Icon(Icons.delete_outline,
+                                          color: AppColors.error),
+                                      onPressed: () => _deleteQuotation(t),
+                                    ),
                                   // Delete Order option (Requirement 4)
                                   if (isOrder)
                                     IconButton(

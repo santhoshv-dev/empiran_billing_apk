@@ -42,7 +42,7 @@ class _SettingsPageState extends State<SettingsPage>
 
     if (!hasFullSettings) {
       return const PageFrame(
-        title: 'Settings',
+        title: 'Account Settings',
         subtitle: 'Update your account password.',
         child: _AccountSecurityTab(),
       );

@@ -43,6 +43,16 @@ class AuthRepository {
     }
 
     apiClient.token = token;
+    try {
+      final freshUserJson = await apiClient.getCurrentUser();
+      final freshUser = UserModel.fromJson(freshUserJson, token: token);
+      await secureStorage.write(
+        key: AppConstants.userKey,
+        value: jsonEncode(freshUser.toJson()),
+      );
+      return freshUser;
+    } catch (_) {}
+
     final cachedUserString =
         await secureStorage.read(key: AppConstants.userKey);
     if (cachedUserString != null && cachedUserString.isNotEmpty) {
