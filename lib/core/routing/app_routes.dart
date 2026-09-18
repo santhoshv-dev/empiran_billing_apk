@@ -1,5 +1,6 @@
 enum ShellRoute {
   dashboard,
+  quotationComposer,
   quotations,
   invoices,
   products,

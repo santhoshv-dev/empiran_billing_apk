@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:empiran/core/services/permission_service.dart';
 import 'package:empiran/core/widgets/empiran_components.dart';
+import 'package:empiran/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:empiran/features/auth/presentation/bloc/auth_state.dart';
 import 'package:empiran/features/auth/presentation/pages/change_password_page.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:empiran/features/settings/presentation/bloc/settings_state.dart';
@@ -33,6 +36,18 @@ class _SettingsPageState extends State<SettingsPage>
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final role = authState is AuthAuthenticated ? authState.user.role : 'Biller';
+    final hasFullSettings = PermissionService.canAccessFullSettings(role);
+
+    if (!hasFullSettings) {
+      return const PageFrame(
+        title: 'Settings',
+        subtitle: 'Update your account password.',
+        child: _AccountSecurityTab(),
+      );
+    }
+
     return PageFrame(
       title: 'Settings & Administration',
       subtitle:

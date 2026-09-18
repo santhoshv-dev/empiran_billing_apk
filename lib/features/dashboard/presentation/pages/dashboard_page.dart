@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:empiran/core/routing/app_routes.dart';
+import 'package:empiran/core/services/permission_service.dart';
 import 'package:empiran/core/theme/app_theme.dart';
 import 'package:empiran/core/utils/formatters.dart';
 import 'package:empiran/core/widgets/empiran_components.dart';
+import 'package:empiran/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:empiran/features/auth/presentation/bloc/auth_state.dart';
 import 'package:empiran/features/invoices/presentation/bloc/invoices_bloc.dart';
 import 'package:empiran/features/invoices/presentation/bloc/invoices_event.dart';
 import 'package:empiran/features/invoices/presentation/bloc/invoices_state.dart';
@@ -34,6 +37,8 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final user = authState is AuthAuthenticated ? authState.user : null;
     final invoiceState = context.watch<InvoicesBloc>().state;
     final productState = context.watch<ProductsBloc>().state;
     final partyState = context.watch<PartiesBloc>().state;
@@ -45,6 +50,24 @@ class DashboardPage extends StatelessWidget {
     final companyName = settingsState is SettingsLoaded
         ? settingsState.company.displayName
         : 'Empiran Traders';
+
+    if (PermissionService.isBiller(user?.role)) {
+      return _BillerDashboard(
+        companyName: companyName,
+        userName: user?.name ?? 'Biller',
+        greeting: _greeting(),
+        onNavigate: onNavigate,
+      );
+    }
+
+    if (PermissionService.isManager(user?.role)) {
+      return _ManagerDashboard(
+        companyName: companyName,
+        userName: user?.name ?? 'Manager',
+        greeting: _greeting(),
+        onNavigate: onNavigate,
+      );
+    }
 
     // 1. Orders & Sales transactions
     final allOrders = txns.where((t) => t.type == 'order' || t.type == 'sale_invoice').toList();
@@ -733,6 +756,423 @@ class DashboardPage extends StatelessWidget {
           const SizedBox(height: 4),
           Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
         ],
+      ),
+    );
+  }
+}
+
+class _BillerDashboard extends StatelessWidget {
+  const _BillerDashboard({
+    required this.companyName,
+    required this.userName,
+    required this.greeting,
+    required this.onNavigate,
+  });
+
+  final String companyName;
+  final String userName;
+  final String greeting;
+  final ValueChanged<ShellRoute> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      _BillerAction(
+        title: 'Quotation',
+        subtitle: 'Create and manage customer quotations.',
+        icon: Icons.description_outlined,
+        route: ShellRoute.quotations,
+      ),
+      _BillerAction(
+        title: 'Sales',
+        subtitle: 'Create bills and review sales invoices.',
+        icon: Icons.point_of_sale_outlined,
+        route: ShellRoute.invoices,
+      ),
+      _BillerAction(
+        title: 'Products',
+        subtitle: 'View product details and selling prices.',
+        icon: Icons.inventory_2_outlined,
+        route: ShellRoute.products,
+      ),
+      _BillerAction(
+        title: 'Settings',
+        subtitle: 'Update your account password.',
+        icon: Icons.settings_outlined,
+        route: ShellRoute.settings,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 720;
+        final cardWidth = isCompact
+            ? constraints.maxWidth
+            : (constraints.maxWidth - 32) / (constraints.maxWidth >= 1060 ? 4 : 2);
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(isCompact ? 16 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(isCompact ? 22 : 30),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -26,
+                      bottom: -42,
+                      child: Icon(
+                        Icons.room_service_outlined,
+                        size: isCompact ? 120 : 170,
+                        color: const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: isCompact ? 34 : 42,
+                          backgroundColor: const Color(0xFFE2E8F0),
+                          child: const Icon(
+                            Icons.person_outline_rounded,
+                            size: 44,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$greeting,',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Color(0xFF334155),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                userName.trim().isEmpty ? 'Biller' : userName,
+                                style: TextStyle(
+                                  fontSize: isCompact ? 30 : 38,
+                                  color: const Color(0xFF1E293B),
+                                  fontWeight: FontWeight.w900,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Manage quotations, sales, products, and your password.',
+                                style: TextStyle(
+                                  color: Color(0xFF475569),
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  for (final option in options)
+                    SizedBox(
+                      width: cardWidth,
+                      child: _BillerOptionCard(
+                        action: option,
+                        onPressed: () => onNavigate(option.route),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 36),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: Color(0xFFCBD5E1))),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.workspace_premium_outlined, color: Color(0xFF64748B)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        companyName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1E293B),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Text(
+                      'Biller workspace',
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ManagerDashboard extends StatelessWidget {
+  const _ManagerDashboard({
+    required this.companyName,
+    required this.userName,
+    required this.greeting,
+    required this.onNavigate,
+  });
+
+  final String companyName;
+  final String userName;
+  final String greeting;
+  final ValueChanged<ShellRoute> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      _BillerAction(
+        title: 'Quotation',
+        subtitle: 'Start a new customer quotation.',
+        icon: Icons.note_add_outlined,
+        route: ShellRoute.quotationComposer,
+      ),
+      _BillerAction(
+        title: 'Sales',
+        subtitle: 'Create and manage sales invoices.',
+        icon: Icons.point_of_sale_outlined,
+        route: ShellRoute.invoices,
+      ),
+      _BillerAction(
+        title: 'Products',
+        subtitle: 'Manage products, pricing, and stock.',
+        icon: Icons.inventory_2_outlined,
+        route: ShellRoute.products,
+      ),
+      _BillerAction(
+        title: 'Quotes',
+        subtitle: 'Review and update saved quotations.',
+        icon: Icons.request_quote_outlined,
+        route: ShellRoute.quotations,
+      ),
+      _BillerAction(
+        title: 'Settings',
+        subtitle: 'Update your account password.',
+        icon: Icons.lock_reset_rounded,
+        route: ShellRoute.settings,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 720;
+        final columns = constraints.maxWidth >= 1120
+            ? 3
+            : constraints.maxWidth >= 760
+                ? 2
+                : 1;
+        final cardWidth =
+            columns == 1 ? constraints.maxWidth : (constraints.maxWidth - (16 * (columns - 1))) / columns;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(isCompact ? 16 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(isCompact ? 22 : 30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.lightBorder),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: isCompact ? 34 : 42,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+                      child: const Icon(
+                        Icons.manage_accounts_outlined,
+                        size: 42,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$greeting,',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: AppColors.lightTextSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            userName.trim().isEmpty ? 'Manager' : userName,
+                            style: TextStyle(
+                              fontSize: isCompact ? 30 : 38,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Manage quotations, sales, products, and your account security.',
+                            style: TextStyle(
+                              color: AppColors.lightTextSecondary,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  for (final option in options)
+                    SizedBox(
+                      width: cardWidth,
+                      child: _BillerOptionCard(
+                        action: option,
+                        onPressed: () => onNavigate(option.route),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 36),
+              Text(
+                companyName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.lightTextPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BillerAction {
+  const _BillerAction({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.route,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final ShellRoute route;
+}
+
+class _BillerOptionCard extends StatelessWidget {
+  const _BillerOptionCard({
+    required this.action,
+    required this.onPressed,
+  });
+
+  final _BillerAction action;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onPressed,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 230),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFCBD5E1)),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -34,
+              bottom: -48,
+              child: Icon(
+                action.icon,
+                size: 150,
+                color: const Color(0xFFF1F5F9),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 34,
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  child: Icon(action.icon, size: 34, color: const Color(0xFF334155)),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  action.title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  action.subtitle,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.35,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton.tonalIcon(
+                    onPressed: onPressed,
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: const Text('Open'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

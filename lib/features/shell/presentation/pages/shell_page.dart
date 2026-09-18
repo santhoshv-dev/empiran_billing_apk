@@ -8,6 +8,7 @@ import 'package:empiran/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_event.dart';
 import 'package:empiran/features/auth/presentation/bloc/auth_state.dart';
 import 'package:empiran/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:empiran/features/invoices/presentation/pages/invoice_composer_page.dart';
 import 'package:empiran/features/invoices/presentation/pages/invoices_page.dart';
 import 'package:empiran/features/parties/presentation/pages/parties_page.dart';
 import 'package:empiran/features/products/presentation/pages/products_page.dart';
@@ -54,6 +55,10 @@ class _ShellPageState extends State<ShellPage> {
   }
 
   bool _handleKeyEvent(KeyEvent event) {
+    final authState = context.read<AuthBloc>().state;
+    final role = authState is AuthAuthenticated ? authState.user.role : 'Biller';
+    if (PermissionService.hasLimitedSettings(role)) return false;
+
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.keyK &&
         (HardwareKeyboard.instance.isControlPressed ||
@@ -169,6 +174,9 @@ class _ShellPageState extends State<ShellPage> {
     final authState = context.watch<AuthBloc>().state;
     final user = authState is AuthAuthenticated ? authState.user : null;
     final role = user?.role ?? 'Biller';
+    final isBiller = PermissionService.isBiller(role);
+    final isManager = PermissionService.isManager(role);
+    final isLimitedRole = isBiller || isManager;
 
     final settingsState = context.watch<SettingsBloc>().state;
     final company =
@@ -181,32 +189,51 @@ class _ShellPageState extends State<ShellPage> {
         icon: Icons.dashboard_outlined,
         page: DashboardPage(onNavigate: _selectRoute),
       ),
-      const _ShellNavItem(
+      _ShellNavItem(
         route: ShellRoute.quotations,
-        label: 'Quotation Maker',
+        label: isBiller ? 'Quotation' : 'Quotes',
         icon: Icons.request_quote_outlined,
-        page: InvoicesPage(type: 'quotation', key: ValueKey('quotes')),
+        page: const InvoicesPage(type: 'quotation', key: ValueKey('quotes')),
       ),
-      const _ShellNavItem(
+      _ShellNavItem(
         route: ShellRoute.invoices,
-        label: 'Orders & Invoices',
+        label: isLimitedRole ? 'Sales' : 'Orders & Invoices',
         icon: Icons.receipt_long_outlined,
-        page: InvoicesPage(type: 'order', key: ValueKey('orders')),
+        page: const InvoicesPage(type: 'order', key: ValueKey('orders')),
       ),
-      const _ShellNavItem(
+      _ShellNavItem(
         route: ShellRoute.products,
-        label: 'Products & Inventory',
+        label: isLimitedRole ? 'Products' : 'Products & Inventory',
         icon: Icons.inventory_2_outlined,
-        page: ProductsPage(key: ValueKey('products')),
-      ),
-      const _ShellNavItem(
-        route: ShellRoute.parties,
-        label: 'Customers & Suppliers',
-        icon: Icons.groups_outlined,
-        page: PartiesPage(key: ValueKey('parties')),
+        page: const ProductsPage(key: ValueKey('products')),
       ),
     ];
 
+    if (isManager) {
+      navItems.insert(
+        1,
+        const _ShellNavItem(
+          route: ShellRoute.quotationComposer,
+          label: 'Quotation',
+          icon: Icons.note_add_outlined,
+          page: InvoiceComposerPage(
+            type: 'quotation',
+            key: ValueKey('manager-quotation-composer'),
+          ),
+        ),
+      );
+    }
+
+    if (!isLimitedRole) {
+      navItems.add(
+        const _ShellNavItem(
+          route: ShellRoute.parties,
+          label: 'Customers & Suppliers',
+          icon: Icons.groups_outlined,
+          page: PartiesPage(key: ValueKey('parties')),
+        ),
+      );
+    }
     if (PermissionService.canViewReports(role)) {
       navItems.add(
         const _ShellNavItem(
@@ -219,11 +246,11 @@ class _ShellPageState extends State<ShellPage> {
     }
     if (PermissionService.canAccessSettings(role)) {
       navItems.add(
-        const _ShellNavItem(
+        _ShellNavItem(
           route: ShellRoute.settings,
-          label: 'Settings & Users',
+          label: isLimitedRole ? 'Settings' : 'Settings & Users',
           icon: Icons.settings_outlined,
-          page: SettingsPage(key: ValueKey('settings')),
+          page: const SettingsPage(key: ValueKey('settings')),
         ),
       );
     }
@@ -248,11 +275,11 @@ class _ShellPageState extends State<ShellPage> {
               children: [
                 // Left Desktop Sidebar
                 Container(
-                  width: 250,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border:
-                        Border(right: BorderSide(color: AppColors.lightBorder)),
+                  width: isBiller ? 300 : 250,
+                  decoration: BoxDecoration(
+                    color: isBiller ? const Color(0xFFF8FAFC) : Colors.white,
+                    border: const Border(
+                        right: BorderSide(color: AppColors.lightBorder)),
                   ),
                   child: Column(
                     children: [
@@ -263,15 +290,24 @@ class _ShellPageState extends State<ShellPage> {
                         child: Row(
                           children: [
                             Container(
-                              width: 40,
-                              height: 40,
+                              width: isBiller ? 54 : 40,
+                              height: isBiller ? 54 : 40,
                               decoration: BoxDecoration(
-                                gradient: AppGradients.primary,
+                                color: isBiller ? Colors.transparent : null,
+                                gradient: isBiller ? null : AppGradients.primary,
+                                border: isBiller
+                                    ? Border.all(color: const Color(0xFF64748B))
+                                    : null,
                                 borderRadius:
                                     BorderRadius.circular(AppRadii.medium),
                               ),
-                              child: const Icon(Icons.receipt_long_rounded,
-                                  color: Colors.white, size: 24),
+                              child: Icon(
+                                isBiller
+                                    ? Icons.workspace_premium_outlined
+                                    : Icons.receipt_long_rounded,
+                                color: isBiller ? const Color(0xFF334155) : Colors.white,
+                                size: isBiller ? 32 : 24,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -280,15 +316,20 @@ class _ShellPageState extends State<ShellPage> {
                                 children: [
                                   Text(
                                     company?.displayName ?? 'Empiran Traders',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontWeight: FontWeight.w800,
-                                        fontSize: 14),
+                                        fontSize: isBiller ? 19 : 14,
+                                        color: const Color(0xFF1E293B)),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const Text(
-                                    'Billing Suite',
-                                    style: TextStyle(
-                                        fontSize: 11, color: Colors.grey),
+                                  Text(
+                                    isBiller
+                                        ? 'Billing & Catering'
+                                        : isManager
+                                            ? 'Manager Workspace'
+                                            : 'Billing Suite',
+                                    style: const TextStyle(
+                                        fontSize: 13, color: Color(0xFF334155)),
                                   ),
                                 ],
                               ),
@@ -319,7 +360,9 @@ class _ShellPageState extends State<ShellPage> {
                                     horizontal: 14, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? AppColors.primary.withValues(alpha: 0.1)
+                                      ? (isBiller
+                                          ? const Color(0xFFE2E8F0)
+                                          : AppColors.primary.withValues(alpha: 0.1))
                                       : Colors.transparent,
                                   borderRadius:
                                       BorderRadius.circular(AppRadii.medium),
@@ -330,8 +373,8 @@ class _ShellPageState extends State<ShellPage> {
                                       item.icon,
                                       size: 20,
                                       color: isSelected
-                                          ? AppColors.primary
-                                          : AppColors.lightTextSecondary,
+                                          ? (isBiller ? const Color(0xFF1E293B) : AppColors.primary)
+                                          : const Color(0xFF475569),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -343,7 +386,7 @@ class _ShellPageState extends State<ShellPage> {
                                               ? FontWeight.w700
                                               : FontWeight.w500,
                                           color: isSelected
-                                              ? AppColors.primary
+                                              ? (isBiller ? const Color(0xFF1E293B) : AppColors.primary)
                                               : AppColors.lightTextPrimary,
                                         ),
                                       ),
@@ -365,7 +408,9 @@ class _ShellPageState extends State<ShellPage> {
                             CircleAvatar(
                               radius: 18,
                               backgroundColor:
-                                  AppColors.primary.withValues(alpha: 0.12),
+                                  isBiller
+                                      ? const Color(0xFFE2E8F0)
+                                      : AppColors.primary.withValues(alpha: 0.12),
                               child: Text(
                                 (user?.name.isNotEmpty ?? false)
                                     ? user!.name[0].toUpperCase()
@@ -429,58 +474,69 @@ class _ShellPageState extends State<ShellPage> {
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.w800),
                             ),
-                            InkWell(
-                              onTap: () => showGlobalSearchDialog(
-                                context,
-                                onNavigate: _selectRoute,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                width: 320,
-                                height: 38,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.lightBackground,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border:
-                                      Border.all(color: AppColors.lightBorder),
+                            if (!isLimitedRole)
+                              InkWell(
+                                onTap: () => showGlobalSearchDialog(
+                                  context,
+                                  onNavigate: _selectRoute,
                                 ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.search_rounded,
-                                        size: 18, color: Colors.grey),
-                                    const SizedBox(width: 8),
-                                    const Expanded(
-                                      child: Text(
-                                        'Search everything...',
-                                        style: TextStyle(
-                                            fontSize: 13, color: Colors.grey),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  width: 320,
+                                  height: 38,
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.lightBackground,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border:
+                                        Border.all(color: AppColors.lightBorder),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.search_rounded,
+                                          size: 18, color: Colors.grey),
+                                      const SizedBox(width: 8),
+                                      const Expanded(
+                                        child: Text(
+                                          'Search everything...',
+                                          style: TextStyle(
+                                              fontSize: 13, color: Colors.grey),
+                                        ),
                                       ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(4),
-                                        border:
-                                            Border.all(color: Colors.black12),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(4),
+                                          border:
+                                              Border.all(color: Colors.black12),
+                                        ),
+                                        child: const Text(
+                                          'Ctrl+K',
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey),
+                                        ),
                                       ),
-                                      child: const Text(
-                                        'Ctrl+K',
-                                        style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey),
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
                             Row(
                               children: [
+                                if (isBiller) ...[
+                                  const Icon(Icons.notifications_none_rounded,
+                                      color: Color(0xFF334155)),
+                                  const SizedBox(width: 18),
+                                  const SizedBox(
+                                    height: 28,
+                                    child: VerticalDivider(color: Color(0xFFCBD5E1)),
+                                  ),
+                                  const SizedBox(width: 18),
+                                ],
                                 CircleAvatar(
                                   radius: 16,
                                   backgroundColor:
@@ -513,14 +569,15 @@ class _ShellPageState extends State<ShellPage> {
             appBar: AppBar(
               title: Text(currentLabel),
               actions: [
-                IconButton(
-                  tooltip: 'Search (Ctrl+K)',
-                  icon: const Icon(Icons.search_rounded),
-                  onPressed: () => showGlobalSearchDialog(
-                    context,
-                    onNavigate: _selectRoute,
+                if (!isLimitedRole)
+                  IconButton(
+                    tooltip: 'Search (Ctrl+K)',
+                    icon: const Icon(Icons.search_rounded),
+                    onPressed: () => showGlobalSearchDialog(
+                      context,
+                      onNavigate: _selectRoute,
+                    ),
                   ),
-                ),
                 IconButton(
                   tooltip: 'Logout',
                   icon:
@@ -581,32 +638,13 @@ class _ShellPageState extends State<ShellPage> {
               selectedIndex: mobileSelectedIndex >= 0 ? mobileSelectedIndex : 0,
               onDestinationSelected: (i) =>
                   _selectRoute(mobileNavItems[i].route),
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard),
-                  label: 'Home',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.request_quote_outlined),
-                  selectedIcon: Icon(Icons.request_quote),
-                  label: 'Quotes',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  selectedIcon: Icon(Icons.receipt_long),
-                  label: 'Sales',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.inventory_2_outlined),
-                  selectedIcon: Icon(Icons.inventory_2),
-                  label: 'Products',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.groups_outlined),
-                  selectedIcon: Icon(Icons.groups),
-                  label: 'Parties',
-                ),
+              destinations: [
+                for (final item in mobileNavItems)
+                  NavigationDestination(
+                    icon: Icon(item.icon),
+                    selectedIcon: Icon(item.icon),
+                    label: item.route == ShellRoute.dashboard ? 'Home' : item.label,
+                  ),
               ],
             ),
           );

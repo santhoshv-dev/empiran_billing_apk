@@ -3,7 +3,8 @@ enum AppRole { admin, manager, biller }
 class PermissionService {
   static AppRole parseRole(String? role) {
     if (role == null) return AppRole.biller;
-    switch (role.toLowerCase().trim()) {
+    final normalized = role.toLowerCase().trim();
+    switch (normalized) {
       case 'admin':
       case 'owner':
       case 'administrator':
@@ -16,13 +17,43 @@ class PermissionService {
       case 'staff':
         return AppRole.biller;
       default:
+        if (normalized.contains('admin') || normalized.contains('owner')) {
+          return AppRole.admin;
+        }
+        if (normalized.contains('manager')) {
+          return AppRole.manager;
+        }
+        if (normalized.contains('biller') ||
+            normalized.contains('billing') ||
+            normalized.contains('cashier') ||
+            normalized.contains('staff')) {
+          return AppRole.biller;
+        }
         return AppRole.biller;
     }
   }
 
-  /// Only Admin can access Settings, configure tax/sequences, and manage cloud endpoints
+  /// Admin gets full settings. Manager and Biller get account security only.
   static bool canAccessSettings(String? role) {
+    final r = parseRole(role);
+    return r == AppRole.admin || r == AppRole.manager || r == AppRole.biller;
+  }
+
+  static bool canAccessFullSettings(String? role) {
     return parseRole(role) == AppRole.admin;
+  }
+
+  static bool isBiller(String? role) {
+    return parseRole(role) == AppRole.biller;
+  }
+
+  static bool isManager(String? role) {
+    return parseRole(role) == AppRole.manager;
+  }
+
+  static bool hasLimitedSettings(String? role) {
+    final r = parseRole(role);
+    return r == AppRole.manager || r == AppRole.biller;
   }
 
   /// Only Admin can create, edit, update roles, or delete users
@@ -35,10 +66,10 @@ class PermissionService {
     return parseRole(role) == AppRole.admin;
   }
 
-  /// Admin has full reports (GST, P&L, Audits); Manager can view sales summaries
+  /// Admin has full reports (GST, P&L, Audits). Manager reports stay hidden in
+  /// the shell unless a dedicated limited reports surface is added.
   static bool canViewReports(String? role) {
-    final r = parseRole(role);
-    return r == AppRole.admin || r == AppRole.manager;
+    return parseRole(role) == AppRole.admin;
   }
 
   /// Admin & Manager can add, edit, or adjust inventory stock; Biller is read-only
@@ -62,10 +93,8 @@ class PermissionService {
   /// Optimized landing screen tab index:
   /// - Admin: 0 (Dashboard)
   /// - Manager: 0 (Dashboard)
-  /// - Biller: 1 (Orders & Sales Invoices / POS Counter for instant billing)
+  /// - Biller: 0 (Role-specific dashboard)
   static int defaultLandingIndex(String? role) {
-    final r = parseRole(role);
-    if (r == AppRole.biller) return 2; // Orders & Invoices (POS Sales Counter)
     return 0; // Dashboard
   }
 }
