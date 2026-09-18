@@ -1356,18 +1356,17 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                         ],
                                       ),
                                       const SizedBox(height: 6),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                      Wrap(
+                                        alignment: WrapAlignment.spaceBetween,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        spacing: 8,
+                                        runSpacing: 8,
                                         children: [
-                                          Expanded(
-                                            child: Text(
-                                              '${Formatters.money(line.price)} / ${line.unit}',
-                                              style: const TextStyle(
-                                                  fontSize: 11,
-                                                  color: Colors.grey),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                                          Text(
+                                            '${Formatters.money(line.price)} / ${line.unit}',
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey),
                                           ),
                                           Row(
                                             mainAxisSize: MainAxisSize.min,

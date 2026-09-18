@@ -1055,7 +1055,9 @@ class _ProductsPageState extends State<ProductsPage> {
                           ],
                         ),
                         if (canManage)
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               EmpiranButton(
                                 label: 'Add Category',
@@ -1063,8 +1065,7 @@ class _ProductsPageState extends State<ProductsPage> {
                                 variant: EmpiranButtonVariant.outlined,
                                 onPressed: () => _addCategoryDialog(context),
                               ),
-                              if (_selectedCategory != 'All') ...[
-                                const SizedBox(width: 8),
+                              if (_selectedCategory != 'All')
                                 EmpiranButton(
                                   label: 'Edit "$_selectedCategory"',
                                   icon: Icons.edit_outlined,
@@ -1072,8 +1073,6 @@ class _ProductsPageState extends State<ProductsPage> {
                                   onPressed: () => _editCategoryDialog(
                                       context, _selectedCategory),
                                 ),
-                              ],
-                              const SizedBox(width: 10),
                               EmpiranButton(
                                 label: 'Create Product',
                                 icon: Icons.add_rounded,
