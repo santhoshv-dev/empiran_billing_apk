@@ -13,7 +13,7 @@ class ApiClient {
                   ),
                 ),
                 connectTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 20),
+                receiveTimeout: const Duration(seconds: 30),
                 headers: const {'Accept': 'application/json'},
               ),
             ) {
@@ -186,8 +186,13 @@ class ApiClient {
     Map<String, dynamic> data,
   ) async =>
       _map(await dio.put('/businesses/$id', data: data));
+  /// Fetches the catalog WITHOUT images (default). Very fast — ideal for lists.
   Future<List<Map<String, dynamic>>> getItems(String id) async =>
-      _list(await dio.get('/businesses/$id/items'));
+      _list(await dio.get('/businesses/$id/items?withImages=false'));
+
+  /// Fetches a SINGLE item WITH full image data. Use only when editing.
+  Future<Map<String, dynamic>> getItemById(String id, String itemId) async =>
+      _map(await dio.get('/businesses/$id/items/$itemId'));
   Future<Map<String, dynamic>> createItem(
     String id,
     Map<String, dynamic> data,
@@ -225,8 +230,31 @@ class ApiClient {
       _map(await dio.put('/businesses/$id/parties/$partyId', data: data));
   Future<void> deleteParty(String id, String partyId) async =>
       dio.delete('/businesses/$id/parties/$partyId');
-  Future<List<Map<String, dynamic>>> getTransactions(String id) async =>
-      _list(await dio.get('/businesses/$id/transactions'));
+  /// Fetches paginated transactions. Pass [type] to filter, [page]/[pageSize] for paging.
+  /// Returns the `items` list from the PagedResponse envelope.
+  Future<List<Map<String, dynamic>>> getTransactions(
+    String id, {
+    String? type,
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    final params = <String, dynamic>{
+      'page': page,
+      'pageSize': pageSize,
+      if (type != null) 'type': type,
+    };
+    final response = await dio.get('/businesses/$id/transactions',
+        queryParameters: params);
+    final body = response.data;
+    // Handle PagedResponse envelope: {items: [...], totalCount, page, ...}
+    if (body is Map && body.containsKey('items')) {
+      final list = body['items'];
+      if (list is List) return list.cast<Map<String, dynamic>>();
+    }
+    // Fallback: plain list (backward compatibility)
+    if (body is List) return body.cast<Map<String, dynamic>>();
+    return [];
+  }
   Future<Map<String, dynamic>> createTransaction(
     String id,
     Map<String, dynamic> data,
