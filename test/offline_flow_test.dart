@@ -39,7 +39,5 @@ void main() {
     expect(queue.length, 1);
     expect(queue.first['status'], 'pending');
     expect(queue.first['entityType'], 'categories');
-    
-    debugPrint('Offline Category successfully cached in local SQLite database and queued for sync!');
   });
 }
