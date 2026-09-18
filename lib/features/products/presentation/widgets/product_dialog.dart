@@ -41,8 +41,8 @@ class _ProductDialogState extends State<_ProductDialog> {
   late final TextEditingController _purchase;
   late final TextEditingController _sales;
   late final TextEditingController _stock;
-  late final TextEditingController _unit;
   late final TextEditingController _low;
+  late String _selectedUnit;
 
   late bool _isService;
   late String _selectedCat;
@@ -50,6 +50,8 @@ class _ProductDialogState extends State<_ProductDialog> {
   Uint8List? _imageBytes;
   bool _isImageLoading = false;
   String? _error;
+  
+  static const _validUnits = ['PCS', 'KG', 'Litre', 'Meter', 'Sqft'];
 
   @override
   void initState() {
@@ -61,8 +63,11 @@ class _ProductDialogState extends State<_ProductDialog> {
     _purchase = TextEditingController(text: '${p?.purchasePrice ?? 0}');
     _sales = TextEditingController(text: '${p?.salesPrice ?? 0}');
     _stock = TextEditingController(text: '${p?.currentStock ?? 0}');
-    _unit = TextEditingController(text: p?.unit ?? 'Pcs');
     _low = TextEditingController(text: '${p?.lowStockLimit ?? 5}');
+    
+    final pUnit = p?.unit.trim().toUpperCase() ?? 'PCS';
+    _selectedUnit = _validUnits.contains(pUnit) ? pUnit : 'PCS';
+    
     _isService  = p?.isService ?? false;
     _image      = p?.image;
     _imageBytes = _decodeImage(_image);
@@ -85,7 +90,6 @@ class _ProductDialogState extends State<_ProductDialog> {
     _purchase.dispose();
     _sales.dispose();
     _stock.dispose();
-    _unit.dispose();
     _low.dispose();
     super.dispose();
   }
@@ -143,7 +147,7 @@ class _ProductDialogState extends State<_ProductDialog> {
       salesPrice: double.parse(_sales.text),
       currentStock: double.parse(_stock.text),
       category: _selectedCat,
-      unit: _unit.text.trim().isEmpty ? 'Pcs' : _unit.text.trim(),
+      unit: _selectedUnit,
       lowStockLimit: double.tryParse(_low.text) ?? 5,
       isService: _isService,
       image: _image,
@@ -261,10 +265,16 @@ class _ProductDialogState extends State<_ProductDialog> {
                         isDecimal: true,
                       ),
                       const SizedBox(height: 12),
-                      EmpiranTextField(
-                        controller: _unit,
-                        label: 'Unit of Measure',
-                        hint: 'Pcs, Mtr, Box, Kg',
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        value: _selectedUnit,
+                        decoration: const InputDecoration(labelText: 'Unit of Measure'),
+                        items: _validUnits
+                            .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => _selectedUnit = v);
+                        },
                       ),
                       const SizedBox(height: 12),
                       EmpiranTextField(
@@ -332,10 +342,16 @@ class _ProductDialogState extends State<_ProductDialog> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: EmpiranTextField(
-                              controller: _unit,
-                              label: 'Unit of Measure',
-                              hint: 'Pcs, Mtr, Box, Kg',
+                            child: DropdownButtonFormField<String>(
+                              isExpanded: true,
+                              value: _selectedUnit,
+                              decoration: const InputDecoration(labelText: 'Unit of Measure'),
+                              items: _validUnits
+                                  .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                  .toList(),
+                              onChanged: (v) {
+                                if (v != null) setState(() => _selectedUnit = v);
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),

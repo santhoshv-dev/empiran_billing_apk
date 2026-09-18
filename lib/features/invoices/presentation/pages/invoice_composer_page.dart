@@ -202,12 +202,90 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
         item.purchasePrice.toString().contains(q);
   }
 
-  int _getItemQtyInCart(String itemId) {
+  double _getItemQtyInCart(String itemId) {
     final line = _lines.where((l) => l.itemId == itemId).firstOrNull;
-    return line?.quantity.toInt() ?? 0;
+    return line?.quantity ?? 0;
+  }
+
+  Future<void> _promptForQuantity(Item item, {bool isUpdate = false, InvoiceLine? existingLine}) async {
+    final isPcs = item.unit.toUpperCase() == 'PCS';
+    final ctrl = TextEditingController(
+      text: existingLine != null ? (isPcs ? existingLine.quantity.toInt().toString() : existingLine.quantity.toString()) : '1',
+    );
+    final formKey = GlobalKey<FormState>();
+
+    final qty = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isUpdate ? 'Update Quantity' : 'Enter Quantity'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: ctrl,
+            keyboardType: TextInputType.numberWithOptions(decimal: !isPcs),
+            decoration: InputDecoration(
+              labelText: 'Quantity (${item.unit})',
+              suffixText: item.unit,
+            ),
+            autofocus: true,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Required';
+              final val = double.tryParse(v.trim());
+              if (val == null || val <= 0) return 'Enter a valid quantity > 0';
+              if (isPcs && val != val.toInt()) return 'Only whole numbers allowed for PCS';
+              return null;
+            },
+            onFieldSubmitted: (_) {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, double.parse(ctrl.text.trim()));
+              }
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, double.parse(ctrl.text.trim()));
+              }
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (qty != null && qty > 0) {
+      setState(() {
+        if (existingLine != null) {
+          existingLine.quantity = qty;
+        } else {
+          final index = _lines.indexWhere((l) => l.itemId == item.id);
+          if (index >= 0) {
+            _lines[index].quantity += qty;
+          } else {
+            _lines.add(
+              InvoiceLine(
+                itemId: item.id,
+                name: item.name,
+                quantity: qty,
+                unit: item.unit,
+                price: widget.type.startsWith('purchase') ? item.purchasePrice : item.salesPrice,
+                hsn: item.hsn,
+              ),
+            );
+          }
+        }
+      });
+    }
   }
 
   void _add(Item item) {
+    if (item.unit.toUpperCase() != 'PCS') {
+      _promptForQuantity(item);
+      return;
+    }
     setState(() {
       final index = _lines.indexWhere((l) => l.itemId == item.id);
       if (index >= 0) {
@@ -229,7 +307,13 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
     });
   }
 
-  void _increment(Item item) => _add(item);
+  void _increment(Item item) {
+    if (item.unit.toUpperCase() != 'PCS') {
+      _promptForQuantity(item, isUpdate: true, existingLine: _lines.where((l) => l.itemId == item.id).firstOrNull);
+      return;
+    }
+    _add(item);
+  }
 
   void _decrement(Item item) {
     setState(() {
@@ -868,6 +952,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                       final item = filtered[i];
                                       final qtyInCart =
                                           _getItemQtyInCart(item.id);
+                                      final qtyString = qtyInCart == qtyInCart.roundToDouble()
+                                          ? qtyInCart.toInt().toString()
+                                          : qtyInCart.toString();
                                       final itemImageBytes =
                                           _decodeImage(item.image);
 
@@ -1027,7 +1114,7 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                                           ),
                                                         ),
                                                         Text(
-                                                          '$qtyInCart',
+                                                          qtyString,
                                                           style:
                                                               const TextStyle(
                                                             fontWeight:
@@ -1303,10 +1390,23 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                                 },
                                               ),
                                               const SizedBox(width: 10),
-                                              Text('${line.quantity.toInt()}',
+                                              InkWell(
+                                                onTap: () => _promptForQuantity(
+                                                  Item(id: line.itemId, name: line.name, unit: line.unit, salesPrice: line.price, purchasePrice: line.price, itemCode: '', hsn: line.hsn, category: '', currentStock: 0, lowStockLimit: 0, isService: false),
+                                                  isUpdate: true,
+                                                  existingLine: line,
+                                                ),
+                                                child: Text(
+                                                  line.unit.toUpperCase() == 'PCS' 
+                                                      ? '${line.quantity.toInt()} ${line.unit}' 
+                                                      : '${line.quantity == line.quantity.roundToDouble() ? line.quantity.toInt() : line.quantity} ${line.unit}',
                                                   style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold)),
+                                                      fontWeight: FontWeight.bold,
+                                                      decoration: TextDecoration.underline,
+                                                      color: AppColors.primary,
+                                                  ),
+                                                ),
+                                              ),
                                               const SizedBox(width: 10),
                                               IconButton(
                                                 icon: const Icon(
