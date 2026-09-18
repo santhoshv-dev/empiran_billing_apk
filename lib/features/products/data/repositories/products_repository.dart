@@ -44,8 +44,8 @@ class ProductsRepository {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
           if (_isGuid(item.id)) {
-            final saved =
-                await apiClient.updateItem(companyId, item.id, item.toApiJson());
+            final saved = await apiClient.updateItem(
+                companyId, item.id, item.toApiJson());
             final remoteItem = Item.fromJson(saved);
             await DbHelper.instance.insertOrUpdate(
               'items',
@@ -53,7 +53,8 @@ class ProductsRepository {
               remoteItem.id,
             );
           } else {
-            final saved = await apiClient.createItem(companyId, item.toApiJson());
+            final saved =
+                await apiClient.createItem(companyId, item.toApiJson());
             final remoteItem = Item.fromJson(saved);
             await DbHelper.instance.delete('items', item.id);
             await DbHelper.instance.insertOrUpdate(
@@ -131,7 +132,10 @@ class ProductsRepository {
       item = items.where((i) => i.id == itemId).firstOrNull;
     }
     if (item == null && itemName.trim().isNotEmpty) {
-      item = items.where((i) => i.name.trim().toLowerCase() == itemName.trim().toLowerCase()).firstOrNull;
+      item = items
+          .where((i) =>
+              i.name.trim().toLowerCase() == itemName.trim().toLowerCase())
+          .firstOrNull;
     }
     if (item != null) {
       await adjustStock(item, change, reason: reason);

@@ -42,8 +42,8 @@ class PartiesRepository {
         final companyId = await apiClient.getActiveBusinessId();
         if (companyId != null) {
           if (_isGuid(party.id)) {
-            final saved =
-                await apiClient.updateParty(companyId, party.id, party.toApiJson());
+            final saved = await apiClient.updateParty(
+                companyId, party.id, party.toApiJson());
             final remoteParty = Party.fromJson(saved);
             await DbHelper.instance.insertOrUpdate(
               'parties',

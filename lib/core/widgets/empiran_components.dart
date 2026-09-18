@@ -1291,7 +1291,8 @@ class PageFrame extends StatelessWidget {
         final vPadding = isCompact ? 12.0 : 18.0;
 
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: vPadding),
+          padding:
+              EdgeInsets.symmetric(horizontal: hPadding, vertical: vPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -126,7 +126,8 @@ class DbHelper {
     if (oldVersion < 3 && !await _columnExists(db, 'items', 'image')) {
       await db.execute('ALTER TABLE items ADD COLUMN image TEXT');
     }
-    if (oldVersion < 4 && !await _columnExists(db, 'transactions', 'referredBy')) {
+    if (oldVersion < 4 &&
+        !await _columnExists(db, 'transactions', 'referredBy')) {
       await db.execute('ALTER TABLE transactions ADD COLUMN referredBy TEXT');
     }
   }

@@ -1,6 +1,7 @@
 class SearchResultItem {
   final String id;
-  final String type; // 'product' | 'customer' | 'supplier' | 'invoice' | 'quotation' | 'category' | 'staff' | 'expense'
+  final String
+      type; // 'product' | 'customer' | 'supplier' | 'invoice' | 'quotation' | 'category' | 'staff' | 'expense'
   final String title;
   final String subtitle;
   final String? badge;
@@ -41,7 +42,9 @@ class SearchResultItem {
       amount: amt,
       date: dt,
       score: (json['score'] as num?)?.toInt() ?? 50,
-      metadata: json['metadata'] is Map ? Map<String, dynamic>.from(json['metadata'] as Map) : null,
+      metadata: json['metadata'] is Map
+          ? Map<String, dynamic>.from(json['metadata'] as Map)
+          : null,
     );
   }
 }
@@ -102,7 +105,8 @@ class GlobalSearchResponse {
 
   factory GlobalSearchResponse.fromJson(Map<String, dynamic> json) {
     final list = (json['results'] as List? ?? [])
-        .map((e) => SearchResultItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .map((e) =>
+            SearchResultItem.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
 
     return GlobalSearchResponse(
@@ -112,7 +116,8 @@ class GlobalSearchResponse {
       pageSize: (json['pageSize'] as num?)?.toInt() ?? 20,
       hasMore: json['hasMore'] == true,
       counts: json['counts'] is Map
-          ? SearchCounts.fromJson(Map<String, dynamic>.from(json['counts'] as Map))
+          ? SearchCounts.fromJson(
+              Map<String, dynamic>.from(json['counts'] as Map))
           : const SearchCounts(),
       results: list,
     );

@@ -39,22 +39,32 @@ class _ReportsPageState extends State<ReportsPage> {
   List<BusinessTransaction> _filterRows(List<BusinessTransaction> all) {
     var data = all.where((t) {
       if (_tab == 0) return true;
-      if (_tab == 1) return ['order', 'sale_invoice', 'quotation', 'estimate'].contains(t.type);
+      if (_tab == 1)
+        return ['order', 'sale_invoice', 'quotation', 'estimate']
+            .contains(t.type);
       return t.paid > 0 || t.type.startsWith('payment_');
     }).toList();
 
-    final start = _fromDate != null ? DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day) : null;
-    final end = _toDate != null ? DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59) : null;
+    final start = _fromDate != null
+        ? DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day)
+        : null;
+    final end = _toDate != null
+        ? DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59)
+        : null;
 
     return data.where((t) {
-      return (start == null || !t.date.isBefore(start)) && (end == null || !t.date.isAfter(end));
+      return (start == null || !t.date.isBefore(start)) &&
+          (end == null || !t.date.isAfter(end));
     }).toList();
   }
 
   Future<void> _exportCsv(List<BusinessTransaction> rows) async {
     final content = reportCsv(rows);
-    final fromStr = _fromDate != null ? DateFormat('dd-MM-yyyy').format(_fromDate!) : 'start';
-    final toStr = _toDate != null ? DateFormat('dd-MM-yyyy').format(_toDate!) : 'end';
+    final fromStr = _fromDate != null
+        ? DateFormat('dd-MM-yyyy').format(_fromDate!)
+        : 'start';
+    final toStr =
+        _toDate != null ? DateFormat('dd-MM-yyyy').format(_toDate!) : 'end';
     final filename = 'sales_transactions_${fromStr}_to_$toStr.csv';
 
     await SharePlus.instance.share(
@@ -70,10 +80,15 @@ class _ReportsPageState extends State<ReportsPage> {
     );
   }
 
-  Future<void> _printReport(Company company, List<BusinessTransaction> rows) async {
-    final reportTitle = ['Transaction Details', 'Sales Details', 'Payment Details'][_tab];
-    final fromStr = _fromDate != null ? DateFormat('dd-MM-yyyy').format(_fromDate!) : 'Beginning';
-    final toStr = _toDate != null ? DateFormat('dd-MM-yyyy').format(_toDate!) : 'Present';
+  Future<void> _printReport(
+      Company company, List<BusinessTransaction> rows) async {
+    final reportTitle =
+        ['Transaction Details', 'Sales Details', 'Payment Details'][_tab];
+    final fromStr = _fromDate != null
+        ? DateFormat('dd-MM-yyyy').format(_fromDate!)
+        : 'Beginning';
+    final toStr =
+        _toDate != null ? DateFormat('dd-MM-yyyy').format(_toDate!) : 'Present';
 
     await Printing.layoutPdf(
       onLayout: (_) => buildReportPdf(
@@ -135,10 +150,13 @@ class _ReportsPageState extends State<ReportsPage> {
   @override
   Widget build(BuildContext context) {
     final settingsState = context.watch<SettingsBloc>().state;
-    final company = settingsState is SettingsLoaded ? settingsState.company : Company();
+    final company =
+        settingsState is SettingsLoaded ? settingsState.company : Company();
 
     final invoiceState = context.watch<InvoicesBloc>().state;
-    final allTxns = invoiceState is InvoicesLoaded ? invoiceState.transactions : <BusinessTransaction>[];
+    final allTxns = invoiceState is InvoicesLoaded
+        ? invoiceState.transactions
+        : <BusinessTransaction>[];
     final rows = _filterRows(allTxns);
 
     final total = rows.fold<double>(0, (a, b) => a + b.total);
@@ -149,7 +167,8 @@ class _ReportsPageState extends State<ReportsPage> {
 
     return PageFrame(
       title: 'Reports & Export',
-      subtitle: 'Export transactions and sales data based on custom date range.',
+      subtitle:
+          'Export transactions and sales data based on custom date range.',
       child: Column(
         children: [
           // Date Range Selection & Quick Filters Card (Requirement 9)
@@ -160,11 +179,13 @@ class _ReportsPageState extends State<ReportsPage> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.date_range_rounded, size: 20, color: AppColors.primary),
+                    Icon(Icons.date_range_rounded,
+                        size: 20, color: AppColors.primary),
                     SizedBox(width: 8),
                     Text(
                       'Select Date-to-Date Export Range',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ],
                 ),
@@ -177,23 +198,32 @@ class _ReportsPageState extends State<ReportsPage> {
                       onTap: _pickFromDate,
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.3)),
                           borderRadius: BorderRadius.circular(8),
                           color: Theme.of(context).cardColor,
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
+                            const Icon(Icons.calendar_today_outlined,
+                                size: 16, color: AppColors.primary),
                             const SizedBox(width: 8),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('From Date', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                const Text('From Date',
+                                    style: TextStyle(
+                                        fontSize: 10, color: Colors.grey)),
                                 Text(
-                                  _fromDate != null ? dateFmt.format(_fromDate!) : 'Select Date',
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                  _fromDate != null
+                                      ? dateFmt.format(_fromDate!)
+                                      : 'Select Date',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -206,23 +236,32 @@ class _ReportsPageState extends State<ReportsPage> {
                       onTap: _pickToDate,
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.3)),
                           borderRadius: BorderRadius.circular(8),
                           color: Theme.of(context).cardColor,
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.event_outlined, size: 16, color: AppColors.primary),
+                            const Icon(Icons.event_outlined,
+                                size: 16, color: AppColors.primary),
                             const SizedBox(width: 8),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('To Date', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                const Text('To Date',
+                                    style: TextStyle(
+                                        fontSize: 10, color: Colors.grey)),
                                 Text(
-                                  _toDate != null ? dateFmt.format(_toDate!) : 'Select Date',
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                  _toDate != null
+                                      ? dateFmt.format(_toDate!)
+                                      : 'Select Date',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -236,22 +275,26 @@ class _ReportsPageState extends State<ReportsPage> {
                       child: Row(
                         children: [
                           ActionChip(
-                            label: const Text('Today', style: TextStyle(fontSize: 11)),
+                            label: const Text('Today',
+                                style: TextStyle(fontSize: 11)),
                             onPressed: () => _setQuickRange('today'),
                           ),
                           const SizedBox(width: 6),
                           ActionChip(
-                            label: const Text('This Month', style: TextStyle(fontSize: 11)),
+                            label: const Text('This Month',
+                                style: TextStyle(fontSize: 11)),
                             onPressed: () => _setQuickRange('month'),
                           ),
                           const SizedBox(width: 6),
                           ActionChip(
-                            label: const Text('Last 30 Days', style: TextStyle(fontSize: 11)),
+                            label: const Text('Last 30 Days',
+                                style: TextStyle(fontSize: 11)),
                             onPressed: () => _setQuickRange('last30'),
                           ),
                           const SizedBox(width: 6),
                           ActionChip(
-                            label: const Text('All Time', style: TextStyle(fontSize: 11)),
+                            label: const Text('All Time',
+                                style: TextStyle(fontSize: 11)),
                             onPressed: () => _setQuickRange('all'),
                           ),
                         ],
@@ -302,7 +345,11 @@ class _ReportsPageState extends State<ReportsPage> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
-                          label: Text(['All Transactions', 'Sales Only', 'Payments Only'][i]),
+                          label: Text([
+                            'All Transactions',
+                            'Sales Only',
+                            'Payments Only'
+                          ][i]),
                           selected: _tab == i,
                           onSelected: (_) => setState(() => _tab = i),
                         ),
@@ -324,7 +371,8 @@ class _ReportsPageState extends State<ReportsPage> {
                   EmpiranButton(
                     label: 'Export PDF',
                     icon: Icons.print_outlined,
-                    onPressed: rows.isEmpty ? null : () => _printReport(company, rows),
+                    onPressed:
+                        rows.isEmpty ? null : () => _printReport(company, rows),
                   ),
                 ],
               );
@@ -364,8 +412,12 @@ class _ReportsPageState extends State<ReportsPage> {
                   Formatters.money(total),
                   AppColors.primary,
                 ),
-                _buildMetricCard('Total Collected', Formatters.money(paid), AppColors.success),
-                _buildMetricCard('Outstanding Balance', Formatters.money(balance), balance > 0 ? AppColors.error : Colors.grey),
+                _buildMetricCard('Total Collected', Formatters.money(paid),
+                    AppColors.success),
+                _buildMetricCard(
+                    'Outstanding Balance',
+                    Formatters.money(balance),
+                    balance > 0 ? AppColors.error : Colors.grey),
               ];
 
               if (isWide) {
@@ -379,11 +431,15 @@ class _ReportsPageState extends State<ReportsPage> {
                   ],
                 );
               } else {
-                final cardWidth = constraints.maxWidth < 360 ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+                final cardWidth = constraints.maxWidth < 360
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 10) / 2;
                 return Wrap(
                   spacing: 10,
                   runSpacing: 10,
-                  children: cards.map((c) => SizedBox(width: cardWidth, child: c)).toList(),
+                  children: cards
+                      .map((c) => SizedBox(width: cardWidth, child: c))
+                      .toList(),
                 );
               }
             },
@@ -395,70 +451,93 @@ class _ReportsPageState extends State<ReportsPage> {
             child: rows.isEmpty
                 ? const EmpiranEmptyState(
                     title: 'No transactions found in this date range',
-                    description: 'Adjust your from/to dates or clear filters to view data.',
+                    description:
+                        'Adjust your from/to dates or clear filters to view data.',
                     icon: Icons.analytics_outlined,
                   )
-                : ListView.separated(
-                    itemCount: rows.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) {
-                      final t = rows[i];
-                      return EmpiranCard(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      context
+                          .read<InvoicesBloc>()
+                          .add(const LoadInvoicesRequested());
+                      await Future.delayed(const Duration(milliseconds: 500));
+                    },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: rows.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        final t = rows[i];
+                        return EmpiranCard(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          t.number,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            t.type.toUpperCase(),
+                                            style: const TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)}${t.referredBy != null && t.referredBy!.isNotEmpty ? ' • Staff: ${t.referredBy}' : ''}',
+                                      style: const TextStyle(
+                                          color: Colors.grey, fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        t.number,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          t.type.toUpperCase(),
-                                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
                                   Text(
-                                    '${t.partyName.isNotEmpty ? t.partyName : 'Cash Customer'} • ${Formatters.date(t.date)}${t.referredBy != null && t.referredBy!.isNotEmpty ? ' • Staff: ${t.referredBy}' : ''}',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                    overflow: TextOverflow.ellipsis,
+                                    Formatters.money(t.total),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14),
+                                  ),
+                                  Text(
+                                    'Paid: ${Formatters.money(t.paid)}',
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 11),
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  Formatters.money(t.total),
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                                Text(
-                                  'Paid: ${Formatters.money(t.paid)}',
-                                  style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
           ),
         ],
@@ -472,9 +551,15 @@ class _ReportsPageState extends State<ReportsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.lightTextSecondary)),
           const SizedBox(height: 6),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: color)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w900, color: color)),
         ],
       ),
     );

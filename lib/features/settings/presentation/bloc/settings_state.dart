@@ -48,7 +48,8 @@ class SettingsLoaded extends SettingsState {
   }
 
   @override
-  List<Object?> get props => [company, invoiceSettings, categories, users, message];
+  List<Object?> get props =>
+      [company, invoiceSettings, categories, users, message];
 }
 
 class SettingsFailure extends SettingsState {

@@ -91,18 +91,22 @@ class _StockAdjustDialogState extends State<_StockAdjustDialog> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Previous Stock', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        const Text('Previous Stock',
+                            style: TextStyle(fontSize: 11, color: Colors.grey)),
                         Text(
                           '${widget.item.currentStock.toStringAsFixed(0)} ${widget.item.unit}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                       ],
                     ),
-                    const Icon(Icons.arrow_forward_rounded, color: AppColors.primary, size: 20),
+                    const Icon(Icons.arrow_forward_rounded,
+                        color: AppColors.primary, size: 20),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('Updated Stock', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        const Text('Updated Stock',
+                            style: TextStyle(fontSize: 11, color: Colors.grey)),
                         Text(
                           '${updatedStock.toStringAsFixed(0)} ${widget.item.unit}',
                           style: const TextStyle(
@@ -133,7 +137,9 @@ class _StockAdjustDialogState extends State<_StockAdjustDialog> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 10),
-                Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                Text(_error!,
+                    style:
+                        const TextStyle(color: AppColors.error, fontSize: 13)),
               ],
             ],
           ),

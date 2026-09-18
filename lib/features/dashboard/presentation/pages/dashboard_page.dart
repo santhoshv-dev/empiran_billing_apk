@@ -95,11 +95,19 @@ class DashboardPage extends StatelessWidget {
       builder: (context, rootConstraints) {
         final isCompact = rootConstraints.maxWidth < 650;
 
-        return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 14 : 24,
-            vertical: isCompact ? 14 : 20,
-          ),
+        return RefreshIndicator(
+          onRefresh: () async {
+            context.read<InvoicesBloc>().add(const LoadInvoicesRequested());
+            context.read<ProductsBloc>().add(const LoadProductsRequested());
+            context.read<PartiesBloc>().add(const LoadPartiesRequested());
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 14 : 24,
+              vertical: isCompact ? 14 : 20,
+            ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -688,6 +696,7 @@ class DashboardPage extends StatelessWidget {
               ),
             ],
           ),
+        );
         );
       },
     );

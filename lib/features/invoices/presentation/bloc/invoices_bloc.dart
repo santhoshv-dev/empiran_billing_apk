@@ -7,14 +7,16 @@ import 'invoices_state.dart';
 class InvoicesBloc extends Bloc<InvoicesEvent, InvoicesState> {
   final InvoicesRepository invoicesRepository;
 
-  InvoicesBloc({required this.invoicesRepository}) : super(const InvoicesInitial()) {
+  InvoicesBloc({required this.invoicesRepository})
+      : super(const InvoicesInitial()) {
     on<LoadInvoicesRequested>(_onLoadInvoicesRequested);
     on<SaveTransactionRequested>(_onSaveTransactionRequested);
     on<DeleteTransactionRequested>(_onDeleteTransactionRequested);
     on<FilterInvoicesRequested>(_onFilterInvoicesRequested);
   }
 
-  List<BusinessTransaction> _filter(List<BusinessTransaction> txns, String query, String type) {
+  List<BusinessTransaction> _filter(
+      List<BusinessTransaction> txns, String query, String type) {
     return txns.where((t) {
       final matchesQuery = query.isEmpty ||
           t.number.toLowerCase().contains(query.toLowerCase()) ||
@@ -44,8 +46,11 @@ class InvoicesBloc extends Bloc<InvoicesEvent, InvoicesState> {
     try {
       await invoicesRepository.saveTransaction(event.transaction);
       final txns = await invoicesRepository.loadInvoices();
-      final currentType = state is InvoicesLoaded ? (state as InvoicesLoaded).selectedType : 'all';
-      final currentQuery = state is InvoicesLoaded ? (state as InvoicesLoaded).query : '';
+      final currentType = state is InvoicesLoaded
+          ? (state as InvoicesLoaded).selectedType
+          : 'all';
+      final currentQuery =
+          state is InvoicesLoaded ? (state as InvoicesLoaded).query : '';
       emit(InvoicesLoaded(
         transactions: txns,
         filteredTransactions: _filter(txns, currentQuery, currentType),
@@ -65,8 +70,11 @@ class InvoicesBloc extends Bloc<InvoicesEvent, InvoicesState> {
     try {
       await invoicesRepository.deleteTransaction(event.transaction);
       final txns = await invoicesRepository.loadInvoices();
-      final currentType = state is InvoicesLoaded ? (state as InvoicesLoaded).selectedType : 'all';
-      final currentQuery = state is InvoicesLoaded ? (state as InvoicesLoaded).query : '';
+      final currentType = state is InvoicesLoaded
+          ? (state as InvoicesLoaded).selectedType
+          : 'all';
+      final currentQuery =
+          state is InvoicesLoaded ? (state as InvoicesLoaded).query : '';
       emit(InvoicesLoaded(
         transactions: txns,
         filteredTransactions: _filter(txns, currentQuery, currentType),

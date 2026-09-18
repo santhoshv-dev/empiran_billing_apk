@@ -11,7 +11,8 @@ import 'package:empiran/models.dart';
 import '../bloc/products_bloc.dart';
 import '../bloc/products_event.dart';
 
-void showProductDialog(BuildContext context, {Item? item, String? initialCategory}) {
+void showProductDialog(BuildContext context,
+    {Item? item, String? initialCategory}) {
   showDialog(
     context: context,
     builder: (_) => MultiBlocProvider(
@@ -46,25 +47,30 @@ class _ProductDialogState extends State<_ProductDialog> {
   late bool _isService;
   late String _selectedCat;
   String? _image;
+  Uint8List? _imageBytes;
+  bool _isImageLoading = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
     final p = widget.item;
-    _name     = TextEditingController(text: p?.name          ?? '');
-    _hsn      = TextEditingController(text: p?.hsn           ?? '');
-    _code     = TextEditingController(text: p?.itemCode      ?? '');
+    _name = TextEditingController(text: p?.name ?? '');
+    _hsn = TextEditingController(text: p?.hsn ?? '');
+    _code = TextEditingController(text: p?.itemCode ?? '');
     _purchase = TextEditingController(text: '${p?.purchasePrice ?? 0}');
-    _sales    = TextEditingController(text: '${p?.salesPrice    ?? 0}');
-    _stock    = TextEditingController(text: '${p?.currentStock  ?? 0}');
-    _unit     = TextEditingController(text: p?.unit          ?? 'Pcs');
-    _low      = TextEditingController(text: '${p?.lowStockLimit ?? 5}');
+    _sales = TextEditingController(text: '${p?.salesPrice ?? 0}');
+    _stock = TextEditingController(text: '${p?.currentStock ?? 0}');
+    _unit = TextEditingController(text: p?.unit ?? 'Pcs');
+    _low = TextEditingController(text: '${p?.lowStockLimit ?? 5}');
     _isService  = p?.isService ?? false;
     _image      = p?.image;
+    _imageBytes = _decodeImage(_image);
 
     final settingsState = context.read<SettingsBloc>().state;
-    final categories = settingsState is SettingsLoaded ? settingsState.categories : ['General'];
+    final categories = settingsState is SettingsLoaded
+        ? settingsState.categories
+        : ['General'];
     _selectedCat = p?.category ?? widget.initialCategory ?? 'General';
     if (!categories.contains(_selectedCat)) {
       _selectedCat = categories.isNotEmpty ? categories.first : 'General';
@@ -85,14 +91,25 @@ class _ProductDialogState extends State<_ProductDialog> {
   }
 
   Future<void> _pickImage() async {
-    final f = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
-      maxWidth: 1000,
-    );
-    if (f != null) {
-      final bytes = await f.readAsBytes();
-      setState(() => _image = base64Encode(bytes));
+    setState(() => _isImageLoading = true);
+    try {
+      final f = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+        maxWidth: 1000,
+      );
+      if (f != null) {
+        final bytes = await f.readAsBytes();
+        final base64String = base64Encode(bytes);
+        if (mounted) {
+          setState(() {
+            _imageBytes = bytes;
+            _image = base64String;
+          });
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isImageLoading = false);
     }
   }
 
@@ -119,17 +136,17 @@ class _ProductDialogState extends State<_ProductDialog> {
 
     final savedItem = Item(
       id: widget.item?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
-      name:          _name.text.trim(),
-      hsn:           _hsn.text.trim(),
-      itemCode:      _code.text.trim(),
+      name: _name.text.trim(),
+      hsn: _hsn.text.trim(),
+      itemCode: _code.text.trim(),
       purchasePrice: double.parse(_purchase.text),
-      salesPrice:    double.parse(_sales.text),
-      currentStock:  double.parse(_stock.text),
-      category:      _selectedCat,
-      unit:          _unit.text.trim().isEmpty ? 'Pcs' : _unit.text.trim(),
+      salesPrice: double.parse(_sales.text),
+      currentStock: double.parse(_stock.text),
+      category: _selectedCat,
+      unit: _unit.text.trim().isEmpty ? 'Pcs' : _unit.text.trim(),
       lowStockLimit: double.tryParse(_low.text) ?? 5,
-      isService:     _isService,
-      image:         _image,
+      isService: _isService,
+      image: _image,
     );
 
     context.read<ProductsBloc>().add(SaveProductRequested(savedItem));
@@ -139,12 +156,12 @@ class _ProductDialogState extends State<_ProductDialog> {
   @override
   Widget build(BuildContext context) {
     final settingsState = context.watch<SettingsBloc>().state;
-    final categories = (settingsState is SettingsLoaded && settingsState.categories.isNotEmpty)
-        ? settingsState.categories
-        : ['General'];
+    final categories =
+        (settingsState is SettingsLoaded && settingsState.categories.isNotEmpty)
+            ? settingsState.categories
+            : ['General'];
     final isEdit = widget.item != null;
     final isNarrow = MediaQuery.sizeOf(context).width < 560;
-    final imageBytes = _decodeImage(_image);
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -188,9 +205,14 @@ class _ProductDialogState extends State<_ProductDialog> {
                   children: [
                     DropdownButtonFormField<String>(
                       isExpanded: true,
-                      initialValue: categories.contains(_selectedCat) ? _selectedCat : categories.first,
+                      initialValue: categories.contains(_selectedCat)
+                          ? _selectedCat
+                          : categories.first,
                       decoration: const InputDecoration(labelText: 'Category'),
-                      items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                      items: categories
+                          .map(
+                              (c) => DropdownMenuItem(value: c, child: Text(c)))
+                          .toList(),
                       onChanged: (v) {
                         if (v != null) setState(() => _selectedCat = v);
                       },
@@ -341,11 +363,18 @@ class _ProductDialogState extends State<_ProductDialog> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        if (imageBytes != null) ...[
+                        if (_isImageLoading) ...[
+                          const SizedBox(
+                            width: 54,
+                            height: 54,
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                          const SizedBox(width: 12),
+                        ] else if (_imageBytes != null) ...[
                           ClipRRect(
                             borderRadius: BorderRadius.circular(AppRadii.medium),
                             child: Image.memory(
-                              imageBytes,
+                              _imageBytes!,
                               width: 54,
                               height: 54,
                               fit: BoxFit.cover,
@@ -358,13 +387,15 @@ class _ProductDialogState extends State<_ProductDialog> {
                           icon: Icons.photo_library_outlined,
                           variant: EmpiranButtonVariant.outlined,
                           height: 40,
-                          onPressed: _pickImage,
+                          onPressed: _isImageLoading ? null : _pickImage,
                         ),
                       ],
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                      Text(_error!,
+                          style: const TextStyle(
+                              color: AppColors.error, fontSize: 13)),
                     ],
                   ],
                 ),
@@ -378,10 +409,13 @@ class _ProductDialogState extends State<_ProductDialog> {
                   if (isEdit)
                     TextButton(
                       onPressed: () {
-                        context.read<ProductsBloc>().add(DeleteProductRequested(widget.item!));
+                        context
+                            .read<ProductsBloc>()
+                            .add(DeleteProductRequested(widget.item!));
                         Navigator.pop(context);
                       },
-                      child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+                      child: const Text('Delete',
+                          style: TextStyle(color: AppColors.error)),
                     ),
                   const Spacer(),
                   TextButton(

@@ -23,11 +23,11 @@ abstract final class AppRadii {
 
 abstract final class AppColors {
   // Billing App Modern Executive Blue & Crisp White Palette
-  static const Color primary =
-      Color(0xFF1E50D8); // Rich Executive Royal Blue
+  static const Color primary = Color(0xFF1E50D8); // Rich Executive Royal Blue
   static const Color primaryDark = Color(0xFF1338A8);
   static const Color primaryLight = Color(0xFF3B82F6);
-  static const Color primarySubtle = Color(0xFFEFF6FF); // Crisp soft ice-blue tint
+  static const Color primarySubtle =
+      Color(0xFFEFF6FF); // Crisp soft ice-blue tint
   static const Color primaryGlow = Color(0x331E50D8);
 
   static const Color secondary = Color(0xFF0284C7); // Sky / Ocean Accent Blue
@@ -53,24 +53,27 @@ abstract final class AppColors {
   static const Color offline = Color(0xFFEA580C);
 
   // Blue with White Mixed Palette
-  static const Color lightBackground = Color(0xFFF8FAFC); // Airy, crisp soft slate-blue white canvas
+  static const Color lightBackground =
+      Color(0xFFF8FAFC); // Airy, crisp soft slate-blue white canvas
   static const Color lightSurface =
       Color(0xFFFFFFFF); // Pure pristine white card
-  static const Color lightSurfaceContainer = Color(0xFFF1F5F9); // Light container
+  static const Color lightSurfaceContainer =
+      Color(0xFFF1F5F9); // Light container
   static const Color lightSurfaceContainerHighest =
       Color(0xFFE2E8F0); // Subtle divider container
   static const Color lightBorder = Color(0xFFE2E8F0); // Modern slate border
   static const Color lightBorderStrong = Color(0xFFCBD5E1); // Accent outline
-  static const Color lightTextPrimary = Color(0xFF0F172A); // Deep Slate Navy for perfect readability
-  static const Color lightTextSecondary = Color(0xFF475569); // Refined Slate Grey
+  static const Color lightTextPrimary =
+      Color(0xFF0F172A); // Deep Slate Navy for perfect readability
+  static const Color lightTextSecondary =
+      Color(0xFF475569); // Refined Slate Grey
   static const Color lightTextMuted = Color(0xFF94A3B8);
 
   // Unified compatibility mappings (ensuring any legacy reference renders in the clean Blue & White palette)
   static const Color darkBackground = Color(0xFFF8FAFC);
   static const Color darkSurface = Color(0xFFFFFFFF);
   static const Color darkSurfaceContainer = Color(0xFFF1F5F9);
-  static const Color darkSurfaceContainerHighest =
-      Color(0xFFE2E8F0);
+  static const Color darkSurfaceContainerHighest = Color(0xFFE2E8F0);
   static const Color darkBorder = Color(0xFFE2E8F0);
   static const Color darkBorderStrong = Color(0xFFCBD5E1);
   static const Color darkTextPrimary = Color(0xFF0F172A);

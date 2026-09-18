@@ -158,7 +158,6 @@ String amountInWords(double value) {
   return 'INR ${say(rupees)}${paise > 0 ? ' and ${say(paise)} Paise' : ''} Only';
 }
 
-
 Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
   final doc = pw.Document();
   pw.MemoryImage? logo;
@@ -171,12 +170,15 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
   }
   const pageMargin = 12.0;
 
-  pw.Widget infoCell(String label, String value, {bool boldValue = false}) => pw.Padding(
+  pw.Widget infoCell(String label, String value, {bool boldValue = false}) =>
+      pw.Padding(
         padding: const pw.EdgeInsets.all(3),
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(label, style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+            pw.Text(label,
+                style: const pw.TextStyle(
+                    fontSize: 6.5, color: PdfColors.grey700)),
             pw.SizedBox(height: 1),
             pw.Text(
               value.isNotEmpty ? value : '-',
@@ -200,14 +202,20 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
         padding: pw.EdgeInsets.all(pad),
         child: pw.Text(
           text,
-          style: pw.TextStyle(fontSize: 7.5, fontWeight: bold ? pw.FontWeight.bold : null),
+          style: pw.TextStyle(
+              fontSize: 7.5, fontWeight: bold ? pw.FontWeight.bold : null),
         ),
       );
 
   final totalQty = t.lines.fold<double>(0, (a, b) => a + b.quantity);
-  final totalQtyFormatted = totalQty == totalQty.roundToDouble() ? totalQty.toStringAsFixed(0) : totalQty.toStringAsFixed(2);
+  final totalQtyFormatted = totalQty == totalQty.roundToDouble()
+      ? totalQty.toStringAsFixed(0)
+      : totalQty.toStringAsFixed(2);
   final taxableVal = (t.subtotal - t.discount).clamp(0, double.infinity);
-  final double fillerHeight = ((t.isGst ? 220.0 : 260.0) - (t.lines.length * 20.0) - (t.discount > 0 ? 14.0 : 0.0)).clamp(10.0, 220.0);
+  final double fillerHeight = ((t.isGst ? 220.0 : 260.0) -
+          (t.lines.length * 20.0) -
+          (t.discount > 0 ? 14.0 : 0.0))
+      .clamp(10.0, 220.0);
 
   pw.ThemeData? theme;
   try {
@@ -241,11 +249,15 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
               else
                 pw.Text(
                   c.displayName.toUpperCase(),
-                  style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.red900),
+                  style: pw.TextStyle(
+                      fontSize: 15,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.red900),
                 ),
               pw.Text(
                 'ORIGINAL FOR RECIPIENT',
-                style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
+                style:
+                    pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
               ),
             ],
           ),
@@ -288,15 +300,25 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                             child: pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
                               children: [
-                                pw.Text(c.displayName.toUpperCase(), style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                                pw.Text(c.displayName.toUpperCase(),
+                                    style: pw.TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: pw.FontWeight.bold)),
                                 if (c.address.isNotEmpty)
-                                  pw.Text(c.address, style: const pw.TextStyle(fontSize: 7.5)),
+                                  pw.Text(c.address,
+                                      style: const pw.TextStyle(fontSize: 7.5)),
                                 if (c.state.isNotEmpty)
-                                  pw.Text('${c.state}${c.stateCode.isNotEmpty ? ' - ${c.stateCode}' : ''}', style: const pw.TextStyle(fontSize: 7.5)),
+                                  pw.Text(
+                                      '${c.state}${c.stateCode.isNotEmpty ? ' - ${c.stateCode}' : ''}',
+                                      style: const pw.TextStyle(fontSize: 7.5)),
                                 if (c.gstin.isNotEmpty)
-                                  pw.Text('GSTIN/UIN #: ${c.gstin}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                                  pw.Text('GSTIN/UIN #: ${c.gstin}',
+                                      style: pw.TextStyle(
+                                          fontSize: 7.5,
+                                          fontWeight: pw.FontWeight.bold)),
                                 if (c.phone.isNotEmpty)
-                                  pw.Text('Phone #: ${c.phone}', style: const pw.TextStyle(fontSize: 7.5)),
+                                  pw.Text('Phone #: ${c.phone}',
+                                      style: const pw.TextStyle(fontSize: 7.5)),
                               ],
                             ),
                           ),
@@ -306,13 +328,24 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                             child: pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
                               children: [
-                                pw.Text('Consignee (Ship to)', style: pw.TextStyle(fontSize: 6.5, fontStyle: pw.FontStyle.italic)),
+                                pw.Text('Consignee (Ship to)',
+                                    style: pw.TextStyle(
+                                        fontSize: 6.5,
+                                        fontStyle: pw.FontStyle.italic)),
                                 pw.Text(
-                                  t.dispatch['consigneeName'] ?? (t.partyName.isNotEmpty ? t.partyName : 'ABM TRADERS'),
-                                  style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
+                                  t.dispatch['consigneeName'] ??
+                                      (t.partyName.isNotEmpty
+                                          ? t.partyName
+                                          : 'ABM TRADERS'),
+                                  style: pw.TextStyle(
+                                      fontSize: 8.5,
+                                      fontWeight: pw.FontWeight.bold),
                                 ),
                                 pw.Text(
-                                  t.dispatch['consigneeAddress'] ?? (t.partyAddress.isNotEmpty ? t.partyAddress : 'PARTY SITE'),
+                                  t.dispatch['consigneeAddress'] ??
+                                      (t.partyAddress.isNotEmpty
+                                          ? t.partyAddress
+                                          : 'PARTY SITE'),
                                   style: const pw.TextStyle(fontSize: 7.5),
                                 ),
                               ],
@@ -324,15 +357,24 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                             child: pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
                               children: [
-                                pw.Text('Buyer (Bill to)', style: pw.TextStyle(fontSize: 6.5, fontStyle: pw.FontStyle.italic)),
+                                pw.Text('Buyer (Bill to)',
+                                    style: pw.TextStyle(
+                                        fontSize: 6.5,
+                                        fontStyle: pw.FontStyle.italic)),
                                 pw.Text(
-                                  t.partyName.isNotEmpty ? t.partyName : 'Cash Customer',
-                                  style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
+                                  t.partyName.isNotEmpty
+                                      ? t.partyName
+                                      : 'Cash Customer',
+                                  style: pw.TextStyle(
+                                      fontSize: 8.5,
+                                      fontWeight: pw.FontWeight.bold),
                                 ),
                                 if (t.partyAddress.isNotEmpty)
-                                  pw.Text(t.partyAddress, style: const pw.TextStyle(fontSize: 7.5)),
+                                  pw.Text(t.partyAddress,
+                                      style: const pw.TextStyle(fontSize: 7.5)),
                                 if (t.partyGstin.isNotEmpty)
-                                  pw.Text('GSTIN/UIN : ${t.partyGstin}', style: const pw.TextStyle(fontSize: 7.5)),
+                                  pw.Text('GSTIN/UIN : ${t.partyGstin}',
+                                      style: const pw.TextStyle(fontSize: 7.5)),
                               ],
                             ),
                           ),
@@ -353,27 +395,44 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                         children: [
                           pw.TableRow(children: [
                             infoCell('Invoice No.', t.number, boldValue: true),
-                            infoCell('Invoice Date', DateFormat('dd/MM/yyyy').format(t.date)),
+                            infoCell('Invoice Date',
+                                DateFormat('dd/MM/yyyy').format(t.date)),
                           ]),
                           pw.TableRow(children: [
-                            infoCell('Mode/Terms of Payment', t.dispatch['paymentMode'] ?? t.paymentMode),
-                            infoCell('Payment Due:', DateFormat('dd/MM/yyyy').format(t.date)),
+                            infoCell('Mode/Terms of Payment',
+                                t.dispatch['paymentMode'] ?? t.paymentMode),
+                            infoCell('Payment Due:',
+                                DateFormat('dd/MM/yyyy').format(t.date)),
                           ]),
                           pw.TableRow(children: [
-                            infoCell('DC.No.', t.dispatch['deliveryNote'] ?? t.dispatch['dcNo'] ?? (t.dispatch['dispatchDocNo'] ?? '13039')),
-                            infoCell('Other Reference(s)', t.dispatch['reference'] ?? t.dispatch['otherReferences'] ?? ''),
+                            infoCell(
+                                'DC.No.',
+                                t.dispatch['deliveryNote'] ??
+                                    t.dispatch['dcNo'] ??
+                                    (t.dispatch['dispatchDocNo'] ?? '13039')),
+                            infoCell(
+                                'Other Reference(s)',
+                                t.dispatch['reference'] ??
+                                    t.dispatch['otherReferences'] ??
+                                    ''),
                           ]),
                           pw.TableRow(children: [
-                            infoCell('PO.Details', t.dispatch['buyersOrderNo'] ?? ''),
-                            infoCell('PO Date', t.dispatch['buyersOrderDate'] ?? ''),
+                            infoCell('PO.Details',
+                                t.dispatch['buyersOrderNo'] ?? ''),
+                            infoCell(
+                                'PO Date', t.dispatch['buyersOrderDate'] ?? ''),
                           ]),
                           pw.TableRow(children: [
-                            infoCell('Driver', t.dispatch['transportMode'] ?? ''),
-                            infoCell('Motor Vehicle No.', t.dispatch['vehicleNo'] ?? 'TN 97 T 4401'),
+                            infoCell(
+                                'Driver', t.dispatch['transportMode'] ?? ''),
+                            infoCell('Motor Vehicle No.',
+                                t.dispatch['vehicleNo'] ?? 'TN 97 T 4401'),
                           ]),
                           pw.TableRow(children: [
-                            infoCell('Terms of Delivery', t.dispatch['destination'] ?? ''),
-                            infoCell('Dispatch Doc No', t.dispatch['dispatchDocNo'] ?? ''),
+                            infoCell('Terms of Delivery',
+                                t.dispatch['destination'] ?? ''),
+                            infoCell('Dispatch Doc No',
+                                t.dispatch['dispatchDocNo'] ?? ''),
                           ]),
                         ],
                       ),
@@ -400,12 +459,16 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                 },
                 children: [
                   pw.TableRow(
-                    decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                    decoration:
+                        const pw.BoxDecoration(color: PdfColors.grey100),
                     children: [
                       tblCell('S.No', bold: true, align: pw.Alignment.center),
-                      tblCell('Description of Goods/Services', bold: true, align: pw.Alignment.center),
-                      tblCell('HSN/SAC', bold: true, align: pw.Alignment.center),
-                      tblCell('Quantity', bold: true, align: pw.Alignment.center),
+                      tblCell('Description of Goods/Services',
+                          bold: true, align: pw.Alignment.center),
+                      tblCell('HSN/SAC',
+                          bold: true, align: pw.Alignment.center),
+                      tblCell('Quantity',
+                          bold: true, align: pw.Alignment.center),
                       tblCell('Rate', bold: true, align: pw.Alignment.center),
                       tblCell('UOM', bold: true, align: pw.Alignment.center),
                       tblCell('Amount', bold: true, align: pw.Alignment.center),
@@ -420,21 +483,34 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                           child: pw.Column(
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
-                              pw.Text(t.lines[i].name, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                              pw.Text('Total Count : ${t.lines[i].quantity.toInt()}', style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+                              pw.Text(t.lines[i].name,
+                                  style: pw.TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: pw.FontWeight.bold)),
+                              pw.Text(
+                                  'Total Count : ${t.lines[i].quantity.toInt()}',
+                                  style: const pw.TextStyle(
+                                      fontSize: 6.5, color: PdfColors.grey700)),
                             ],
                           ),
                         ),
-                        tblCell(t.lines[i].hsn.isNotEmpty ? t.lines[i].hsn : '25171010', align: pw.Alignment.center),
                         tblCell(
-                          t.lines[i].quantity == t.lines[i].quantity.roundToDouble()
+                            t.lines[i].hsn.isNotEmpty
+                                ? t.lines[i].hsn
+                                : '25171010',
+                            align: pw.Alignment.center),
+                        tblCell(
+                          t.lines[i].quantity ==
+                                  t.lines[i].quantity.roundToDouble()
                               ? t.lines[i].quantity.toStringAsFixed(0)
                               : t.lines[i].quantity.toStringAsFixed(2),
                           align: pw.Alignment.centerRight,
                         ),
-                        tblCell('Rs. ${t.lines[i].price.toStringAsFixed(2)}', align: pw.Alignment.centerRight),
+                        tblCell('Rs. ${t.lines[i].price.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight),
                         tblCell(t.lines[i].unit, align: pw.Alignment.center),
-                        tblCell('Rs. ${t.lines[i].total.toStringAsFixed(2)}', align: pw.Alignment.centerRight),
+                        tblCell('Rs. ${t.lines[i].total.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight),
                       ],
                     ),
 
@@ -463,10 +539,14 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                         pw.Container(
                           alignment: pw.Alignment.centerRight,
                           padding: const pw.EdgeInsets.all(3),
-                          child: pw.Text('Discount:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7.5)),
+                          child: pw.Text('Discount:',
+                              style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 7.5)),
                         ),
                         tblCell(''),
-                        tblCell('-Rs. ${t.discount.toStringAsFixed(2)}', align: pw.Alignment.centerRight, bold: true),
+                        tblCell('-Rs. ${t.discount.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight, bold: true),
                       ],
                     ),
 
@@ -481,10 +561,14 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                         pw.Container(
                           alignment: pw.Alignment.centerRight,
                           padding: const pw.EdgeInsets.all(3),
-                          child: pw.Text('CGST 9%', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7.5)),
+                          child: pw.Text('CGST 9%',
+                              style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 7.5)),
                         ),
                         tblCell(''),
-                        tblCell('Rs. ${t.cgst.toStringAsFixed(2)}', align: pw.Alignment.centerRight, bold: true),
+                        tblCell('Rs. ${t.cgst.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight, bold: true),
                       ],
                     ),
                     pw.TableRow(
@@ -496,10 +580,14 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                         pw.Container(
                           alignment: pw.Alignment.centerRight,
                           padding: const pw.EdgeInsets.all(3),
-                          child: pw.Text('SGST 9%', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7.5)),
+                          child: pw.Text('SGST 9%',
+                              style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 7.5)),
                         ),
                         tblCell(''),
-                        tblCell('Rs. ${t.sgst.toStringAsFixed(2)}', align: pw.Alignment.centerRight, bold: true),
+                        tblCell('Rs. ${t.sgst.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight, bold: true),
                       ],
                     ),
                     pw.TableRow(
@@ -511,25 +599,32 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                         pw.Container(
                           alignment: pw.Alignment.centerRight,
                           padding: const pw.EdgeInsets.all(3),
-                          child: pw.Text('Round_off:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7.5)),
+                          child: pw.Text('Round_off:',
+                              style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 7.5)),
                         ),
                         tblCell(''),
-                        tblCell('Rs. 0.00', align: pw.Alignment.centerRight, bold: true),
+                        tblCell('Rs. 0.00',
+                            align: pw.Alignment.centerRight, bold: true),
                       ],
                     ),
                   ],
 
                   // Grand Total row
                   pw.TableRow(
-                    decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                    decoration:
+                        const pw.BoxDecoration(color: PdfColors.grey100),
                     children: [
                       tblCell(''),
                       tblCell('Total', bold: true, align: pw.Alignment.center),
                       tblCell(''),
-                      tblCell(totalQtyFormatted, align: pw.Alignment.centerRight, bold: true),
+                      tblCell(totalQtyFormatted,
+                          align: pw.Alignment.centerRight, bold: true),
                       tblCell(''),
                       tblCell(''),
-                      tblCell('Rs. ${t.total.toStringAsFixed(2)}', align: pw.Alignment.centerRight, bold: true),
+                      tblCell('Rs. ${t.total.toStringAsFixed(2)}',
+                          align: pw.Alignment.centerRight, bold: true),
                     ],
                   ),
                 ],
@@ -537,15 +632,20 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
 
               // Amount in Words
               pw.Container(
-                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
-                padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                decoration: const pw.BoxDecoration(
+                    border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
+                padding:
+                    const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('Amount in Words', style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+                    pw.Text('Amount in Words',
+                        style: const pw.TextStyle(
+                            fontSize: 6.5, color: PdfColors.grey700)),
                     pw.Text(
                       amountInWords(t.total).replaceFirst('INR', 'Rupees'),
-                      style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(
+                          fontSize: 7.5, fontWeight: pw.FontWeight.bold),
                     ),
                   ],
                 ),
@@ -570,26 +670,42 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                   },
                   children: [
                     pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                      decoration:
+                          const pw.BoxDecoration(color: PdfColors.grey100),
                       children: [
-                        tblCell('HSN/SAC', bold: true, align: pw.Alignment.center),
-                        tblCell('Taxable Value', bold: true, align: pw.Alignment.center),
-                        tblCell('CGST %', bold: true, align: pw.Alignment.center),
-                        tblCell('CGST Amount', bold: true, align: pw.Alignment.center),
-                        tblCell('SGST %', bold: true, align: pw.Alignment.center),
-                        tblCell('SGST Amount', bold: true, align: pw.Alignment.center),
-                        tblCell('Total Tax', bold: true, align: pw.Alignment.center),
+                        tblCell('HSN/SAC',
+                            bold: true, align: pw.Alignment.center),
+                        tblCell('Taxable Value',
+                            bold: true, align: pw.Alignment.center),
+                        tblCell('CGST %',
+                            bold: true, align: pw.Alignment.center),
+                        tblCell('CGST Amount',
+                            bold: true, align: pw.Alignment.center),
+                        tblCell('SGST %',
+                            bold: true, align: pw.Alignment.center),
+                        tblCell('SGST Amount',
+                            bold: true, align: pw.Alignment.center),
+                        tblCell('Total Tax',
+                            bold: true, align: pw.Alignment.center),
                       ],
                     ),
                     pw.TableRow(
                       children: [
-                        tblCell(t.lines.isNotEmpty && t.lines.first.hsn.isNotEmpty ? t.lines.first.hsn : '25171010', align: pw.Alignment.center),
-                        tblCell('Rs. ${taxableVal.toStringAsFixed(2)}', align: pw.Alignment.centerRight),
+                        tblCell(
+                            t.lines.isNotEmpty && t.lines.first.hsn.isNotEmpty
+                                ? t.lines.first.hsn
+                                : '25171010',
+                            align: pw.Alignment.center),
+                        tblCell('Rs. ${taxableVal.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight),
                         tblCell('9%', align: pw.Alignment.center),
-                        tblCell('Rs. ${t.cgst.toStringAsFixed(2)}', align: pw.Alignment.centerRight),
+                        tblCell('Rs. ${t.cgst.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight),
                         tblCell('9%', align: pw.Alignment.center),
-                        tblCell('Rs. ${t.sgst.toStringAsFixed(2)}', align: pw.Alignment.centerRight),
-                        tblCell('Rs. ${(t.cgst + t.sgst).toStringAsFixed(2)}', align: pw.Alignment.centerRight),
+                        tblCell('Rs. ${t.sgst.toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight),
+                        tblCell('Rs. ${(t.cgst + t.sgst).toStringAsFixed(2)}',
+                            align: pw.Alignment.centerRight),
                       ],
                     ),
                   ],
@@ -597,12 +713,15 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
 
               // Declaration Box
               pw.Container(
-                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
+                decoration: const pw.BoxDecoration(
+                    border: pw.Border(bottom: pw.BorderSide(width: 0.6))),
                 padding: const pw.EdgeInsets.all(5),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('Declaration', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Declaration',
+                        style: pw.TextStyle(
+                            fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 2),
                     pw.Text(
                       'We declare that this invoice shows the actual price of the goods described and that all particulars are as true and correct.',
@@ -610,7 +729,8 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                     ),
                     pw.Text(
                       '*This is computer generated invoice no signature required*',
-                      style: pw.TextStyle(fontSize: 6.5, fontStyle: pw.FontStyle.italic),
+                      style: pw.TextStyle(
+                          fontSize: 6.5, fontStyle: pw.FontStyle.italic),
                     ),
                   ],
                 ),
@@ -627,15 +747,28 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                     children: [
                       pw.Container(
                         padding: const pw.EdgeInsets.all(5),
-                        decoration: const pw.BoxDecoration(border: pw.Border(right: pw.BorderSide(width: 0.6))),
+                        decoration: const pw.BoxDecoration(
+                            border:
+                                pw.Border(right: pw.BorderSide(width: 0.6))),
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text('COMPANY BANK DETAILS', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                            pw.Text('COMPANY BANK DETAILS',
+                                style: pw.TextStyle(
+                                    fontSize: 7.5,
+                                    fontWeight: pw.FontWeight.bold)),
                             pw.SizedBox(height: 2),
-                            pw.Text('Bank Name : ${c.bankName.isNotEmpty ? c.bankName : 'ICICI BANK LIMITED'}', style: const pw.TextStyle(fontSize: 7)),
-                            pw.Text('A/C No. : ${c.accountNo.isNotEmpty ? c.accountNo : '606605027347'}', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
-                            pw.Text('Branch & IFSC : ${c.branch.isNotEmpty ? c.branch : 'Kancheepuram'} / ${c.ifsc.isNotEmpty ? c.ifsc : 'ICIC0006066'}', style: const pw.TextStyle(fontSize: 7)),
+                            pw.Text(
+                                'Bank Name : ${c.bankName.isNotEmpty ? c.bankName : 'ICICI BANK LIMITED'}',
+                                style: const pw.TextStyle(fontSize: 7)),
+                            pw.Text(
+                                'A/C No. : ${c.accountNo.isNotEmpty ? c.accountNo : '606605027347'}',
+                                style: pw.TextStyle(
+                                    fontSize: 7,
+                                    fontWeight: pw.FontWeight.bold)),
+                            pw.Text(
+                                'Branch & IFSC : ${c.branch.isNotEmpty ? c.branch : 'Kancheepuram'} / ${c.ifsc.isNotEmpty ? c.ifsc : 'ICIC0006066'}',
+                                style: const pw.TextStyle(fontSize: 7)),
                           ],
                         ),
                       ),
@@ -644,9 +777,15 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.end,
                           children: [
-                            pw.Text('For ${c.displayName.toUpperCase()}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                            pw.Text('For ${c.displayName.toUpperCase()}',
+                                style: pw.TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: pw.FontWeight.bold)),
                             pw.SizedBox(height: 25),
-                            pw.Text('Authorised Signatory', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                            pw.Text('Authorised Signatory',
+                                style: pw.TextStyle(
+                                    fontSize: 7.5,
+                                    fontWeight: pw.FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -667,8 +806,11 @@ Future<Uint8List> buildInvoicePdf(Company c, BusinessTransaction t) async {
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('${c.displayName} - Copyright 2026', style: const pw.TextStyle(fontSize: 6.5)),
-              pw.Text('Computer generated Invoice. No signature required.', style: pw.TextStyle(fontSize: 6.5, fontStyle: pw.FontStyle.italic)),
+              pw.Text('${c.displayName} - Copyright 2026',
+                  style: const pw.TextStyle(fontSize: 6.5)),
+              pw.Text('Computer generated Invoice. No signature required.',
+                  style: pw.TextStyle(
+                      fontSize: 6.5, fontStyle: pw.FontStyle.italic)),
             ],
           ),
         ),
@@ -856,7 +998,8 @@ Future<Uint8List> buildThermalReceiptPdf(
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('GST @ 18% (CGST 9% + SGST 9%):', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text('GST @ 18% (CGST 9% + SGST 9%):',
+                  style: const pw.TextStyle(fontSize: 8)),
               pw.Text(money.format(t.cgst + t.sgst),
                   style: const pw.TextStyle(fontSize: 8)),
             ],

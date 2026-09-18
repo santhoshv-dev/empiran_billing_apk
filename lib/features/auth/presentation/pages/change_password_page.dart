@@ -68,7 +68,8 @@ class _ChangePasswordFormState extends State<ChangePasswordForm> {
     try {
       if (widget.isForgot) {
         await repo.forgotPassword(_emailController.text.trim());
-        _message = 'A temporary password has been sent to your email.\n\nLog in with it, then go to Settings → Change Password to set a new password.';
+        _message =
+            'A temporary password has been sent to your email.\n\nLog in with it, then go to Settings → Change Password to set a new password.';
       } else {
         await repo.changePassword(
           currentPassword: _currentPasswordController.text,
@@ -126,8 +127,9 @@ class _ChangePasswordFormState extends State<ChangePasswordForm> {
                     labelText: 'Current Password',
                     prefixIcon: Icon(Icons.lock_outline),
                   ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Enter current password.' : null,
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Enter current password.'
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -137,8 +139,9 @@ class _ChangePasswordFormState extends State<ChangePasswordForm> {
                     labelText: 'New Password',
                     prefixIcon: Icon(Icons.vpn_key_outlined),
                   ),
-                  validator: (value) =>
-                      value != null && value.length >= 8 ? null : 'Minimum 8 characters.',
+                  validator: (value) => value != null && value.length >= 8
+                      ? null
+                      : 'Minimum 8 characters.',
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -162,7 +165,8 @@ class _ChangePasswordFormState extends State<ChangePasswordForm> {
                 const SizedBox(height: 16),
               ],
               EmpiranButton(
-                label: widget.isForgot ? 'Send Instructions' : 'Update Password',
+                label:
+                    widget.isForgot ? 'Send Instructions' : 'Update Password',
                 isLoading: _busy,
                 onPressed: _submit,
               ),
@@ -185,7 +189,8 @@ class _ChangePasswordFormState extends State<ChangePasswordForm> {
               const SizedBox(height: 20),
               EmpiranButton(
                 label: widget.successActionLabel ?? 'Back to Login',
-                onPressed: widget.onSuccessAction ?? () => Navigator.of(context).pop(),
+                onPressed:
+                    widget.onSuccessAction ?? () => Navigator.of(context).pop(),
               ),
             ],
           ],

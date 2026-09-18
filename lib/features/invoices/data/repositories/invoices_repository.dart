@@ -21,7 +21,8 @@ class InvoicesRepository {
               remoteRows.map((r) => BusinessTransaction.fromJson(r)).toList();
 
           for (final t in remoteTxns) {
-            await DbHelper.instance.insertOrUpdate('transactions', t.toJson(), t.id);
+            await DbHelper.instance
+                .insertOrUpdate('transactions', t.toJson(), t.id);
           }
           return remoteTxns;
         }
@@ -35,7 +36,8 @@ class InvoicesRepository {
     if (isGst) {
       final fy = FinancialYearService.currentTag();
       final tag = fy.isNotEmpty ? fy : settings.gstYear;
-      final num = '${tag.replaceAll('-', '')}/${settings.gstCounter.toString().padLeft(4, '0')}';
+      final num =
+          '${tag.replaceAll('-', '')}/${settings.gstCounter.toString().padLeft(4, '0')}';
       settings.gstCounter++;
       return num;
     } else {
@@ -46,7 +48,8 @@ class InvoicesRepository {
   }
 
   Future<void> saveTransaction(BusinessTransaction txn) async {
-    await DbHelper.instance.insertOrUpdate('transactions', txn.toJson(), txn.id);
+    await DbHelper.instance
+        .insertOrUpdate('transactions', txn.toJson(), txn.id);
 
     if (apiClient.token != null && apiClient.token!.isNotEmpty) {
       try {

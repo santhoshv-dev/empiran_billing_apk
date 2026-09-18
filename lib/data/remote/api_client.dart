@@ -308,7 +308,8 @@ class ApiClient {
           '/businesses/$businessId/categories/$categoryId/image/base64',
           data: {'base64Data': base64}));
 
-  Future<void> deleteCategoryImage(String businessId, String categoryId) async =>
+  Future<void> deleteCategoryImage(
+          String businessId, String categoryId) async =>
       dio.delete('/businesses/$businessId/categories/$categoryId/image');
 
   Future<List<Map<String, dynamic>>> getStaff(String id) async =>
@@ -424,7 +425,10 @@ class ApiClient {
   Future<String?> getActiveBusinessId() async {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString('company_id');
-    if (cached != null && cached.isNotEmpty && cached != 'local' && _isGuid(cached)) {
+    if (cached != null &&
+        cached.isNotEmpty &&
+        cached != 'local' &&
+        _isGuid(cached)) {
       return cached;
     }
     if (token != null && token!.isNotEmpty) {

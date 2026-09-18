@@ -6,7 +6,8 @@ import 'settings_state.dart';
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final SettingsRepository settingsRepository;
 
-  SettingsBloc({required this.settingsRepository}) : super(const SettingsInitial()) {
+  SettingsBloc({required this.settingsRepository})
+      : super(const SettingsInitial()) {
     on<LoadSettingsRequested>(_onLoadSettingsRequested);
     on<SaveCompanyRequested>(_onSaveCompanyRequested);
     on<SaveInvoiceSettingsRequested>(_onSaveInvoiceSettingsRequested);
@@ -106,7 +107,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       newTrimmed,
       imageBase64: event.imageBase64,
     );
-    final updated = current.categories.map((c) => c == oldTrimmed ? newTrimmed : c).toList();
+    final updated = current.categories
+        .map((c) => c == oldTrimmed ? newTrimmed : c)
+        .toList();
     if (!updated.contains(newTrimmed)) {
       updated.add(newTrimmed);
     }
@@ -119,7 +122,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     if (state is! SettingsLoaded) return;
     final current = state as SettingsLoaded;
-    final updated = List<String>.from(current.categories)..remove(event.category.trim());
+    final updated = List<String>.from(current.categories)
+      ..remove(event.category.trim());
     await settingsRepository.deleteCategory(event.category);
     emit(current.copyWith(categories: updated));
   }

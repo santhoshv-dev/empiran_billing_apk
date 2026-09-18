@@ -57,12 +57,20 @@ class StaffManagementTab extends StatelessWidget {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
-                    initialValue: ['Admin', 'Manager', 'Biller'].contains(role) ? role : 'Biller',
+                    initialValue: ['Admin', 'Manager', 'Biller'].contains(role)
+                        ? role
+                        : 'Biller',
                     decoration: const InputDecoration(labelText: 'Staff Role'),
                     items: const [
-                      DropdownMenuItem(value: 'Admin', child: Text('Administrator (Full Control)')),
-                      DropdownMenuItem(value: 'Manager', child: Text('Manager (Reports & Billing)')),
-                      DropdownMenuItem(value: 'Biller', child: Text('Biller (Billing Only)')),
+                      DropdownMenuItem(
+                          value: 'Admin',
+                          child: Text('Administrator (Full Control)')),
+                      DropdownMenuItem(
+                          value: 'Manager',
+                          child: Text('Manager (Reports & Billing)')),
+                      DropdownMenuItem(
+                          value: 'Biller',
+                          child: Text('Biller (Billing Only)')),
                     ],
                     onChanged: (v) {
                       if (v != null) setState(() => role = v);
@@ -70,7 +78,9 @@ class StaffManagementTab extends StatelessWidget {
                   ),
                   if (error != null) ...[
                     const SizedBox(height: 12),
-                    Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                    Text(error!,
+                        style: const TextStyle(
+                            color: AppColors.error, fontSize: 13)),
                   ],
                 ],
               ),
@@ -84,8 +94,12 @@ class StaffManagementTab extends StatelessWidget {
             EmpiranButton(
               label: isEdit ? 'Update' : 'Create',
               onPressed: () {
-                if (name.text.trim().isEmpty || (!isEdit && (username.text.trim().isEmpty || password.text.isEmpty))) {
-                  setState(() => error = 'Name, username, and password are required.');
+                if (name.text.trim().isEmpty ||
+                    (!isEdit &&
+                        (username.text.trim().isEmpty ||
+                            password.text.isEmpty))) {
+                  setState(() =>
+                      error = 'Name, username, and password are required.');
                   return;
                 }
 
@@ -96,7 +110,8 @@ class StaffManagementTab extends StatelessWidget {
                           username: user['username']!,
                           name: name.text.trim(),
                           email: email.text.trim(),
-                          password: password.text.isNotEmpty ? password.text : null,
+                          password:
+                              password.text.isNotEmpty ? password.text : null,
                           role: role,
                         ),
                       );
@@ -163,7 +178,8 @@ class StaffManagementTab extends StatelessWidget {
                     children: [
                       Text(
                         'Staff Accounts & Access',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                       Text(
                         'Authorized billers, managers and administrators',
@@ -184,7 +200,8 @@ class StaffManagementTab extends StatelessWidget {
               Expanded(
                 child: EmpiranEmptyState(
                   title: 'No staff accounts configured',
-                  description: 'Add staff members to grant billing or administrative access.',
+                  description:
+                      'Add staff members to grant billing or administrative access.',
                   icon: Icons.manage_accounts_outlined,
                   actionLabel: 'Add Staff Member',
                   onAction: () => _showUserDialog(context),
@@ -202,10 +219,15 @@ class StaffManagementTab extends StatelessWidget {
                         final isCardCompact = cardConstraints.maxWidth < 520;
 
                         final avatar = CircleAvatar(
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
                           child: Text(
-                            (u['name']?.isNotEmpty ?? false) ? u['name']![0].toUpperCase() : 'U',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                            (u['name']?.isNotEmpty ?? false)
+                                ? u['name']![0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary),
                           ),
                         );
 
@@ -214,19 +236,22 @@ class StaffManagementTab extends StatelessWidget {
                           children: [
                             Text(
                               u['name'] ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14),
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               '${u['username']} • ${u['email'] ?? 'No email'}',
-                              style: const TextStyle(color: Colors.grey, fontSize: 12),
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         );
 
                         final roleBadge = Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.secondary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(AppRadii.small),
@@ -251,7 +276,8 @@ class StaffManagementTab extends StatelessWidget {
                             ),
                             IconButton(
                               tooltip: 'Remove',
-                              icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                              icon: const Icon(Icons.delete_outline,
+                                  size: 20, color: AppColors.error),
                               onPressed: () {
                                 context
                                     .read<SettingsBloc>()
@@ -280,7 +306,8 @@ class StaffManagementTab extends StatelessWidget {
                                 const SizedBox(height: 8),
                                 const Divider(height: 1),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     roleBadge,
                                     actions,
@@ -292,7 +319,8 @@ class StaffManagementTab extends StatelessWidget {
                         }
 
                         return EmpiranCard(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                           child: Row(
                             children: [
                               avatar,

@@ -21,7 +21,10 @@ class UserModel extends Equatable {
     return UserModel(
       id: json['id']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
-      name: json['name']?.toString() ?? json['displayName']?.toString() ?? json['username']?.toString() ?? '',
+      name: json['name']?.toString() ??
+          json['displayName']?.toString() ??
+          json['username']?.toString() ??
+          '',
       email: json['email']?.toString() ?? '',
       role: json['role']?.toString() ?? 'Biller',
       token: token ?? json['token']?.toString(),

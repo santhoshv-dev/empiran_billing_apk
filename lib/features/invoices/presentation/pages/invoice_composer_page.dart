@@ -26,12 +26,14 @@ class InvoiceComposerPage extends StatefulWidget {
   final String type; // 'order', 'quotation', 'purchase', etc.
   final BusinessTransaction? source;
   final bool embedded;
+  final bool isEditing;
 
   const InvoiceComposerPage({
     super.key,
     this.type = 'order',
     this.source,
     this.embedded = false,
+    this.isEditing = false,
   });
 
   @override
@@ -58,16 +60,18 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
   bool _busy = false;
   final Map<String, String> _dispatch = {};
   String? _error;
-  final DateTime _date = DateTime.now();
+  late DateTime _date;
 
   // Step state for Quotation Maker flow: Step 0 = Customer details (Optional), Step 1 = Products & Ordering
   late int _quotationStep;
   Map<String, String> _categoryImages = {};
 
   bool get _isPayment => widget.type.startsWith('payment_');
-  double get _subtotal => _isPayment ? _amount : _lines.fold(0, (s, l) => s + l.total);
+  double get _subtotal =>
+      _isPayment ? _amount : _lines.fold(0, (s, l) => s + l.total);
   double get _effectiveDiscount => _discount;
-  double get _taxableAmount => (_subtotal - _effectiveDiscount).clamp(0, double.infinity);
+  double get _taxableAmount =>
+      (_subtotal - _effectiveDiscount).clamp(0, double.infinity);
   double get _cgst => _isGst ? _taxableAmount * 0.09 : 0;
   double get _sgst => _isGst ? _taxableAmount * 0.09 : 0;
   double get _total => _taxableAmount + _cgst + _sgst + _shipping;
@@ -75,6 +79,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
   @override
   void initState() {
     super.initState();
+    _date = widget.source != null && widget.isEditing
+        ? widget.source!.date
+        : DateTime.now();
     // Quotation maker starts at Step 0 (Ask for Customer Name & Mobile Number first)
     _quotationStep = widget.type == 'quotation' ? 0 : 1;
 
@@ -91,7 +98,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
       _notesController.text = s.notes;
       _referredByController.text = s.referredBy ?? '';
       _isGst = s.isGst;
-      _quotationStep = 1; // If editing or converting existing source, jump straight to products
+      _dispatch.addAll(s.dispatch);
+      _quotationStep =
+          1; // If editing or converting existing source, jump straight to products
     }
 
     _loadCategoryImages();
@@ -99,7 +108,10 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
 
   Future<void> _loadCategoryImages() async {
     try {
-      final images = await context.read<SettingsBloc>().settingsRepository.loadCategoryImages();
+      final images = await context
+          .read<SettingsBloc>()
+          .settingsRepository
+          .loadCategoryImages();
       if (mounted) {
         setState(() => _categoryImages = images);
       }
@@ -143,7 +155,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
             name: item.name,
             quantity: 1,
             unit: item.unit,
-            price: widget.type.startsWith('purchase') ? item.purchasePrice : item.salesPrice,
+            price: widget.type.startsWith('purchase')
+                ? item.purchasePrice
+                : item.salesPrice,
             hsn: item.hsn,
           ),
         );
@@ -174,20 +188,28 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
 
     try {
       if (_isPayment && (_partyId == null || _amount <= 0)) {
-        throw ArgumentError('Select a party and enter an amount greater than zero.');
+        throw ArgumentError(
+            'Select a party and enter an amount greater than zero.');
       }
       if (!_isPayment && _lines.isEmpty) {
         throw ArgumentError('Add at least one product to continue.');
       }
 
       final settingsState = context.read<SettingsBloc>().state;
-      final settings = settingsState is SettingsLoaded ? settingsState.invoiceSettings : InvoiceSettings();
+      final settings = settingsState is SettingsLoaded
+          ? settingsState.invoiceSettings
+          : InvoiceSettings();
 
       final invoicesRepo = context.read<InvoicesBloc>().invoicesRepository;
       final source = widget.source;
-      final number = source?.number ?? invoicesRepo.generateNumber(widget.type, _isGst, settings);
-      if (source == null) {
-        context.read<SettingsBloc>().add(SaveInvoiceSettingsRequested(settings));
+      final isEditing = widget.isEditing && source != null;
+      final number = isEditing
+          ? source.number
+          : invoicesRepo.generateNumber(widget.type, _isGst, settings);
+      if (!isEditing) {
+        context
+            .read<SettingsBloc>()
+            .add(SaveInvoiceSettingsRequested(settings));
       }
 
       // Auto-save customer details in Customer Section (Requirement 8)
@@ -195,10 +217,13 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
       final custPhone = _phoneController.text.trim();
       if (custName.isNotEmpty && _partyId == null) {
         final partyState = context.read<PartiesBloc>().state;
-        final existingParties = partyState is PartiesLoaded ? partyState.parties : <Party>[];
-        final match = existingParties.where((p) =>
-            p.name.toLowerCase() == custName.toLowerCase() ||
-            (custPhone.isNotEmpty && p.phone == custPhone)).firstOrNull;
+        final existingParties =
+            partyState is PartiesLoaded ? partyState.parties : <Party>[];
+        final match = existingParties
+            .where((p) =>
+                p.name.toLowerCase() == custName.toLowerCase() ||
+                (custPhone.isNotEmpty && p.phone == custPhone))
+            .firstOrNull;
         if (match != null) {
           _partyId = match.id;
         } else {
@@ -217,11 +242,15 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
       // Read current logged-in staff/admin name
       final authState = context.read<AuthBloc>().state;
       final staffName = authState is AuthAuthenticated
-          ? (authState.user.name.isNotEmpty ? authState.user.name : authState.user.username)
+          ? (authState.user.name.isNotEmpty
+              ? authState.user.name
+              : authState.user.username)
           : 'Admin';
 
       final txn = BusinessTransaction(
-        id: source?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        id: isEditing
+            ? source.id
+            : DateTime.now().microsecondsSinceEpoch.toString(),
         type: widget.type,
         number: number,
         date: _date,
@@ -229,7 +258,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
             ? [
                 InvoiceLine(
                   itemId: '',
-                  name: widget.type == 'payment_in' ? 'Payment In' : 'Payment Out',
+                  name: widget.type == 'payment_in'
+                      ? 'Payment In'
+                      : 'Payment Out',
                   quantity: 1,
                   unit: '',
                   price: _amount,
@@ -239,6 +270,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
         partyId: _partyId,
         partyName: custName,
         partyPhone: custPhone,
+        partyAddress: source?.partyAddress ?? '',
+        partyGstin: source?.partyGstin ?? '',
         isGst: _isGst,
         paid: _isPayment ? 0 : _paid,
         paymentMode: _paymentMode,
@@ -249,21 +282,52 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
         discount: _effectiveDiscount,
         shipping: _shipping,
         notes: _notesController.text,
-        referredBy: _referredByController.text.trim().isNotEmpty ? _referredByController.text.trim() : (source?.referredBy ?? staffName),
-        convertedFrom: source?.type == 'quotation' && widget.type != 'quotation'
+        referredBy: _referredByController.text.trim().isNotEmpty
+            ? _referredByController.text.trim()
+            : (source?.referredBy ?? staffName),
+        convertedFrom: !isEditing &&
+                source?.type == 'quotation' &&
+                widget.type != 'quotation'
             ? source!.id
             : source?.convertedFrom,
       );
 
-      // If creating an order, deduct stock for the ordered products (Requirement 3)
+      // If creating or updating an order, keep product stock aligned with quantity changes.
       if (widget.type == 'order') {
+        final oldQuantities = <String, double>{};
+        if (isEditing && source.type == 'order') {
+          for (final line in source.lines) {
+            if (line.itemId.isNotEmpty) {
+              oldQuantities[line.itemId] =
+                  (oldQuantities[line.itemId] ?? 0) + line.quantity;
+            }
+          }
+        }
+
+        final newQuantities = <String, double>{};
         for (final line in _lines) {
           if (line.itemId.isNotEmpty) {
+            newQuantities[line.itemId] =
+                (newQuantities[line.itemId] ?? 0) + line.quantity;
+          }
+        }
+
+        final itemIds = {...oldQuantities.keys, ...newQuantities.keys};
+        for (final itemId in itemIds) {
+          final oldQty = oldQuantities[itemId] ?? 0;
+          final newQty = newQuantities[itemId] ?? 0;
+          final delta = newQty - oldQty;
+          if (delta != 0) {
             try {
-              await context.read<ProductsBloc>().productsRepository.adjustStockById(
-                    line.itemId,
-                    -line.quantity,
-                    reason: 'Order placed: #$number',
+              await context
+                  .read<ProductsBloc>()
+                  .productsRepository
+                  .adjustStockById(
+                    itemId,
+                    -delta,
+                    reason: isEditing
+                        ? 'Order updated: #$number'
+                        : 'Order placed: #$number',
                   );
             } catch (_) {}
           }
@@ -318,7 +382,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
               : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.2),
+            color: isSelected
+                ? AppColors.primary
+                : Colors.grey.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -352,14 +418,18 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         fit: BoxFit.cover,
                         gaplessPlayback: true,
                         errorBuilder: (_, __, ___) => Icon(
-                          cat == 'All' ? Icons.apps_rounded : Icons.category_outlined,
+                          cat == 'All'
+                              ? Icons.apps_rounded
+                              : Icons.category_outlined,
                           color: isSelected ? AppColors.primary : Colors.grey,
                           size: 22,
                         ),
                       ),
                     )
                   : Icon(
-                      cat == 'All' ? Icons.apps_rounded : Icons.category_outlined,
+                      cat == 'All'
+                          ? Icons.apps_rounded
+                          : Icons.category_outlined,
                       color: isSelected ? AppColors.primary : Colors.grey,
                       size: 22,
                     ),
@@ -408,7 +478,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.request_quote_rounded, color: AppColors.primary, size: 28),
+                      child: const Icon(Icons.request_quote_rounded,
+                          color: AppColors.primary, size: 28),
                     ),
                     const SizedBox(width: 14),
                     const Expanded(
@@ -417,7 +488,10 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         children: [
                           Text(
                             'Quotation Maker',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary),
                           ),
                           SizedBox(height: 2),
                           Text(
@@ -432,18 +506,21 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                 const SizedBox(height: 20),
                 const Text(
                   'Customer Name and Mobile Number are optional. You can enter them now or continue directly to browse products.',
-                  style: TextStyle(fontSize: 13, color: AppColors.lightTextSecondary),
+                  style: TextStyle(
+                      fontSize: 13, color: AppColors.lightTextSecondary),
                 ),
                 const SizedBox(height: 20),
                 if (parties.isNotEmpty) ...[
                   Autocomplete<Party>(
-                    displayStringForOption: (option) => '${option.name} (${option.phone})',
+                    displayStringForOption: (option) =>
+                        '${option.name} (${option.phone})',
                     optionsBuilder: (textEditingValue) {
                       if (textEditingValue.text.isEmpty) {
                         return parties;
                       }
                       return parties.where((option) {
-                        return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase()) ||
+                        return option.name.toLowerCase().contains(
+                                textEditingValue.text.toLowerCase()) ||
                             option.phone.contains(textEditingValue.text);
                       });
                     },
@@ -454,7 +531,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         _phoneController.text = selection.phone;
                       });
                     },
-                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
                       return EmpiranTextField(
                         controller: controller,
                         focusNode: focusNode,
@@ -475,7 +553,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                           elevation: 4,
                           borderRadius: BorderRadius.circular(8),
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 250, maxWidth: 400),
+                            constraints: const BoxConstraints(
+                                maxHeight: 250, maxWidth: 400),
                             child: ListView.builder(
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
@@ -524,7 +603,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
                         ),
                         onPressed: () {
                           setState(() => _quotationStep = 1);
@@ -555,10 +635,11 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
   @override
   Widget build(BuildContext context) {
     final isQuotation = widget.type == 'quotation';
+    final isEditing = widget.isEditing && widget.source != null;
     final title = isQuotation
-        ? 'Quotation Maker'
+        ? (isEditing ? 'Update Quotation' : 'Quotation Maker')
         : widget.type == 'order'
-            ? 'Create Order / Invoice'
+            ? (isEditing ? 'Update Order / Invoice' : 'Create Order / Invoice')
             : 'Create ${widget.type.replaceAll('_', ' ').toUpperCase()}';
 
     return Scaffold(
@@ -578,7 +659,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
             ),
       body: BlocBuilder<PartiesBloc, PartiesState>(
         builder: (context, partyState) {
-          final parties = partyState is PartiesLoaded ? partyState.parties : <Party>[];
+          final parties =
+              partyState is PartiesLoaded ? partyState.parties : <Party>[];
 
           // If Quotation Maker is in Step 0, ask for Customer first (Requirement 1)
           if (isQuotation && _quotationStep == 0) {
@@ -592,15 +674,25 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
               // Left Pane: Products Section with Instamart-Style Categories
               final productsPane = BlocBuilder<ProductsBloc, ProductsState>(
                 builder: (context, pState) {
-                  final items = pState is ProductsLoaded ? pState.items : <Item>[];
-                  final rawCategories = items.map((i) => i.category.trim()).where((c) => c.isNotEmpty).toSet().toList();
+                  final items =
+                      pState is ProductsLoaded ? pState.items : <Item>[];
+                  final rawCategories = items
+                      .map((i) => i.category.trim())
+                      .where((c) => c.isNotEmpty)
+                      .toSet()
+                      .toList();
                   final categories = ['All', ...rawCategories];
 
                   final filtered = items.where((i) {
-                    final matchCat = _category == 'All' || i.category.trim() == _category.trim();
+                    final matchCat = _category == 'All' ||
+                        i.category.trim() == _category.trim();
                     final matchQuery = _productQuery.isEmpty ||
-                        i.name.toLowerCase().contains(_productQuery.toLowerCase()) ||
-                        i.itemCode.toLowerCase().contains(_productQuery.toLowerCase());
+                        i.name
+                            .toLowerCase()
+                            .contains(_productQuery.toLowerCase()) ||
+                        i.itemCode
+                            .toLowerCase()
+                            .contains(_productQuery.toLowerCase());
                     return matchCat && matchQuery;
                   }).toList();
 
@@ -610,23 +702,30 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                       if (isQuotation) ...[
                         // Customer summary banner
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                            border: Border.all(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.2)),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.person_outline, size: 16, color: AppColors.primary),
+                              const Icon(Icons.person_outline,
+                                  size: 16, color: AppColors.primary),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   _nameController.text.trim().isNotEmpty
                                       ? 'Quotation For: ${_nameController.text.trim()} ${_phoneController.text.trim().isNotEmpty ? "(${_phoneController.text.trim()})" : ""}'
                                       : 'Quotation For: Walk-in / General Customer',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -635,8 +734,10 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                   padding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
                                 ),
-                                onPressed: () => setState(() => _quotationStep = 0),
-                                child: const Text('Change', style: TextStyle(fontSize: 11)),
+                                onPressed: () =>
+                                    setState(() => _quotationStep = 0),
+                                child: const Text('Change',
+                                    style: TextStyle(fontSize: 11)),
                               ),
                             ],
                           ),
@@ -655,10 +756,15 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: categories.map((cat) {
-                            final count = cat == 'All' ? items.length : items.where((i) => i.category.trim() == cat).length;
+                            final count = cat == 'All'
+                                ? items.length
+                                : items
+                                    .where((i) => i.category.trim() == cat)
+                                    .length;
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: _buildCategoryCard(cat, count, _category == cat),
+                              child: _buildCategoryCard(
+                                  cat, count, _category == cat),
                             );
                           }).toList(),
                         ),
@@ -670,7 +776,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                         child: items.isEmpty
                             ? EmpiranEmptyState(
                                 title: 'No products in catalog',
-                                description: 'Add your first product to begin billing.',
+                                description:
+                                    'Add your first product to begin billing.',
                                 icon: Icons.inventory_2_outlined,
                                 actionLabel: 'Add Product',
                                 onAction: () => showProductDialog(context),
@@ -680,25 +787,31 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.search_off_rounded, size: 40, color: Colors.grey),
+                                        const Icon(Icons.search_off_rounded,
+                                            size: 40, color: Colors.grey),
                                         const SizedBox(height: 8),
                                         Text(
                                           'No products in category "$_category"',
-                                          style: const TextStyle(color: Colors.grey),
+                                          style: const TextStyle(
+                                              color: Colors.grey),
                                         ),
                                       ],
                                     ),
                                   )
                                 : ListView.separated(
                                     itemCount: filtered.length,
-                                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 6),
                                     itemBuilder: (context, i) {
                                       final item = filtered[i];
-                                      final qtyInCart = _getItemQtyInCart(item.id);
-                                      final itemImageBytes = _decodeImage(item.image);
+                                      final qtyInCart =
+                                          _getItemQtyInCart(item.id);
+                                      final itemImageBytes =
+                                          _decodeImage(item.image);
 
                                       return EmpiranCard(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14, vertical: 10),
                                         child: Row(
                                           children: [
                                             // Product Image (Requirement 1 & 7)
@@ -706,25 +819,35 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                               width: 52,
                                               height: 52,
                                               decoration: BoxDecoration(
-                                                color: AppColors.lightSurfaceContainer,
-                                                borderRadius: BorderRadius.circular(AppRadii.medium),
+                                                color: AppColors
+                                                    .lightSurfaceContainer,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        AppRadii.medium),
                                               ),
                                               child: itemImageBytes != null
                                                   ? ClipRRect(
-                                                      borderRadius: BorderRadius.circular(AppRadii.medium),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              AppRadii.medium),
                                                       child: Image.memory(
                                                         itemImageBytes,
                                                         fit: BoxFit.cover,
                                                         gaplessPlayback: true,
-                                                        errorBuilder: (_, __, ___) => const Icon(
-                                                          Icons.inventory_2_outlined,
-                                                          color: AppColors.primary,
+                                                        errorBuilder:
+                                                            (_, __, ___) =>
+                                                                const Icon(
+                                                          Icons
+                                                              .inventory_2_outlined,
+                                                          color:
+                                                              AppColors.primary,
                                                           size: 22,
                                                         ),
                                                       ),
                                                     )
                                                   : const Icon(
-                                                      Icons.inventory_2_outlined,
+                                                      Icons
+                                                          .inventory_2_outlined,
                                                       color: AppColors.primary,
                                                       size: 22,
                                                     ),
@@ -732,28 +855,37 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     item.name,
-                                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                                    style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 13),
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                   const SizedBox(height: 2),
                                                   Text(
                                                     'Stock: ${item.currentStock} ${item.unit} • ${item.category}',
-                                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                                    style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.grey),
                                                   ),
                                                 ],
                                               ),
                                             ),
                                             const SizedBox(width: 8),
                                             Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
                                               children: [
                                                 Text(
-                                                  Formatters.money(item.salesPrice),
+                                                  Formatters.money(
+                                                      item.salesPrice),
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.w800,
                                                     fontSize: 14,
@@ -764,20 +896,36 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                                 if (qtyInCart == 0)
                                                   InkWell(
                                                     onTap: () => _add(item),
-                                                    borderRadius: BorderRadius.circular(6),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            6),
                                                     child: Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 4),
                                                       decoration: BoxDecoration(
-                                                        color: AppColors.primary.withValues(alpha: 0.12),
-                                                        borderRadius: BorderRadius.circular(6),
-                                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                                        color: AppColors.primary
+                                                            .withValues(
+                                                                alpha: 0.12),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(6),
+                                                        border: Border.all(
+                                                            color: AppColors
+                                                                .primary
+                                                                .withValues(
+                                                                    alpha:
+                                                                        0.3)),
                                                       ),
                                                       child: const Text(
                                                         '+ Add',
                                                         style: TextStyle(
                                                           fontSize: 11,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: AppColors.primary,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              AppColors.primary,
                                                         ),
                                                       ),
                                                     ),
@@ -785,33 +933,63 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                                 else
                                                   Container(
                                                     decoration: BoxDecoration(
-                                                      color: AppColors.primary.withValues(alpha: 0.1),
-                                                      borderRadius: BorderRadius.circular(6),
-                                                      border: Border.all(color: AppColors.primary),
+                                                      color: AppColors.primary
+                                                          .withValues(
+                                                              alpha: 0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              6),
+                                                      border: Border.all(
+                                                          color: AppColors
+                                                              .primary),
                                                     ),
                                                     child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
                                                       children: [
                                                         InkWell(
-                                                          onTap: () => _decrement(item),
+                                                          onTap: () =>
+                                                              _decrement(item),
                                                           child: const Padding(
-                                                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                            child: Icon(Icons.remove, size: 14, color: AppColors.primary),
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        6,
+                                                                    vertical:
+                                                                        2),
+                                                            child: Icon(
+                                                                Icons.remove,
+                                                                size: 14,
+                                                                color: AppColors
+                                                                    .primary),
                                                           ),
                                                         ),
                                                         Text(
                                                           '$qtyInCart',
-                                                          style: const TextStyle(
-                                                            fontWeight: FontWeight.bold,
+                                                          style:
+                                                              const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
                                                             fontSize: 12,
-                                                            color: AppColors.primary,
+                                                            color: AppColors
+                                                                .primary,
                                                           ),
                                                         ),
                                                         InkWell(
-                                                          onTap: () => _increment(item),
+                                                          onTap: () =>
+                                                              _increment(item),
                                                           child: const Padding(
-                                                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                            child: Icon(Icons.add, size: 14, color: AppColors.primary),
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        6,
+                                                                    vertical:
+                                                                        2),
+                                                            child: Icon(
+                                                                Icons.add,
+                                                                size: 14,
+                                                                color: AppColors
+                                                                    .primary),
                                                           ),
                                                         ),
                                                       ],
@@ -841,18 +1019,24 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Customer Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          const Text('Customer Details',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14)),
                           const SizedBox(height: 10),
                           if (parties.isNotEmpty) ...[
                             Autocomplete<Party>(
-                              displayStringForOption: (option) => '${option.name} (${option.phone})',
+                              displayStringForOption: (option) =>
+                                  '${option.name} (${option.phone})',
                               optionsBuilder: (textEditingValue) {
                                 if (textEditingValue.text.isEmpty) {
                                   return parties;
                                 }
                                 return parties.where((option) {
-                                  return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase()) ||
-                                      option.phone.contains(textEditingValue.text);
+                                  return option.name.toLowerCase().contains(
+                                          textEditingValue.text
+                                              .toLowerCase()) ||
+                                      option.phone
+                                          .contains(textEditingValue.text);
                                 });
                               },
                               onSelected: (selection) {
@@ -862,11 +1046,13 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                   _phoneController.text = selection.phone;
                                 });
                               },
-                              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                              fieldViewBuilder: (context, controller, focusNode,
+                                  onFieldSubmitted) {
                                 return EmpiranTextField(
                                   controller: controller,
                                   focusNode: focusNode,
-                                  label: 'Search Registered Customer (Optional)',
+                                  label:
+                                      'Search Registered Customer (Optional)',
                                   hint: 'Type name or phone...',
                                   prefixIcon: Icons.search,
                                   onChanged: (val) {
@@ -876,20 +1062,23 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                   },
                                 );
                               },
-                              optionsViewBuilder: (context, onSelected, options) {
+                              optionsViewBuilder:
+                                  (context, onSelected, options) {
                                 return Align(
                                   alignment: Alignment.topLeft,
                                   child: Material(
                                     elevation: 4,
                                     borderRadius: BorderRadius.circular(8),
                                     child: ConstrainedBox(
-                                      constraints: const BoxConstraints(maxHeight: 250, maxWidth: 400),
+                                      constraints: const BoxConstraints(
+                                          maxHeight: 250, maxWidth: 400),
                                       child: ListView.builder(
                                         padding: EdgeInsets.zero,
                                         shrinkWrap: true,
                                         itemCount: options.length,
                                         itemBuilder: (context, index) {
-                                          final option = options.elementAt(index);
+                                          final option =
+                                              options.elementAt(index);
                                           return ListTile(
                                             title: Text(option.name),
                                             subtitle: Text(option.phone),
@@ -965,8 +1154,13 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Selected Products', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              Text('${_lines.length} items', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              const Text('Selected Products',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14)),
+                              Text('${_lines.length} items',
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.grey)),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -974,8 +1168,10 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 24),
                               child: Center(
-                                child: Text('No products added yet. Select from the catalog on the left.',
-                                    style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                child: Text(
+                                    'No products added yet. Select from the catalog on the left.',
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 13)),
                               ),
                             )
                           else
@@ -984,34 +1180,45 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Expanded(
                                             child: Text(
                                               line.name,
-                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           IconButton(
-                                            icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                                            icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 20,
+                                                color: AppColors.error),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
-                                            onPressed: () => setState(() => _lines.remove(line)),
+                                            onPressed: () => setState(
+                                                () => _lines.remove(line)),
                                           ),
                                         ],
                                       ),
                                       const SizedBox(height: 6),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Expanded(
                                             child: Text(
                                               '${Formatters.money(line.price)} / ${line.unit}',
-                                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
@@ -1019,9 +1226,12 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               IconButton(
-                                                icon: const Icon(Icons.remove_circle_outline, size: 22),
+                                                icon: const Icon(
+                                                    Icons.remove_circle_outline,
+                                                    size: 22),
                                                 padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
+                                                constraints:
+                                                    const BoxConstraints(),
                                                 onPressed: () {
                                                   setState(() {
                                                     if (line.quantity > 1) {
@@ -1033,20 +1243,30 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                                 },
                                               ),
                                               const SizedBox(width: 10),
-                                              Text('${line.quantity.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                              Text('${line.quantity.toInt()}',
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold)),
                                               const SizedBox(width: 10),
                                               IconButton(
-                                                icon: const Icon(Icons.add_circle_outline, size: 22),
+                                                icon: const Icon(
+                                                    Icons.add_circle_outline,
+                                                    size: 22),
                                                 padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                                onPressed: () => setState(() => line.quantity++),
+                                                constraints:
+                                                    const BoxConstraints(),
+                                                onPressed: () => setState(
+                                                    () => line.quantity++),
                                               ),
                                               const SizedBox(width: 16),
                                               SizedBox(
                                                 width: 60,
                                                 child: Text(
                                                   Formatters.money(line.total),
-                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13),
                                                   textAlign: TextAlign.right,
                                                 ),
                                               ),
@@ -1073,7 +1293,9 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('Subtotal:'),
-                              Text(Formatters.money(_subtotal), style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text(Formatters.money(_subtotal),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -1083,7 +1305,8 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                             children: [
                               const Expanded(
                                 flex: 3,
-                                child: Text('Discount (Fixed ₹):', style: TextStyle(fontSize: 13)),
+                                child: Text('Discount (Fixed ₹):',
+                                    style: TextStyle(fontSize: 13)),
                               ),
                               Expanded(
                                 flex: 2,
@@ -1097,12 +1320,17 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                       hintText: '₹0',
                                       prefixText: '₹ ',
                                       isDense: true,
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 8),
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
                                     ),
                                     onChanged: (v) {
                                       setState(() {
-                                        _discount = double.tryParse(v.trim()) ?? 0;
+                                        _discount =
+                                            double.tryParse(v.trim()) ?? 0;
                                       });
                                     },
                                   ),
@@ -1115,9 +1343,15 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Discount Applied:', style: TextStyle(fontSize: 12, color: AppColors.success)),
+                                const Text('Discount Applied:',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.success)),
                                 Text('-${Formatters.money(_effectiveDiscount)}',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.success)),
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.success)),
                               ],
                             ),
                           ],
@@ -1131,15 +1365,20 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                                 children: [
                                   Checkbox(
                                     value: _isGst,
-                                    onChanged: (v) => setState(() => _isGst = v ?? false),
+                                    onChanged: (v) =>
+                                        setState(() => _isGst = v ?? false),
                                   ),
-                                  const Text('Apply GST (18%)', style: TextStyle(fontWeight: FontWeight.w600)),
+                                  const Text('Apply GST (18%)',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
                                 ],
                               ),
                               if (_isGst)
                                 Text(
                                   Formatters.money(_cgst + _sgst),
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary),
                                 ),
                             ],
                           ),
@@ -1150,33 +1389,55 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                               padding: const EdgeInsets.all(10),
                               margin: const EdgeInsets.symmetric(vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.05),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                                border: Border.all(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15)),
                               ),
                               child: Column(
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Taxable Value:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                      Text(Formatters.money(_taxableAmount), style: const TextStyle(fontSize: 12)),
+                                      const Text('Taxable Value:',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey)),
+                                      Text(Formatters.money(_taxableAmount),
+                                          style: const TextStyle(fontSize: 12)),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('CGST @ 9%:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                                      Text(Formatters.money(_cgst), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                      const Text('CGST @ 9%:',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600)),
+                                      Text(Formatters.money(_cgst),
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600)),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('SGST @ 9%:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                                      Text(Formatters.money(_sgst), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                      const Text('SGST @ 9%:',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600)),
+                                      Text(Formatters.money(_sgst),
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600)),
                                     ],
                                   ),
                                 ],
@@ -1188,22 +1449,36 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Grand Total:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
-                              Text(Formatters.money(_total), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                              const Text('Grand Total:',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primary)),
+                              Text(Formatters.money(_total),
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primary)),
                             ],
                           ),
                           const SizedBox(height: 16),
                           if (_error != null) ...[
-                            Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                            Text(_error!,
+                                style: const TextStyle(
+                                    color: AppColors.error, fontSize: 12)),
                             const SizedBox(height: 12),
                           ],
                           EmpiranButton(
-                            label: widget.type == 'quotation'
-                                ? 'Create Quotation'
-                                : widget.type == 'order'
-                                    ? 'Place Order'
-                                    : 'Issue Invoice',
-                            icon: Icons.check_circle_outline,
+                            label: isEditing
+                                ? 'Update ${widget.type == 'quotation' ? 'Quotation' : widget.type == 'order' ? 'Order' : 'Document'}'
+                                : widget.type == 'quotation'
+                                    ? 'Create Quotation'
+                                    : widget.type == 'order'
+                                        ? 'Place Order'
+                                        : 'Issue Invoice',
+                            icon: isEditing
+                                ? Icons.update_rounded
+                                : Icons.check_circle_outline,
                             isLoading: _busy,
                             onPressed: _save,
                           ),
@@ -1217,9 +1492,17 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
               if (isWide) {
                 return Row(
                   children: [
-                    Expanded(flex: 6, child: Padding(padding: const EdgeInsets.all(16), child: productsPane)),
+                    Expanded(
+                        flex: 6,
+                        child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: productsPane)),
                     const VerticalDivider(width: 1),
-                    Expanded(flex: 5, child: Padding(padding: const EdgeInsets.all(16), child: checkoutPane)),
+                    Expanded(
+                        flex: 5,
+                        child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: checkoutPane)),
                   ],
                 );
               } else {
@@ -1229,15 +1512,23 @@ class _InvoiceComposerPageState extends State<InvoiceComposerPage> {
                     children: [
                       const TabBar(
                         tabs: [
-                          Tab(text: 'Catalog', icon: Icon(Icons.inventory_2_outlined)),
-                          Tab(text: 'Cart & Summary', icon: Icon(Icons.shopping_cart_outlined)),
+                          Tab(
+                              text: 'Catalog',
+                              icon: Icon(Icons.inventory_2_outlined)),
+                          Tab(
+                              text: 'Cart & Summary',
+                              icon: Icon(Icons.shopping_cart_outlined)),
                         ],
                       ),
                       Expanded(
                         child: TabBarView(
                           children: [
-                            Padding(padding: const EdgeInsets.all(16), child: productsPane),
-                            Padding(padding: const EdgeInsets.all(16), child: checkoutPane),
+                            Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: productsPane),
+                            Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: checkoutPane),
                           ],
                         ),
                       ),

@@ -7,7 +7,8 @@ import 'parties_state.dart';
 class PartiesBloc extends Bloc<PartiesEvent, PartiesState> {
   final PartiesRepository partiesRepository;
 
-  PartiesBloc({required this.partiesRepository}) : super(const PartiesInitial()) {
+  PartiesBloc({required this.partiesRepository})
+      : super(const PartiesInitial()) {
     on<LoadPartiesRequested>(_onLoadPartiesRequested);
     on<SavePartyRequested>(_onSavePartyRequested);
     on<DeletePartyRequested>(_onDeletePartyRequested);
@@ -20,8 +21,10 @@ class PartiesBloc extends Bloc<PartiesEvent, PartiesState> {
           .toLowerCase()
           .contains(query.toLowerCase());
       if (!matchesQuery) return false;
-      if (filter == 'Customers') return p.type == 'Customer' || p.type == 'Both';
-      if (filter == 'Suppliers') return p.type == 'Supplier' || p.type == 'Both';
+      if (filter == 'Customers')
+        return p.type == 'Customer' || p.type == 'Both';
+      if (filter == 'Suppliers')
+        return p.type == 'Supplier' || p.type == 'Both';
       return true;
     }).toList();
   }
@@ -46,8 +49,10 @@ class PartiesBloc extends Bloc<PartiesEvent, PartiesState> {
     try {
       await partiesRepository.saveParty(event.party);
       final parties = await partiesRepository.loadParties();
-      final currentFilter = state is PartiesLoaded ? (state as PartiesLoaded).partyFilter : 'All';
-      final currentQuery = state is PartiesLoaded ? (state as PartiesLoaded).query : '';
+      final currentFilter =
+          state is PartiesLoaded ? (state as PartiesLoaded).partyFilter : 'All';
+      final currentQuery =
+          state is PartiesLoaded ? (state as PartiesLoaded).query : '';
       emit(PartiesLoaded(
         parties: parties,
         filteredParties: _filter(parties, currentQuery, currentFilter),
@@ -67,8 +72,10 @@ class PartiesBloc extends Bloc<PartiesEvent, PartiesState> {
     try {
       await partiesRepository.deleteParty(event.party);
       final parties = await partiesRepository.loadParties();
-      final currentFilter = state is PartiesLoaded ? (state as PartiesLoaded).partyFilter : 'All';
-      final currentQuery = state is PartiesLoaded ? (state as PartiesLoaded).query : '';
+      final currentFilter =
+          state is PartiesLoaded ? (state as PartiesLoaded).partyFilter : 'All';
+      final currentQuery =
+          state is PartiesLoaded ? (state as PartiesLoaded).query : '';
       emit(PartiesLoaded(
         parties: parties,
         filteredParties: _filter(parties, currentQuery, currentFilter),

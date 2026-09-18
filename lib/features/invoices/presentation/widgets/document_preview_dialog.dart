@@ -13,7 +13,8 @@ void showDocumentPreviewDialog(
   bool isThermal = false,
 }) {
   final settingsState = context.read<SettingsBloc>().state;
-  final company = settingsState is SettingsLoaded ? settingsState.company : Company();
+  final company =
+      settingsState is SettingsLoaded ? settingsState.company : Company();
 
   showDialog(
     context: context,
@@ -36,15 +37,17 @@ void showDocumentPreviewDialog(
                     ? screenSize.width
                     : (thermal
                         ? 620
-                        : (screenSize.width > 1200 ? 1100 : screenSize.width * 0.95)),
-                maxHeight: isFullscreen
-                    ? screenSize.height
-                    : screenSize.height * 0.95,
+                        : (screenSize.width > 1200
+                            ? 1100
+                            : screenSize.width * 0.95)),
+                maxHeight:
+                    isFullscreen ? screenSize.height : screenSize.height * 0.95,
               ),
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: const BoxDecoration(
                       border: Border(bottom: BorderSide(color: Colors.black12)),
                     ),
@@ -58,31 +61,43 @@ void showDocumentPreviewDialog(
                               Row(
                                 children: [
                                   Icon(
-                                    thermal ? Icons.receipt_long : Icons.description_outlined,
+                                    thermal
+                                        ? Icons.receipt_long
+                                        : Icons.description_outlined,
                                     color: AppColors.primary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      thermal ? 'Thermal Receipt (80mm)' : 'Tax Invoice (A4)',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      thermal
+                                          ? 'Thermal Receipt (80mm)'
+                                          : 'Tax Invoice (A4)',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   IconButton(
                                     icon: Icon(
-                                      isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+                                      isFullscreen
+                                          ? Icons.fullscreen_exit_rounded
+                                          : Icons.fullscreen_rounded,
                                       size: 20,
                                     ),
-                                    tooltip: isFullscreen ? 'Exit Full Screen' : 'Full Screen',
+                                    tooltip: isFullscreen
+                                        ? 'Exit Full Screen'
+                                        : 'Full Screen',
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: () => setState(() => isFullscreen = !isFullscreen),
+                                    onPressed: () => setState(
+                                        () => isFullscreen = !isFullscreen),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.close, size: 20),
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: () => Navigator.of(context).pop(),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
                                   ),
                                 ],
                               ),
@@ -93,17 +108,21 @@ void showDocumentPreviewDialog(
                                   segments: const [
                                     ButtonSegment(
                                       value: false,
-                                      label: Text('A4', style: TextStyle(fontSize: 12)),
-                                      icon: Icon(Icons.print_outlined, size: 14),
+                                      label: Text('A4',
+                                          style: TextStyle(fontSize: 12)),
+                                      icon:
+                                          Icon(Icons.print_outlined, size: 14),
                                     ),
                                     ButtonSegment(
                                       value: true,
-                                      label: Text('80mm', style: TextStyle(fontSize: 12)),
+                                      label: Text('80mm',
+                                          style: TextStyle(fontSize: 12)),
                                       icon: Icon(Icons.receipt_long, size: 14),
                                     ),
                                   ],
                                   selected: {thermal},
-                                  onSelectionChanged: (set) => setState(() => thermal = set.first),
+                                  onSelectionChanged: (set) =>
+                                      setState(() => thermal = set.first),
                                 ),
                               ),
                             ],
@@ -117,14 +136,20 @@ void showDocumentPreviewDialog(
                               child: Row(
                                 children: [
                                   Icon(
-                                    thermal ? Icons.receipt_long : Icons.description_outlined,
+                                    thermal
+                                        ? Icons.receipt_long
+                                        : Icons.description_outlined,
                                     color: AppColors.primary,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      thermal ? 'Thermal Receipt (80mm)' : 'Tax Invoice (A4)',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      thermal
+                                          ? 'Thermal Receipt (80mm)'
+                                          : 'Tax Invoice (A4)',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -140,7 +165,8 @@ void showDocumentPreviewDialog(
                                     ButtonSegment(
                                       value: false,
                                       label: Text('A4'),
-                                      icon: Icon(Icons.print_outlined, size: 16),
+                                      icon:
+                                          Icon(Icons.print_outlined, size: 16),
                                     ),
                                     ButtonSegment(
                                       value: true,
@@ -149,16 +175,22 @@ void showDocumentPreviewDialog(
                                     ),
                                   ],
                                   selected: {thermal},
-                                  onSelectionChanged: (set) => setState(() => thermal = set.first),
+                                  onSelectionChanged: (set) =>
+                                      setState(() => thermal = set.first),
                                 ),
                                 const SizedBox(width: 6),
                                 IconButton(
                                   icon: Icon(
-                                    isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+                                    isFullscreen
+                                        ? Icons.fullscreen_exit_rounded
+                                        : Icons.fullscreen_rounded,
                                     color: AppColors.primary,
                                   ),
-                                  tooltip: isFullscreen ? 'Exit Full Screen' : 'Full Screen',
-                                  onPressed: () => setState(() => isFullscreen = !isFullscreen),
+                                  tooltip: isFullscreen
+                                      ? 'Exit Full Screen'
+                                      : 'Full Screen',
+                                  onPressed: () => setState(
+                                      () => isFullscreen = !isFullscreen),
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(

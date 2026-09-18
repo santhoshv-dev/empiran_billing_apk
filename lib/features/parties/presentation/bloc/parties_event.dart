@@ -34,7 +34,8 @@ class FilterPartiesRequested extends PartiesEvent {
   final String query;
   final String partyFilter; // 'All', 'Customers', 'Suppliers'
 
-  const FilterPartiesRequested({required this.query, required this.partyFilter});
+  const FilterPartiesRequested(
+      {required this.query, required this.partyFilter});
 
   @override
   List<Object?> get props => [query, partyFilter];

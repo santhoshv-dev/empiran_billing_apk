@@ -72,7 +72,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 80) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 80) {
       if (!_isLoading && !_isLoadingMore && _hasMore) {
         _loadMore();
       }
@@ -127,7 +128,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
 
       try {
         final invState = context.read<InvoicesBloc>().state;
-        if (invState is InvoicesLoaded) activeTransactions = invState.transactions;
+        if (invState is InvoicesLoaded)
+          activeTransactions = invState.transactions;
       } catch (_) {}
 
       final searchResponse = await LocalSearchService.search(
@@ -312,16 +314,19 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.search_rounded, size: 24, color: AppColors.primary),
+                  const Icon(Icons.search_rounded,
+                      size: 24, color: AppColors.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
                       focusNode: _focusNode,
                       autofocus: true,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w500),
                       decoration: const InputDecoration(
-                        hintText: 'Search products, customers, invoices, codes...',
+                        hintText:
+                            'Search products, customers, invoices, codes...',
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -339,7 +344,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                     )
                   else if (_searchController.text.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Icons.clear, size: 20, color: Colors.grey),
+                      icon:
+                          const Icon(Icons.clear, size: 20, color: Colors.grey),
                       visualDensity: VisualDensity.compact,
                       onPressed: () {
                         _searchController.clear();
@@ -348,14 +354,18 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                     ),
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
                       'ESC',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey),
                     ),
                   ),
                 ],
@@ -373,7 +383,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                   _buildTypeChip('customers', 'Customers', _counts.customers),
                   _buildTypeChip('suppliers', 'Suppliers', _counts.suppliers),
                   _buildTypeChip('invoices', 'Invoices', _counts.invoices),
-                  _buildTypeChip('categories', 'Categories', _counts.categories),
+                  _buildTypeChip(
+                      'categories', 'Categories', _counts.categories),
                   _buildTypeChip('staff', 'Staff', _counts.staff),
                   _buildTypeChip('expenses', 'Expenses', _counts.expenses),
                 ],
@@ -383,16 +394,21 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
             // Typo-tolerance & Smart Filter hint banner
             if (_searchController.text.trim().isNotEmpty && _results.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 color: AppColors.primary.withValues(alpha: 0.04),
                 child: Row(
                   children: [
-                    const Icon(Icons.bolt_rounded, size: 16, color: AppColors.primary),
+                    const Icon(Icons.bolt_rounded,
+                        size: 16, color: AppColors.primary),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'Space-agnostic & typo-tolerant search active • Found ${_counts.all > 0 ? _counts.all : _results.length} matches',
-                        style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -425,7 +441,10 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                   if (_results.isNotEmpty)
                     Text(
                       '${_results.length} loaded',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey),
                     ),
                 ],
               ),
@@ -467,7 +486,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 12),
-            Text('Searching across database...', style: TextStyle(fontSize: 13, color: Colors.grey)),
+            Text('Searching across database...',
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
           ],
         ),
       );
@@ -480,9 +500,12 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, size: 36, color: AppColors.error),
+              const Icon(Icons.error_outline_rounded,
+                  size: 36, color: AppColors.error),
               const SizedBox(height: 10),
-              Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+              Text(_errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.error, fontSize: 13)),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 icon: const Icon(Icons.refresh, size: 16),
@@ -509,7 +532,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.manage_search_rounded, size: 32, color: AppColors.primary),
+                child: const Icon(Icons.manage_search_rounded,
+                    size: 32, color: AppColors.primary),
               ),
               const SizedBox(height: 14),
               const Text(
@@ -548,11 +572,13 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.search_off_rounded, size: 42, color: Colors.grey),
+              const Icon(Icons.search_off_rounded,
+                  size: 42, color: Colors.grey),
               const SizedBox(height: 12),
               Text(
                 'No results found for "${_searchController.text}"',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -614,7 +640,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                           Expanded(
                             child: Text(
                               item.title,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 14),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -635,7 +662,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: typeColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
@@ -653,14 +681,18 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                           if (item.badge != null) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.black.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 item.badge!,
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.black87),
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87),
                               ),
                             ),
                           ],
@@ -668,7 +700,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                           Expanded(
                             child: Text(
                               item.subtitle,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -678,7 +711,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 14, color: Colors.grey),
               ],
             ),
           ),

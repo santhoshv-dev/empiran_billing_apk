@@ -24,11 +24,18 @@ class _CompanyProfileFormState extends State<CompanyProfileForm>
 
   late final Map<String, TextEditingController> _controllers;
   String? _logo;
+  Uint8List? _logoBytes;
+  bool _isLogoLoading = false;
 
   @override
   void initState() {
     super.initState();
     _logo = widget.company.logo;
+    if (_logo != null && _logo!.isNotEmpty) {
+      try {
+        _logoBytes = base64Decode(_logo!.contains(',') ? _logo!.split(',').last : _logo!);
+      } catch (_) {}
+    }
     _controllers = {
       'name': TextEditingController(text: widget.company.name),
       'gstin': TextEditingController(text: widget.company.gstin),
@@ -152,11 +159,18 @@ class _CompanyProfileFormState extends State<CompanyProfileForm>
             const SizedBox(height: 10),
             Row(
               children: [
-                if (_logo != null) ...[
+                if (_isLogoLoading) ...[
+                  const SizedBox(
+                    width: 54,
+                    height: 54,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  const SizedBox(width: 14),
+                ] else if (_logoBytes != null) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadii.medium),
                     child: Image.memory(
-                      base64Decode(_logo!.contains(',') ? _logo!.split(',').last : _logo!),
+                      _logoBytes!,
                       width: 54,
                       height: 54,
                       fit: BoxFit.cover,
@@ -168,24 +182,38 @@ class _CompanyProfileFormState extends State<CompanyProfileForm>
                   label: _logo == null ? 'Upload Logo' : 'Change Logo',
                   icon: Icons.upload_file_outlined,
                   variant: EmpiranButtonVariant.outlined,
-                  onPressed: () async {
-                    final f = await ImagePicker().pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 75,
-                      maxWidth: 1200,
-                    );
-                    if (f != null) {
-                      final bytes = await f.readAsBytes();
-                      setState(() => _logo = base64Encode(bytes));
+                  onPressed: _isLogoLoading ? null : () async {
+                    setState(() => _isLogoLoading = true);
+                    try {
+                      final f = await ImagePicker().pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 75,
+                        maxWidth: 1200,
+                      );
+                      if (f != null) {
+                        final bytes = await f.readAsBytes();
+                        final base64String = base64Encode(bytes);
+                        if (mounted) {
+                          setState(() {
+                            _logoBytes = bytes;
+                            _logo = base64String;
+                          });
+                        }
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isLogoLoading = false);
                     }
                   },
                 ),
-                if (_logo != null) ...[
+                if (_logo != null && !_isLogoLoading) ...[
                   const SizedBox(width: 8),
                   IconButton(
                     tooltip: 'Remove Logo',
                     icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                    onPressed: () => setState(() => _logo = null),
+                    onPressed: () => setState(() {
+                      _logo = null;
+                      _logoBytes = null;
+                    }),
                   ),
                 ],
               ],

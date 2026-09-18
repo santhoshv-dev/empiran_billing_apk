@@ -7,6 +7,7 @@ bool _b(dynamic value) {
   if (value is String) return value == '1' || value.toLowerCase() == 'true';
   return false;
 }
+
 String _transactionType(dynamic value) => switch ('$value') {
       'sale_invoice' => 'order',
       'estimate' => 'quotation',
@@ -37,7 +38,8 @@ List<InvoiceLine> _parseLines(dynamic raw) {
       final decoded = jsonDecode(raw);
       if (decoded is List) {
         return decoded
-            .map((e) => InvoiceLine.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map((e) =>
+                InvoiceLine.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
       }
     } catch (_) {}
@@ -216,7 +218,7 @@ class Item {
         'currentStock': currentStock,
         'lowStockLimit': lowStockLimit,
         'image': image,
-};
+      };
 }
 
 class Category {

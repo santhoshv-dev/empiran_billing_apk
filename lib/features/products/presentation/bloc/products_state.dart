@@ -48,7 +48,8 @@ class ProductsLoaded extends ProductsState {
   }
 
   @override
-  List<Object?> get props => [items, filteredItems, query, selectedCategory, message];
+  List<Object?> get props =>
+      [items, filteredItems, query, selectedCategory, message];
 }
 
 class ProductsFailure extends ProductsState {

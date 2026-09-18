@@ -43,7 +43,8 @@ class AuthRepository {
     }
 
     apiClient.token = token;
-    final cachedUserString = await secureStorage.read(key: AppConstants.userKey);
+    final cachedUserString =
+        await secureStorage.read(key: AppConstants.userKey);
     if (cachedUserString != null && cachedUserString.isNotEmpty) {
       try {
         final json = jsonDecode(cachedUserString) as Map<String, dynamic>;

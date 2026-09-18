@@ -7,7 +7,8 @@ import 'products_state.dart';
 class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   final ProductsRepository productsRepository;
 
-  ProductsBloc({required this.productsRepository}) : super(const ProductsInitial()) {
+  ProductsBloc({required this.productsRepository})
+      : super(const ProductsInitial()) {
     on<LoadProductsRequested>(_onLoadProductsRequested);
     on<SaveProductRequested>(_onSaveProductRequested);
     on<DeleteProductRequested>(_onDeleteProductRequested);
@@ -49,8 +50,11 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     try {
       await productsRepository.saveProduct(event.item);
       final items = await productsRepository.loadProducts();
-      final currentCategory = state is ProductsLoaded ? (state as ProductsLoaded).selectedCategory : 'All';
-      final currentQuery = state is ProductsLoaded ? (state as ProductsLoaded).query : '';
+      final currentCategory = state is ProductsLoaded
+          ? (state as ProductsLoaded).selectedCategory
+          : 'All';
+      final currentQuery =
+          state is ProductsLoaded ? (state as ProductsLoaded).query : '';
       emit(ProductsLoaded(
         items: items,
         filteredItems: _filter(items, currentQuery, currentCategory),
@@ -70,8 +74,11 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     try {
       await productsRepository.deleteProduct(event.item);
       final items = await productsRepository.loadProducts();
-      final currentCategory = state is ProductsLoaded ? (state as ProductsLoaded).selectedCategory : 'All';
-      final currentQuery = state is ProductsLoaded ? (state as ProductsLoaded).query : '';
+      final currentCategory = state is ProductsLoaded
+          ? (state as ProductsLoaded).selectedCategory
+          : 'All';
+      final currentQuery =
+          state is ProductsLoaded ? (state as ProductsLoaded).query : '';
       emit(ProductsLoaded(
         items: items,
         filteredItems: _filter(items, currentQuery, currentCategory),
@@ -95,8 +102,11 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
         reason: event.reason,
       );
       final items = await productsRepository.loadProducts();
-      final currentCategory = state is ProductsLoaded ? (state as ProductsLoaded).selectedCategory : 'All';
-      final currentQuery = state is ProductsLoaded ? (state as ProductsLoaded).query : '';
+      final currentCategory = state is ProductsLoaded
+          ? (state as ProductsLoaded).selectedCategory
+          : 'All';
+      final currentQuery =
+          state is ProductsLoaded ? (state as ProductsLoaded).query : '';
       emit(ProductsLoaded(
         items: items,
         filteredItems: _filter(items, currentQuery, currentCategory),

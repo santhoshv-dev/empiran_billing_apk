@@ -48,7 +48,8 @@ class PartiesLoaded extends PartiesState {
   }
 
   @override
-  List<Object?> get props => [parties, filteredParties, query, partyFilter, message];
+  List<Object?> get props =>
+      [parties, filteredParties, query, partyFilter, message];
 }
 
 class PartiesFailure extends PartiesState {

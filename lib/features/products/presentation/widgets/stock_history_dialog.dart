@@ -62,7 +62,8 @@ class _StockHistoryDialogState extends State<_StockHistoryDialog> {
               color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.history_rounded, color: AppColors.primary, size: 22),
+            child: const Icon(Icons.history_rounded,
+                color: AppColors.primary, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -71,12 +72,16 @@ class _StockHistoryDialogState extends State<_StockHistoryDialog> {
               children: [
                 Text(
                   widget.item.name,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   'Current Stock: ${widget.item.currentStock.toStringAsFixed(0)} ${widget.item.unit}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -102,11 +107,14 @@ class _StockHistoryDialogState extends State<_StockHistoryDialog> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inventory_2_outlined, size: 40, color: Colors.grey.shade400),
+                        Icon(Icons.inventory_2_outlined,
+                            size: 40, color: Colors.grey.shade400),
                         const SizedBox(height: 8),
-                        const Text('No stock adjustment history yet.', style: TextStyle(color: Colors.grey)),
+                        const Text('No stock adjustment history yet.',
+                            style: TextStyle(color: Colors.grey)),
                         const SizedBox(height: 4),
-                        const Text('Stock adjustments will appear here.', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        const Text('Stock adjustments will appear here.',
+                            style: TextStyle(color: Colors.grey, fontSize: 11)),
                       ],
                     ),
                   )
@@ -127,8 +135,11 @@ class _StockHistoryDialogState extends State<_StockHistoryDialog> {
                                   ? AppColors.success.withValues(alpha: 0.12)
                                   : AppColors.error.withValues(alpha: 0.12),
                               child: Icon(
-                                isAdd ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                                color: isAdd ? AppColors.success : AppColors.error,
+                                isAdd
+                                    ? Icons.arrow_upward_rounded
+                                    : Icons.arrow_downward_rounded,
+                                color:
+                                    isAdd ? AppColors.success : AppColors.error,
                                 size: 16,
                               ),
                             ),
@@ -138,13 +149,20 @@ class _StockHistoryDialogState extends State<_StockHistoryDialog> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    rec.reason.isNotEmpty ? rec.reason : (isAdd ? 'Stock Added' : 'Stock Reduced'),
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                    rec.reason.isNotEmpty
+                                        ? rec.reason
+                                        : (isAdd
+                                            ? 'Stock Added'
+                                            : 'Stock Reduced'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     dateFormat.format(rec.date),
-                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.grey),
                                   ),
                                 ],
                               ),
@@ -157,13 +175,16 @@ class _StockHistoryDialogState extends State<_StockHistoryDialog> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: isAdd ? AppColors.success : AppColors.error,
+                                    color: isAdd
+                                        ? AppColors.success
+                                        : AppColors.error,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${rec.previousStock.toStringAsFixed(0)} → ${rec.updatedStock.toStringAsFixed(0)}',
-                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.grey),
                                 ),
                               ],
                             ),

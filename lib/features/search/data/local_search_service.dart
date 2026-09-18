@@ -31,7 +31,8 @@ class LocalSearchService {
     }
 
     final queryType = type.trim().toLowerCase();
-    final cleanAlphanumeric = raw.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    final cleanAlphanumeric =
+        raw.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
     final phoneDigits = raw.replaceAll(RegExp(r'\D'), '');
 
     final tokens = RegExp(r'[a-zA-Z]+|\d+')
@@ -75,7 +76,8 @@ class LocalSearchService {
           final badge = item.isService
               ? 'Service'
               : '${item.currentStock.toStringAsFixed(item.currentStock.truncateToDouble() == item.currentStock ? 0 : 2)} ${item.unit}';
-          final subtitle = 'SKU: ${item.itemCode.isNotEmpty ? item.itemCode : "—"} | ${item.category}';
+          final subtitle =
+              'SKU: ${item.itemCode.isNotEmpty ? item.itemCode : "—"} | ${item.category}';
 
           allMatched.add(SearchResultItem(
             id: item.id,
@@ -97,7 +99,9 @@ class LocalSearchService {
     }
 
     // --- PARTIES (CUSTOMERS & SUPPLIERS) ---
-    if (queryType == 'all' || queryType == 'customers' || queryType == 'suppliers') {
+    if (queryType == 'all' ||
+        queryType == 'customers' ||
+        queryType == 'suppliers') {
       for (final party in parties) {
         final isSupplier = party.type.toLowerCase() == 'vendor' ||
             party.type.toLowerCase() == 'supplier';
@@ -154,7 +158,8 @@ class LocalSearchService {
         final score = _matchScore(
           primary: txn.number,
           secondary: txn.partyName,
-          tertiary: '${txn.partyPhone} ${txn.status} ${txn.paymentMode} $lineNames',
+          tertiary:
+              '${txn.partyPhone} ${txn.status} ${txn.paymentMode} $lineNames',
           raw: raw,
           cleanAlphanumeric: cleanAlphanumeric,
           tokens: tokens,
@@ -170,8 +175,10 @@ class LocalSearchService {
           allMatched.add(SearchResultItem(
             id: txn.id,
             type: typeLabel,
-            title: '${txn.number} — ${txn.partyName.isNotEmpty ? txn.partyName : "Cash Sale"}',
-            subtitle: 'Status: ${txn.status.toUpperCase()} • Mode: ${txn.paymentMode.toUpperCase()}',
+            title:
+                '${txn.number} — ${txn.partyName.isNotEmpty ? txn.partyName : "Cash Sale"}',
+            subtitle:
+                'Status: ${txn.status.toUpperCase()} • Mode: ${txn.paymentMode.toUpperCase()}',
             badge: txn.status.toUpperCase(),
             amount: txn.total,
             date: txn.date,
@@ -249,7 +256,13 @@ class LocalSearchService {
     final pagedResults = allMatched.skip(skip).take(pageSize).toList();
     final hasMore = (skip + pageSize) < allMatched.length;
 
-    final allCount = productsCount + customersCount + suppliersCount + invoicesCount + categoriesCount + staffCount + expensesCount;
+    final allCount = productsCount +
+        customersCount +
+        suppliersCount +
+        invoicesCount +
+        categoriesCount +
+        staffCount +
+        expensesCount;
     final counts = SearchCounts(
       all: allCount,
       products: productsCount,
@@ -304,10 +317,13 @@ class LocalSearchService {
     if (tLower.contains(rLower)) return 80;
 
     // 5. Space-agnostic matching (e.g. "iphone15" matches "iPhone 15", "johnsmith" matches "John Smith")
-    final pClean = primary.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
-    final sClean = secondary.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    final pClean =
+        primary.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    final sClean =
+        secondary.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
     if (cleanAlphanumeric.isNotEmpty) {
-      if (pClean.contains(cleanAlphanumeric) || sClean.contains(cleanAlphanumeric)) {
+      if (pClean.contains(cleanAlphanumeric) ||
+          sClean.contains(cleanAlphanumeric)) {
         return 80;
       }
     }
@@ -421,7 +437,9 @@ class LocalSearchService {
       if (raw != null && raw.isNotEmpty) {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          return decoded.map((e) => Map<String, String>.from(e as Map)).toList();
+          return decoded
+              .map((e) => Map<String, String>.from(e as Map))
+              .toList();
         }
       }
     } catch (_) {}

@@ -59,8 +59,9 @@ class _LoginFormState extends State<LoginForm> {
                   labelText: 'Username or Email',
                   prefixIcon: Icon(Icons.person_outline_rounded),
                 ),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Enter your username or email.' : null,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Enter your username or email.'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -75,14 +76,18 @@ class _LoginFormState extends State<LoginForm> {
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                   suffixIcon: IconButton(
                     tooltip: _showPassword ? 'Hide password' : 'Show password',
-                    onPressed: () => setState(() => _showPassword = !_showPassword),
+                    onPressed: () =>
+                        setState(() => _showPassword = !_showPassword),
                     icon: Icon(
-                      _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _showPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                     ),
                   ),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Enter your password.' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Enter your password.'
+                    : null,
               ),
               Align(
                 alignment: Alignment.centerRight,
@@ -91,7 +96,8 @@ class _LoginFormState extends State<LoginForm> {
                       ? null
                       : () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => const ChangePasswordPage(isForgot: true),
+                              builder: (_) =>
+                                  const ChangePasswordPage(isForgot: true),
                             ),
                           ),
                   child: const Text('Forgot password?'),
@@ -100,16 +106,19 @@ class _LoginFormState extends State<LoginForm> {
               const SizedBox(height: 16),
               if (state is AuthFailure) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppRadii.small),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+                      const Icon(Icons.error_outline_rounded,
+                          color: AppColors.error, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

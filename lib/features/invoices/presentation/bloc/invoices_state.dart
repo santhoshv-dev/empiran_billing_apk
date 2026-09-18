@@ -48,7 +48,8 @@ class InvoicesLoaded extends InvoicesState {
   }
 
   @override
-  List<Object?> get props => [transactions, filteredTransactions, query, selectedType, message];
+  List<Object?> get props =>
+      [transactions, filteredTransactions, query, selectedType, message];
 }
 
 class InvoicesFailure extends InvoicesState {

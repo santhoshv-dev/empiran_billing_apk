@@ -6,7 +6,8 @@ import '../../../../models.dart';
 import '../bloc/parties_bloc.dart';
 import '../bloc/parties_event.dart';
 
-void showPartyDialog(BuildContext context, {Party? party, String? defaultType}) {
+void showPartyDialog(BuildContext context,
+    {Party? party, String? defaultType}) {
   showDialog(
     context: context,
     builder: (_) => BlocProvider.value(
@@ -39,13 +40,13 @@ class _PartyDialogState extends State<_PartyDialog> {
   void initState() {
     super.initState();
     final p = widget.party;
-    _name    = TextEditingController(text: p?.name    ?? '');
-    _phone   = TextEditingController(text: p?.phone   ?? '');
-    _email   = TextEditingController(text: p?.email   ?? '');
-    _gstin   = TextEditingController(text: p?.gstin   ?? '');
+    _name = TextEditingController(text: p?.name ?? '');
+    _phone = TextEditingController(text: p?.phone ?? '');
+    _email = TextEditingController(text: p?.email ?? '');
+    _gstin = TextEditingController(text: p?.gstin ?? '');
     _address = TextEditingController(text: p?.address ?? '');
     _balance = TextEditingController(text: '${p?.balance ?? 0}');
-    _type    = p?.type ?? widget.defaultType ?? 'Customer';
+    _type = p?.type ?? widget.defaultType ?? 'Customer';
   }
 
   @override
@@ -66,11 +67,11 @@ class _PartyDialogState extends State<_PartyDialog> {
     }
     final savedParty = Party(
       id: widget.party?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
-      name:    _name.text.trim(),
-      phone:   _phone.text.trim(),
-      email:   _email.text.trim(),
-      type:    _type,
-      gstin:   _gstin.text.trim(),
+      name: _name.text.trim(),
+      phone: _phone.text.trim(),
+      email: _email.text.trim(),
+      type: _type,
+      gstin: _gstin.text.trim(),
       address: _address.text.trim(),
       balance: double.tryParse(_balance.text) ?? 0,
     );
@@ -127,12 +128,15 @@ class _PartyDialogState extends State<_PartyDialog> {
                       scrollDirection: Axis.horizontal,
                       child: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(value: 'Customer', label: Text('Customer')),
-                          ButtonSegment(value: 'Supplier', label: Text('Supplier')),
-                          ButtonSegment(value: 'Both',     label: Text('Both')),
+                          ButtonSegment(
+                              value: 'Customer', label: Text('Customer')),
+                          ButtonSegment(
+                              value: 'Supplier', label: Text('Supplier')),
+                          ButtonSegment(value: 'Both', label: Text('Both')),
                         ],
                         selected: {_type},
-                        onSelectionChanged: (s) => setState(() => _type = s.first),
+                        onSelectionChanged: (s) =>
+                            setState(() => _type = s.first),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -215,7 +219,9 @@ class _PartyDialogState extends State<_PartyDialog> {
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                      Text(_error!,
+                          style: const TextStyle(
+                              color: AppColors.error, fontSize: 13)),
                     ],
                   ],
                 ),
@@ -229,10 +235,13 @@ class _PartyDialogState extends State<_PartyDialog> {
                   if (isEdit)
                     TextButton(
                       onPressed: () {
-                        context.read<PartiesBloc>().add(DeletePartyRequested(widget.party!));
+                        context
+                            .read<PartiesBloc>()
+                            .add(DeletePartyRequested(widget.party!));
                         Navigator.pop(context);
                       },
-                      child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+                      child: const Text('Delete',
+                          style: TextStyle(color: AppColors.error)),
                     ),
                   const Spacer(),
                   TextButton(

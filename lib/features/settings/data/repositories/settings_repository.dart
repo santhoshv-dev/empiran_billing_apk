@@ -35,7 +35,9 @@ class SettingsRepository {
                 ? company.displayName
                 : remoteName,
             gstin: b['gstin']?.toString() ?? company.gstin,
-            address: '${b['addressLine1'] ?? ''} ${b['addressLine2'] ?? ''}'.trim().isNotEmpty
+            address: '${b['addressLine1'] ?? ''} ${b['addressLine2'] ?? ''}'
+                    .trim()
+                    .isNotEmpty
                 ? '${b['addressLine1'] ?? ''} ${b['addressLine2'] ?? ''}'.trim()
                 : company.address,
             phone: b['phone']?.toString() ?? company.phone,
@@ -49,7 +51,8 @@ class SettingsRepository {
             logo: company.logo,
             role: b['role']?.toString() ?? company.role,
           );
-          await prefs.setString(AppConstants.companyKey, jsonEncode(company.toJson()));
+          await prefs.setString(
+              AppConstants.companyKey, jsonEncode(company.toJson()));
           await prefs.setString('company_id', realId);
         }
       } catch (_) {}
@@ -60,7 +63,8 @@ class SettingsRepository {
 
   Future<void> saveCompany(Company company) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.companyKey, jsonEncode(company.toJson()));
+    await prefs.setString(
+        AppConstants.companyKey, jsonEncode(company.toJson()));
 
     if (apiClient.token != null && apiClient.token!.isNotEmpty) {
       try {
@@ -85,7 +89,8 @@ class SettingsRepository {
 
   Future<void> saveInvoiceSettings(InvoiceSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.settingsKey, jsonEncode(settings.toJson()));
+    await prefs.setString(
+        AppConstants.settingsKey, jsonEncode(settings.toJson()));
   }
 
   Future<List<String>> loadCategories() async {
@@ -99,7 +104,9 @@ class SettingsRepository {
     }
 
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token != null && apiClient.token!.isNotEmpty && companyId != null) {
+    if (apiClient.token != null &&
+        apiClient.token!.isNotEmpty &&
+        companyId != null) {
       try {
         final remote = await apiClient.getCategories(companyId);
         final remoteNames = remote
@@ -107,8 +114,11 @@ class SettingsRepository {
             .where((name) => name.isNotEmpty)
             .toList();
         if (remoteNames.isNotEmpty) {
-          categories = [...{...categories, ...remoteNames}];
-          await prefs.setString(AppConstants.categoriesKey, jsonEncode(categories));
+          categories = [
+            ...{...categories, ...remoteNames}
+          ];
+          await prefs.setString(
+              AppConstants.categoriesKey, jsonEncode(categories));
         }
       } catch (_) {}
     }
@@ -153,14 +163,17 @@ class SettingsRepository {
     }
 
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token == null || apiClient.token!.isEmpty || companyId == null) {
+    if (apiClient.token == null ||
+        apiClient.token!.isEmpty ||
+        companyId == null) {
       return;
     }
 
     try {
       final remote = await apiClient.getCategories(companyId);
       final existingRemote = remote.where(
-        (c) => (c['name']?.toString().trim().toLowerCase() ?? '') ==
+        (c) =>
+            (c['name']?.toString().trim().toLowerCase() ?? '') ==
             trimmed.toLowerCase(),
       );
       final created = existingRemote.isNotEmpty
@@ -190,7 +203,8 @@ class SettingsRepository {
     if (newTrimmed.isEmpty) return;
 
     final existing = await loadCategories();
-    final updated = existing.map((c) => c == oldTrimmed ? newTrimmed : c).toList();
+    final updated =
+        existing.map((c) => c == oldTrimmed ? newTrimmed : c).toList();
     if (!updated.contains(newTrimmed)) {
       updated.add(newTrimmed);
     }
@@ -210,21 +224,29 @@ class SettingsRepository {
     await prefs.setString('category_images_map', jsonEncode(images));
 
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token == null || apiClient.token!.isEmpty || companyId == null) {
+    if (apiClient.token == null ||
+        apiClient.token!.isEmpty ||
+        companyId == null) {
       return;
     }
 
     try {
       final remote = await apiClient.getCategories(companyId);
-      final match = remote.where(
-        (c) => (c['name']?.toString().trim().toLowerCase() ?? '') == oldTrimmed.toLowerCase(),
-      ).firstOrNull;
+      final match = remote
+          .where(
+            (c) =>
+                (c['name']?.toString().trim().toLowerCase() ?? '') ==
+                oldTrimmed.toLowerCase(),
+          )
+          .firstOrNull;
       if (match != null) {
         final categoryId = match['id']?.toString();
         if (categoryId != null && categoryId.isNotEmpty) {
-          await apiClient.updateCategory(companyId, categoryId, {'name': newTrimmed});
+          await apiClient
+              .updateCategory(companyId, categoryId, {'name': newTrimmed});
           if (imageBase64 != null && imageBase64.trim().isNotEmpty) {
-            await apiClient.uploadCategoryImageBase64(companyId, categoryId, imageBase64.trim());
+            await apiClient.uploadCategoryImageBase64(
+                companyId, categoryId, imageBase64.trim());
           }
         }
       }
@@ -244,7 +266,9 @@ class SettingsRepository {
     }
 
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token == null || apiClient.token!.isEmpty || companyId == null) {
+    if (apiClient.token == null ||
+        apiClient.token!.isEmpty ||
+        companyId == null) {
       return;
     }
 
@@ -265,7 +289,9 @@ class SettingsRepository {
 
   Future<List<Map<String, String>>> loadUsers() async {
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token != null && apiClient.token!.isNotEmpty && companyId != null) {
+    if (apiClient.token != null &&
+        apiClient.token!.isNotEmpty &&
+        companyId != null) {
       try {
         final remote = await apiClient.getStaff(companyId);
         final list = remote
@@ -303,7 +329,9 @@ class SettingsRepository {
     required String role,
   }) async {
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token != null && apiClient.token!.isNotEmpty && companyId != null) {
+    if (apiClient.token != null &&
+        apiClient.token!.isNotEmpty &&
+        companyId != null) {
       try {
         await apiClient.createStaff(companyId, {
           'name': name,
@@ -337,7 +365,10 @@ class SettingsRepository {
     String? id,
   }) async {
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token != null && apiClient.token!.isNotEmpty && companyId != null && id != null) {
+    if (apiClient.token != null &&
+        apiClient.token!.isNotEmpty &&
+        companyId != null &&
+        id != null) {
       try {
         await apiClient.updateStaffRole(companyId, id, role);
       } catch (_) {}
@@ -360,13 +391,19 @@ class SettingsRepository {
 
   Future<void> deleteUser(String username, {String? id}) async {
     final companyId = await apiClient.getActiveBusinessId();
-    if (apiClient.token != null && apiClient.token!.isNotEmpty && companyId != null && id != null) {
+    if (apiClient.token != null &&
+        apiClient.token!.isNotEmpty &&
+        companyId != null &&
+        id != null) {
       try {
         await apiClient.deleteStaff(companyId, id);
       } catch (_) {}
     }
     final existing = await loadUsers();
-    final updated = existing.where((u) => u['username'] != username && (id == null || u['id'] != id)).toList();
+    final updated = existing
+        .where(
+            (u) => u['username'] != username && (id == null || u['id'] != id))
+        .toList();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('staff_users', jsonEncode(updated));
   }

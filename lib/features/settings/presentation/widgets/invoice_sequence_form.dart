@@ -31,7 +31,8 @@ class _InvoiceSequenceFormState extends State<InvoiceSequenceForm>
     _gstYear = TextEditingController(text: widget.settings.gstYear);
     _gstCounter = TextEditingController(text: '${widget.settings.gstCounter}');
     _nonGstPrefix = TextEditingController(text: widget.settings.nonGstPrefix);
-    _nonGstCounter = TextEditingController(text: '${widget.settings.nonGstCounter}');
+    _nonGstCounter =
+        TextEditingController(text: '${widget.settings.nonGstCounter}');
   }
 
   @override

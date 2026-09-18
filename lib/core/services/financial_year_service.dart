@@ -25,5 +25,6 @@ class FinancialYearService {
     return '$prefix/$fy/$paddedCounter';
   }
 
-  static String currentTag({DateTime? date}) => getCurrentFinancialYear(date: date);
+  static String currentTag({DateTime? date}) =>
+      getCurrentFinancialYear(date: date);
 }
