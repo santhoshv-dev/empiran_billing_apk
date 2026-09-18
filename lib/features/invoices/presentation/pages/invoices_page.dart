@@ -609,15 +609,17 @@ class _InvoicesPageState extends State<InvoicesPage> {
                                       onPressed: () => _convertToOrder(t),
                                     ),
                                   if (isQuote)
-                                    IconButton(
-                                      tooltip: 'Convert to order',
-                                      icon: const Icon(Icons.transform_rounded,
-                                          color: AppColors.secondary),
-                                      onPressed: () =>
-                                          Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => InvoiceComposerPage(
-                                              type: 'order', source: t),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                      child: EmpiranButton(
+                                        label: 'Convert to Order',
+                                        icon: Icons.transform_rounded,
+                                        height: 38,
+                                        onPressed: () => Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => InvoiceComposerPage(
+                                                type: 'order', source: t),
+                                          ),
                                         ),
                                       ),
                                     ),
